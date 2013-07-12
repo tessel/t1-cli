@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 var fs = require('fs')
-  , exec = require('child_process').exec;
+  , spawn = require('child_process').spawn
+  , path = require('path');
 
 var choices = require('choices')
   , colors = require('colors')
@@ -54,66 +55,38 @@ function newbuf (l) {
 
 function onmodemselect (modem) {
   modem = '/dev/' + modem;
-  console.log('Connected to terminal device', modem.green);
+  console.log('Connecting to terminal device', modem.green);
 
-  // var stdout = fs.createWriteStream(modem);
-  // stdout.write(new Buffer(0x5E));
-  // console.log('done');
+  var serial = spawn('python', ['-u', path.join(__dirname, 'pycli.py'), modem]);
+  serial.stderr.pipe(process.stderr);
 
-  var SerialPort = require("serialport").SerialPort
-  var serialPort = new SerialPort(modem, {
-    baudrate: 115200
-  }, false).on('open', function () {
-    process.stdout.write('Opened socket... ');
-    serialPort.once('data', function (data) {
-      serialPort.write(new Buffer([0xDE]), function(err, results) {
-        console.log('starting.');
-        serialPort.on('data', function waitforbang (data) {
-          if (String(data) == '!\n') {
-            serialPort.removeListener('data', waitforbang);
-            onready();
-          }
-        });
-      });
+  serial.stdout.once('data', function onhandshake (data) {
+    serial.stdout.on('data', function onhandshakeack (data) {
+      if (String(data).indexOf('!') > -1) {
+        serial.stdout.removeListener('data', onhandshakeack);
+        onready();
+      }
     });
-  });
+    serial.stdin.write('!\n');
+  })
 
-  serialPort.open();
+  serial.on('exit', function () {
+    console.error('Serial closed.');
+    process.exit(1);
+  })
 
   function onready () {
-    serialPort.on('data', function(data) {
+    console.log('Connected.\n');
+
+    serial.stdout.on('data', function(data) {
       process.stdout.write(String(data).yellow);
     });  
 
     var sizebuf = new Buffer(4);
     sizebuf.writeInt32LE(val.length, 0);
-    serialPort.write(Buffer.concat([sizebuf, val]), function(err, results) {
-      console.log(String('[write err ' + err + ', written ' + results + ']').grey);
+    serial.stdin.write(Buffer.concat([sizebuf, val]), function () {
+      console.log(String('[it is written]').grey);
     });
   }
 
-  // while (1) {
-  //   try {
-  //     var stdin = fs.createReadStream(modem);
-  //      var stdout = fs.createWriteStream(modem);
-
-  //     stdin.pipe(process.stdout);
-  //     // process.stdin.resume();
-
-  //     stdin.on('data', function (line) {
-  //       if (String(line) == 'WAIT\n') {
-  //         var val = 'console:log(2 + 2)';
-  //         // exec(echoescape(['printf', new Buffer([0, 0, 0, 5])]) + ' > ' + modem);
-  //         // exec(echoescape(['printf', val]) + ' > ' + modem);
-  //         // fs.writeFileSync(modem, new Buffer([0, 0, 0, eval.length]));
-  //         stdout.write(new Buffer(0x5E));
-  //         console.log('done');
-  //       }
-  //     })
-
-  //     return;
-  //   } catch (e) {
-  //     console.error(e);
-  //   }
-  // }
 }
