@@ -6,24 +6,48 @@ var fs = require('fs')
 
 var choices = require('choices')
   , colors = require('colors')
-  , shellescape = require('shell-escape');
+  , jssc = require('jssc');
 
 
-if (process.argv.length < 2) {
-  console.error('Usage: ss [filename]');
+if (process.argv.length < 3) {
+  console.error('Usage: ss [-l] [filename]');
   process.exit(1);
 }
 
-var val = fs.readFileSync(process.argv[2], 'utf-8');
-val = new Buffer(val);
+function compile (file, next) {
+  var colony = spawn('colony', ['-cb', path.relative(process.cwd(), file)])
+  var bufs = [];
+  colony.stderr.on('data', function (data) {
+    console.error(String(data).red);
+  })
+  colony.stdout.on('data', function (data) {
+    bufs.push(data);
+  })
+  colony.on('close', function (code) {
+    if (code > 0) {
+      console.error('Invalid colony output code', code + ', aborting.');
+      process.exit(1);
+    }
+
+    var output = Buffer.concat(bufs);
+    next(output);
+  })
+}
 
 
 console.log('hey its scripstick'.grey);
 
-var firstNoDevicesFound = false;
-detectDevice();
+detectDevice(function (modem) {
+  compile(process.argv[2], function (luacode) {
+    handshake(modem, function (serial) {
+      upload(serial, luacode);
+    });
+  });
+});
 
-function detectDevice () {
+var firstNoDevicesFound = false;
+
+function detectDevice (next) {
   var modems = fs.readdirSync('/dev').filter(function (file) {
     return file.match(/^cu.usbmodem.*$/);
   });
@@ -38,55 +62,38 @@ function detectDevice () {
 
   if (modems.length > 1) {
     choices('Select a device: ', modems, function (i) {
-      onmodemselect(modems[i]);
+      next(modems[i]);
     });
   } else {
-    onmodemselect(modems[0]);
+    next(modems[0]);
   }
 }
 
-var nbi = 1;
-function newbuf (l) {
-  for (var a = [], i = 0; i < l; i++) {
-    a.push(nbi++);
-  }
-  return new Buffer(a);
-}
-
-function onmodemselect (modem) {
+function handshake (modem, next) {
   modem = '/dev/' + modem;
-  console.log('Connecting to terminal device', modem.green);
+  process.stdout.write('Connecting to ' + modem.green + '... ');
 
-  var serial = spawn('python', ['-u', path.join(__dirname, 'pycli.py'), modem]);
+  var serial = jssc.listen(modem);
   serial.stderr.pipe(process.stderr);
-
-  serial.stdout.once('data', function onhandshake (data) {
-    serial.stdout.on('data', function onhandshakeack (data) {
-      if (String(data).indexOf('!') > -1) {
-        serial.stdout.removeListener('data', onhandshakeack);
-        onready();
-      }
-    });
-    serial.stdin.write('!\n');
-  })
-
-  serial.on('exit', function () {
-    console.error('Serial closed.');
+  serial.on('close', function (code) {
+    console.log('jssc exited with code', code);
     process.exit(1);
   })
 
-  function onready () {
-    console.log('Connected.\n');
-
-    serial.stdout.on('data', function(data) {
-      process.stdout.write(String(data).yellow);
-    });  
-
-    var sizebuf = new Buffer(4);
-    sizebuf.writeInt32LE(val.length, 0);
-    serial.stdin.write(Buffer.concat([sizebuf, val]), function () {
-      console.log(String('[it is written]').grey);
+  // Wait for initial "!\n"
+  serial.stdout.once('data', function onhandshake (data) {
+    serial.stdout.pipe(process.stdout);
+    serial.stdin.write("!\n", function () {
+      console.log('done.');
+      next(serial);
     });
-  }
+  })
+}
 
+function upload (serial, luacode) {
+  var sizebuf = new Buffer(4);
+  sizebuf.writeInt32LE(luacode.length, 0);
+  serial.stdin.write(Buffer.concat([sizebuf, luacode]), function () {
+    console.log(String('[it is written]').grey);
+  });
 }
