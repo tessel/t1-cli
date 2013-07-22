@@ -38,10 +38,14 @@ function compile (file, next) {
 console.log('hey its scripstick'.grey);
 
 detectDevice(function (modem) {
-  compile(process.argv[2], function (luacode) {
-    handshake(modem, function (serial) {
-      upload(serial, luacode);
-    });
+  handshake(modem, function (serial) {
+    if (process.argv[2] == '-c') {
+      console.log('[connected]'.grey);
+    } else {
+      compile(process.argv[2], function (luacode) {
+        upload(serial, luacode);
+      });
+    }
   });
 });
 
