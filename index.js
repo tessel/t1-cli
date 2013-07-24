@@ -35,6 +35,8 @@ function compile (file, next) {
 }
 
 
+var firstNoDevicesFound = false;
+
 console.log('hey its scripstick'.grey);
 
 detectDevice(function (modem) {
@@ -49,8 +51,6 @@ detectDevice(function (modem) {
   });
 });
 
-var firstNoDevicesFound = false;
-
 function detectDevice (next) {
   var modems = fs.readdirSync('/dev').filter(function (file) {
     return file.match(/^cu.usbmodem.*$/);
@@ -58,10 +58,10 @@ function detectDevice (next) {
 
   if (modems.length == 0) {
     if (!firstNoDevicesFound) {
-      console.error('No ScriptStick connected, waiting for device to connect...');
+      console.error('No ScriptStick connected, waiting for device to connect...'.grey);
       firstNoDevicesFound = true;
     }
-    return setTimeout(detectDevice, 10);
+    return setTimeout(detectDevice, 10, next);
   }
 
   if (modems.length > 1) {
@@ -75,7 +75,7 @@ function detectDevice (next) {
 
 function handshake (modem, next) {
   modem = '/dev/' + modem;
-  process.stdout.write('Connecting to ' + modem.green + '... ');
+  process.stdout.write('Connecting to '.grey + modem.green + '... '.grey);
 
   var serial = jssc.listen(modem);
   serial.stderr.pipe(process.stderr);
