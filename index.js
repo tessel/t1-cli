@@ -10,13 +10,13 @@ var choices = require('choices')
 
 
 if (process.argv.length < 3) {
-  console.error('Usage: ss [-l] [filename]');
+  console.error('Usage: ss [-i] [filename]');
   process.exit(1);
 }
 
 function compile (file, next) {
-  var colony = spawn('colony', ['-cb', path.relative(process.cwd(), file)])
   var bufs = [];
+  var colony = spawn('colony', ['-cb', path.relative(process.cwd(), file)])
   colony.stderr.on('data', function (data) {
     console.error(String(data).red);
   })
@@ -41,7 +41,7 @@ console.log('hey its scripstick'.grey);
 
 detectDevice(function (modem) {
   handshake(modem, function (serial) {
-    if (process.argv[2] == '-c') {
+    if (process.argv[2] == '-i') {
       console.log('[connected]'.grey);
     } else {
       compile(process.argv[2], function (luacode) {
