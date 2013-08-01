@@ -8,7 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "ss": "./index.js"
+    "tessel": "./index.js"
   },
   "repository": "",
   "author": "",
@@ -16,6 +16,7 @@
   "dependencies": {
     "choices": "0.0.2",
     "colors": "~0.6.0-1",
+    "colony": "git+ssh://git@github.com:hiddenmachine/colony.git",
     "jssc": "git+ssh://git@github.com:hiddenmachine/jssc.git",
     "my-local-ip": "~1.0.0"
   }
