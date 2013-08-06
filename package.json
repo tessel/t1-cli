@@ -1,6 +1,6 @@
 {
-  "name": "ss",
-  "version": "0.0.1",
+  "name": "tessel",
+  "version": "0.0.2",
   "description": "",
   "main": "index.js",
   "private": true,
@@ -11,7 +11,7 @@
     "tessel": "./index.js"
   },
   "repository": "",
-  "author": "",
+  "author": "Tim Cameron Ryan <tim@technical.io>",
   "license": "BSD",
   "dependencies": {
     "choices": "0.0.2",
