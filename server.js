@@ -29,6 +29,7 @@ var tesselserver = net.createServer(function (socket) {
   socket.on('end', function () {
     clients.splice(clients.indexOf(socket), 1);
     if (clients.length == 0) {
+      serial.kill();
       process.exit(0);  
     }
   })
