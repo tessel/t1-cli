@@ -17,9 +17,10 @@ var choices = require('choices')
 var argv = optimist.argv;
 
 function usage () {
-  console.error("Tessel CLI\nUsage: tessel <filename>\n" +
+  console.error("Tessel CLI\nUsage:\n" +
+    "       tessel <filename>\n" +
     "       tessel listen\n" +
-    "       tessel push <filename> [-r <ip:port>]" +
+    "       tessel push <filename> [-r <ip:port>]\n" +
     "       tessel wifi <ssid> <pass>\n");
 }
 
@@ -32,7 +33,9 @@ if (process.argv.length < 3) {
 
 function compile (file, safe, next) {
   try {
-    colony.bundleFiles(path.join(process.cwd(), file), function (luacode) {
+    colony.bundleFiles(path.join(process.cwd(), file), {
+      tessel: __dirname + '/node_modules/tessel-lib'
+    }, function (luacode) {
       next(new Buffer(luacode));
     });
   } catch (e) {
@@ -111,115 +114,118 @@ var net = require('net');
 // } else {
   header.init();
 
-  detectDevice(function (modem) {
-
-    // Listening.
-    // if (process.argv[2] == '-l') {
-    handshake(modem, function () {
-      var port = 6540, host = 'localhost';
-      if (argv.r) {
-        var args = argv.r.split(':');
-        host = args[0];
-        port = args[1];
-      }
-
-      var tesselclient = net.connect(port, host);
-      tesselclient.pipe(process.stdout);
-      tesselclient.on('connect', function () {
-        header.connected(modem);
+  if (argv.r) {
+    var args = argv.r.split(':');
+    host = args[0];
+    port = args[1];
+    onconnect('[remote]', port, host);
+  } else {
+    detectDevice(function (modem) {
+      // Listening.
+      // if (process.argv[2] == '-l') {
+      handshake(modem, function () {
+        onconnect(modem, 6540, 'localhost');
       });
+    });
+  }
 
-      if (process.argv[2] == 'push') {
-        if (process.argv.length < 4) {
-          usage();
-          process.exit(1);
-        }
+  function onconnect (modem, port, host) {
+    var tesselclient = net.connect(port, host);
+    tesselclient.pipe(process.stdout);
+    tesselclient.on('connect', function () {
+      header.connected(modem);
+    });
 
-        compile(process.argv[3], false, function (luacode) {
-          upload(tesselclient, luacode);
-        });
-      } else if (process.argv[2] == 'wifi') {
-        var ssid = process.argv[3];
-        var pass = process.argv[4];
-
-        if (process.argv.length < 5) {
-          usage();
-          process.exit(1);
-        }
-
-        tesselclient.on('connect', function () {
-          console.log(('Connecting to ' + ssid + ':' + pass + '...').yellow);
-        });
-
-        
-        var outbuf = new Buffer(96);
-        outbuf.fill(0);
-        new Buffer(ssid).copy(outbuf, 0, 0, 32);
-        new Buffer(pass).copy(outbuf, 32, 0, 64);
-
-        var sizebuf = new Buffer(5);
-        sizebuf.writeUInt8('W'.charCodeAt(0), 0);
-        sizebuf.writeInt32LE(outbuf.length, 1);
-
-        tesselclient.write(Buffer.concat([sizebuf, outbuf]), function () {
-          // console.log(String('[it is written]').grey);
-        });
-      } else if (process.argv[2] == 'listen') {
-        // nop
-      } else {
+    if (process.argv[2] == 'push') {
+      if (process.argv.length < 4) {
         usage();
         process.exit(1);
       }
-    });
-    // }
 
-    // Interactive.
-    // handshake(modem, function (serial) {
-    //   if (process.argv[2] == '-i') {
-    //     console.log('[connected]'.grey);
+      compile(process.argv[3], false, function (luacode) {
+        upload(tesselclient, luacode);
+      });
+    } else if (process.argv[2] == 'wifi') {
+      var ssid = process.argv[3];
+      var pass = process.argv[4];
 
-    //     repl.start({
-    //       prompt: "",
-    //       input: process.stdin,
-    //       output: process.stdout,
-    //       ignoreUndefined: true,
-    //       eval: function eval(cmd, context, filename, callback) {
-    //         cmd = cmd.replace(/^.|\n.$/g, '');
-    //         runeval(cmd, function () {
-    //           callback(null, undefined);
-    //         });
-    //       }
-    //     }).on('exit', function (code) {
-    //       process.exit(code);
-    //     })
+      if (process.argv.length < 5) {
+        usage();
+        process.exit(1);
+      }
 
-    //     // process.stdin.on('data', function (data) {
+      tesselclient.on('connect', function () {
+        console.log(('Connecting to ' + ssid + ':' + pass + '...').yellow);
+      });
 
-    //     function runeval (data, next) {
-    //       fs.writeFileSync(path.join(__dirname, 'tmp', 'repl.js'), data);
-    //       compile(path.join(__dirname, 'tmp', 'repl.js'), true, function (luacode) {
-    //         if (luacode) {
-    //           upload(serial, luacode);
-    //           next();
-    //         } else {
-    //           process.stdout.write('> ');
-    //           next();
-    //         }
-    //       });
-    //     }
+      
+      var outbuf = new Buffer(96);
+      outbuf.fill(0);
+      new Buffer(ssid).copy(outbuf, 0, 0, 32);
+      new Buffer(pass).copy(outbuf, 32, 0, 64);
 
-    //     serial.once('data', function () {
-    //       console.log('global.board = require(\'tm\')');
-    //       runeval('global.board = require(\'tm\')', function () { });
-    //     })
+      var sizebuf = new Buffer(5);
+      sizebuf.writeUInt8('W'.charCodeAt(0), 0);
+      sizebuf.writeInt32LE(outbuf.length, 1);
 
-    //   } else {
-    //     compile(process.argv[2], false, function (luacode) {
-    //       upload(serial, luacode);
-    //     });
-    //   }
-    // });
-  });
+      tesselclient.write(Buffer.concat([sizebuf, outbuf]), function () {
+        // console.log(String('[it is written]').grey);
+      });
+    } else if (process.argv[2] == 'listen') {
+      // nop
+    } else {
+      usage();
+      process.exit(1);
+    }
+  }
+  // }
+
+  // Interactive.
+  // handshake(modem, function (serial) {
+  //   if (process.argv[2] == '-i') {
+  //     console.log('[connected]'.grey);
+
+  //     repl.start({
+  //       prompt: "",
+  //       input: process.stdin,
+  //       output: process.stdout,
+  //       ignoreUndefined: true,
+  //       eval: function eval(cmd, context, filename, callback) {
+  //         cmd = cmd.replace(/^.|\n.$/g, '');
+  //         runeval(cmd, function () {
+  //           callback(null, undefined);
+  //         });
+  //       }
+  //     }).on('exit', function (code) {
+  //       process.exit(code);
+  //     })
+
+  //     // process.stdin.on('data', function (data) {
+
+  //     function runeval (data, next) {
+  //       fs.writeFileSync(path.join(__dirname, 'tmp', 'repl.js'), data);
+  //       compile(path.join(__dirname, 'tmp', 'repl.js'), true, function (luacode) {
+  //         if (luacode) {
+  //           upload(serial, luacode);
+  //           next();
+  //         } else {
+  //           process.stdout.write('> ');
+  //           next();
+  //         }
+  //       });
+  //     }
+
+  //     serial.once('data', function () {
+  //       console.log('global.board = require(\'tm\')');
+  //       runeval('global.board = require(\'tm\')', function () { });
+  //     })
+
+  //   } else {
+  //     compile(process.argv[2], false, function (luacode) {
+  //       upload(serial, luacode);
+  //     });
+  //   }
+  // });
 // }
 
 function detectDevice (next) {
