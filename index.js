@@ -161,8 +161,9 @@ var net = require('net');
       
       var outbuf = new Buffer(96);
       outbuf.fill(0);
-      new Buffer(ssid).copy(outbuf, 0, 0, 32);
-      new Buffer(pass).copy(outbuf, 32, 0, 64);
+      // TODO use byteslength for node 0.8
+      new Buffer(ssid).copy(outbuf, 0, 0, ssid.length);
+      new Buffer(pass).copy(outbuf, 32, 0, pass.length);
 
       var sizebuf = new Buffer(5);
       sizebuf.writeUInt8('W'.charCodeAt(0), 0);
