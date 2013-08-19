@@ -143,8 +143,15 @@ var net = require('net');
       }
 
       compile(process.argv[3], false, function (luacode) {
-        upload(tesselclient, luacode);
+        upload('U', tesselclient, luacode);
       });
+    } else if (process.argv[2] == 'firmware') {
+      if (process.argv.length < 4) {
+        usage();
+        process.exit(1);
+      }
+
+      upload('F', tesselclient, fs.readFileSync(process.argv[3]));
     } else if (process.argv[2] == 'wifi') {
       var ssid = process.argv[3];
       var pass = process.argv[4];
@@ -273,9 +280,9 @@ function handshake (modem, next) {
   });
 }
 
-function upload (client, luacode) {
+function upload (car, client, luacode) {
   var sizebuf = new Buffer(5);
-  sizebuf.writeUInt8('U'.charCodeAt(0), 0);
+  sizebuf.writeUInt8(car.charCodeAt(0), 0);
   sizebuf.writeInt32LE(luacode.length, 1);
   client.write(Buffer.concat([sizebuf, luacode]), function () {
     // console.log(String('[it is written]').grey);
