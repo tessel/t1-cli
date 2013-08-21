@@ -12,8 +12,8 @@ var choices = require('choices')
   , async = require('async')
   , portscanner = require('portscanner')
   , optimist = require('optimist')
-  , jssc = require('jssc');
-
+  , jssc = require('jssc')
+  , dgram = require('dgram');
 
 var argv = optimist.argv;
 
@@ -22,6 +22,7 @@ function usage () {
     "       tessel <filename>\n" +
     "       tessel listen\n" +
     "       tessel push <filename> [-r <ip:port>]\n" +
+    "       tessel pushall <filename>\n"+
     "       tessel wifi <ssid> <pass>\n");
 }
 
@@ -29,6 +30,7 @@ if (process.argv.length < 3) {
   usage();
   process.exit(1);
 }
+
 
 // Compile a filename to code, detect error situation.
 
@@ -132,6 +134,12 @@ var net = require('net');
     });
   }
 
+  function pushCode(file, client){
+    compile(file, false, function (luacode) {
+      upload('U', client, luacode);
+    });
+  }
+
   function onconnect (modem, port, host) {
     var tesselclient = net.connect(port, host);
     tesselclient.pipe(process.stdout);
@@ -145,9 +153,44 @@ var net = require('net');
         process.exit(1);
       }
 
-      compile(process.argv[3], false, function (luacode) {
-        upload('U', tesselclient, luacode);
+      pushCode(process.argv[3], tesselclient);
+    } else if (process.argv[2] == 'pushall'){
+      // listen for all possible 
+      var client = dgram.createSocket('udp4');
+      var addresses = [];
+      client.bind(5454, function() {
+        client.addMembership('224.0.1.187'); // hard coded for now
       });
+      
+      console.log(('listening for tessel devices...').yellow);
+
+      client.on('listening', function () {
+          var address = s.address();
+      });
+      
+      client.on('message', function (message, remote) {   
+        if (addresses.indexOf(remote.address) == -1) {
+          addresses.push(remote.address);
+          console.log("found ip: " + remote.address);
+        } 
+        // console.log('B: From: ' + remote.address + ':' + remote.port +' - ' + message);
+      });
+
+      // timeout of 2 seconds
+      setTimeout(function () {
+        client.close();
+        console.log('pushing code to the following: ', addresses);
+        // push to all gathered ips
+        addresses.forEach(function(address){
+          var tClient = net.connect(port, address);
+          // tClient.on('connect', function () {
+          //   header.connected(modem);
+          // });
+          pushCode(address, tClient);
+        });
+        
+      }, 2000);
+
     } else if (process.argv[2] == 'firmware') {
       if (process.argv.length < 4) {
         usage();
