@@ -240,7 +240,17 @@ var net = require('net');
 // }
 
 function detectDevice (next) {
-  jssc.list(function (err, modems) {
+  if (process.platform.match(/^win/)) {
+    jssc.list(onmodems);
+  } else {
+    onmodems(null, fs.readdirSync('/dev').filter(function (file) {
+      return file.match(/^cu.usbmodem.*$/);
+    }).map(function (file) {
+      return '/dev/' + file;
+    }));
+  }
+
+  function onmodems (err, modems) {
     if (modems.length == 0) {
       if (!detectDevice.firstNoDevicesFound) {
         header.nofound();
@@ -256,7 +266,7 @@ function detectDevice (next) {
     } else {
       next(modems[0]);
     }
-  })
+  }
 }
 
 function handshake (modem, next) {
