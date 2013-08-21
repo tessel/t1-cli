@@ -11,7 +11,8 @@ var choices = require('choices')
   , colors = require('colors')
   , async = require('async')
   , portscanner = require('portscanner')
-  , optimist = require('optimist');
+  , optimist = require('optimist')
+  , jssc = require('jssc');
 
 
 var argv = optimist.argv;
@@ -34,7 +35,9 @@ if (process.argv.length < 3) {
 function compile (file, safe, next) {
   try {
     colony.bundleFiles(path.join(process.cwd(), file), {
-      tessel: __dirname + '/node_modules/tessel-lib'
+      tessel: __dirname + '/node_modules/tessel-lib',
+      events: null,
+      net: null
     }, function (luacode) {
       next(new Buffer(luacode));
     });
@@ -237,25 +240,23 @@ var net = require('net');
 // }
 
 function detectDevice (next) {
-  var modems = fs.readdirSync('/dev').filter(function (file) {
-    return file.match(/^cu.usbmodem.*$/);
-  });
-
-  if (modems.length == 0) {
-    if (!detectDevice.firstNoDevicesFound) {
-      header.nofound();
-      detectDevice.firstNoDevicesFound = true;
+  jssc.list(function (err, modems) {
+    if (modems.length == 0) {
+      if (!detectDevice.firstNoDevicesFound) {
+        header.nofound();
+        detectDevice.firstNoDevicesFound = true;
+      }
+      return setTimeout(detectDevice, 10, next);
     }
-    return setTimeout(detectDevice, 10, next);
-  }
 
-  if (modems.length > 1) {
-    choices('Select a device: ', modems, function (i) {
-      next('/dev/' + modems[i]);
-    });
-  } else {
-    next('/dev/' + modems[0]);
-  }
+    if (modems.length > 1) {
+      choices('Select a device: ', modems, function (i) {
+        next(modems[i]);
+      });
+    } else {
+      next(modems[0]);
+    }
+  })
 }
 
 function handshake (modem, next) {
