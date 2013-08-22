@@ -37,7 +37,8 @@ function compile (file, safe, next) {
     colony.bundleFiles(path.join(process.cwd(), file), {
       tessel: __dirname + '/node_modules/tessel-lib',
       events: null,
-      net: null
+      net: null,
+      dgram: null
     }, function (luacode) {
       next(new Buffer(luacode));
     });
