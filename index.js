@@ -24,7 +24,8 @@ function usage () {
     "       tessel logs\n" +
     "       tessel push <filename> [-r <ip:port>]\n" +
     // "       tessel pushall <filename>\n"+
-    "       tessel wifi <ssid> <pass>\n");
+    "       tessel wifi <ssid> <pass>\n"+
+    "       tessel stop\n");
 }
 
 if (process.argv.length < 3) {
@@ -195,7 +196,8 @@ var net = require('net');
         }
       });
       pushCode(process.argv[3], tesselclient);
-
+    } else if (process.argv[2] == 'stop') {
+      pushCode('scripts/stop.js', tesselclient);
     // } else if (process.argv[2] == 'pushall'){
     //   // listen for all possible 
     //   var client = dgram.createSocket('udp4');
