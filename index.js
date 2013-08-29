@@ -205,7 +205,7 @@ var net = require('net');
       });
       pushCode(process.argv[3], tesselclient);
     } else if (process.argv[2] == 'stop') {
-      pushCode(require('path').dirname(require.main.filename)+'/scripts/stop.js', tesselclient);
+      pushCode(path.dirname(require.main.filename)+'/scripts/stop.js', tesselclient);
     // } else if (process.argv[2] == 'pushall'){
     //   // listen for all possible 
     //   var client = dgram.createSocket('udp4');
