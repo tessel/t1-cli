@@ -1,4 +1,5 @@
-console.log('looping');
-while (1) {
-console.log('loop 1');
+console.log('while (true)');
+var i = 0;
+while (true) {
+  console.log('loop', i++);
 }

@@ -13,16 +13,17 @@ var choices = require('choices')
   , portscanner = require('portscanner')
   , optimist = require('optimist')
   , jssc = require('jssc')
-  , dgram = require('dgram');
+  , dgram = require('dgram')
+  , carrier = require('carrier');
 
 var argv = optimist.argv;
 
 function usage () {
   console.error("Tessel CLI\nUsage:\n" +
     "       tessel <filename>\n" +
-    "       tessel listen\n" +
+    "       tessel logs\n" +
     "       tessel push <filename> [-r <ip:port>]\n" +
-    "       tessel pushall <filename>\n"+
+    // "       tessel pushall <filename>\n"+
     "       tessel wifi <ssid> <pass>\n");
 }
 
@@ -66,13 +67,13 @@ var header = {
     header._msg('TESSEL? '.grey);
   },
   _unwrite: function (n) {
-    process.stdout.write(repeatstr('\b', n));
+    process.stderr.write(repeatstr('\b', n));
     header.len = 0;
   },
   _msg: function (str) {
     header._unwrite(header.len || 0);
     header.len = str.stripColors.length;
-    process.stdout.write(str);
+    process.stderr.write(str);
   },
   nofound: function () {
     header._msg('TESSEL? No Tessel found, waiting...'.grey);
@@ -143,62 +144,103 @@ var net = require('net');
 
   function onconnect (modem, port, host) {
     var tesselclient = net.connect(port, host);
-    tesselclient.pipe(process.stdout);
+    // tesselclient.pipe(process.stdout);
+    tesselclient.on('error', function (err) {
+      console.error('Error: Cannot connect to Tessel locally.', err);
+    })
     tesselclient.on('connect', function () {
-      header.connected(modem);
+      header.connected(modem.replace(/\s+$/, ''));
+    })
+
+    // Parse messages, crudely.
+    carrier.carry(tesselclient, function (data) {
+      data = String(data);
+      var type = 's';
+      if (data.match(/^\#\&/)) {
+        type = data.charAt(2);
+        data = data.substr(3);
+      }
+      if (type == type.toUpperCase()) {
+        try {
+          data = JSON.parse(data);
+        } catch (e) {
+          console.error('  error -'.red, 'Invalid message', data);
+          return;
+        }
+      }
+      tesselclient.emit('command', type, data, type == type.toLowerCase());
     });
 
     if (process.argv[2] == 'push') {
+      // Push new code to the device.
       if (process.argv.length < 4) {
         usage();
         process.exit(1);
       }
 
+      var updating = 0, scriptrunning = false;
+      tesselclient.on('command', function (command, data) {
+        if (command == 'u') {
+          console.error(data.grey);
+        } else if (command == 's' && scriptrunning) {
+          console.log(data);
+        } else if (command == 'S' && data == '1') {
+          scriptrunning = true;
+        } else if (command == 'U') {
+          if (updating) {
+            // Interrupted by other deploy
+            process.exit(0);
+          }
+          updating = true;
+        }
+      });
       pushCode(process.argv[3], tesselclient);
-    } else if (process.argv[2] == 'pushall'){
-      // listen for all possible 
-      var client = dgram.createSocket('udp4');
-      var addresses = [];
-      client.bind(5454, function() {
-        client.addMembership('224.0.1.187'); // hard coded for now
-      });
-      
-      console.log(('listening for tessel devices...').yellow);
 
-      client.on('listening', function () {
-          var address = s.address();
-      });
+    // } else if (process.argv[2] == 'pushall'){
+    //   // listen for all possible 
+    //   var client = dgram.createSocket('udp4');
+    //   var addresses = [];
+    //   client.bind(5454, function() {
+    //     client.addMembership('224.0.1.187'); // hard coded for now
+    //   });
       
-      client.on('message', function (message, remote) {   
-        if (addresses.indexOf(remote.address) == -1) {
-          addresses.push(remote.address);
-          console.log("found ip: " + remote.address);
-        } 
-        // console.log('B: From: ' + remote.address + ':' + remote.port +' - ' + message);
-      });
+    //   console.log(('listening for tessel devices...').yellow);
 
-      // timeout of 2 seconds
-      setTimeout(function () {
-        client.close();
-        console.log('pushing code to the following: ', addresses);
-        // push to all gathered ips
-        addresses.forEach(function(address){
-          var tClient = net.connect(port, address);
-          // tClient.on('connect', function () {
-          //   header.connected(modem);
-          // });
-          pushCode(address, tClient);
-        });
+    //   client.on('listening', function () {
+    //       var address = s.address();
+    //   });
+      
+    //   client.on('message', function (message, remote) {   
+    //     if (addresses.indexOf(remote.address) == -1) {
+    //       addresses.push(remote.address);
+    //       console.log("found ip: " + remote.address);
+    //     } 
+    //     // console.log('B: From: ' + remote.address + ':' + remote.port +' - ' + message);
+    //   });
+
+    //   // timeout of 2 seconds
+    //   setTimeout(function () {
+    //     client.close();
+    //     console.log('pushing code to the following: ', addresses);
+    //     // push to all gathered ips
+    //     addresses.forEach(function(address){
+    //       var tClient = net.connect(port, address);
+    //       // tClient.on('connect', function () {
+    //       //   header.connected(modem);
+    //       // });
+    //       pushCode(address, tClient);
+    //     });
         
-      }, 2000);
+    //   }, 2000);
 
-    } else if (process.argv[2] == 'firmware') {
-      if (process.argv.length < 4) {
-        usage();
-        process.exit(1);
-      }
+    // } else if (process.argv[2] == 'firmware') {
+    //   if (process.argv.length < 4) {
+    //     usage();
+    //     process.exit(1);
+    //   }
 
-      upload('F', tesselclient, fs.readFileSync(process.argv[3]));
+    //   upload('F', tesselclient, fs.readFileSync(process.argv[3]));
+
     } else if (process.argv[2] == 'wifi') {
       var ssid = process.argv[3];
       var pass = process.argv[4];
@@ -208,8 +250,16 @@ var net = require('net');
         process.exit(1);
       }
 
-      tesselclient.on('connect', function () {
-        console.log(('Connecting to ' + ssid + ':' + pass + '...').yellow);
+      tesselclient.once('connect', function () {
+        console.log(('Network ' + JSON.stringify(ssid) + ' (pass ' + JSON.stringify(pass) + ')'));
+      });
+
+      tesselclient.on('command', function (command, data) {
+        if (command == 'w') {
+          console.log(data);
+        } else if (command == 'W' && 'ip' in data) {
+          process.exit(0);
+        }
       });
 
       
@@ -226,8 +276,19 @@ var net = require('net');
       tesselclient.write(Buffer.concat([sizebuf, outbuf]), function () {
         // console.log(String('[it is written]').grey);
       });
-    } else if (process.argv[2] == 'listen') {
-      // nop
+
+    } else if (process.argv[2] == 'logs' || process.argv[2] == 'listen') {
+      tesselclient.on('command', function (command, data, debug) {
+        if (debug) {
+          console.log(command.grey, data);
+        }
+      });
+
+    } else if (process.argv[2] == 'verbose') {
+      tesselclient.on('command', function (command, data, debug) {
+        console.log(debug ? command.grey : command.red, data);
+      });
+
     } else {
       usage();
       process.exit(1);
