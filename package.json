@@ -16,7 +16,6 @@
   "dependencies": {
     "choices": "0.0.2",
     "colors": "~0.6.0-1",
-    "colony": "git+https://github.com/technicalmachine/colony.git",
     "tessel-lib": "git+https://github.com/technicalmachine/tessel-lib.git",
     "my-local-ip": "~1.0.0",
     "portscanner": "~0.1.3",
