@@ -24,7 +24,8 @@ function usage () {
     "       tessel logs\n" +
     "       tessel push <filename> [-r <ip:port>]\n" +
     // "       tessel pushall <filename>\n"+
-    "       tessel wifi <ssid> <pass>\n");
+    "       tessel wifi <ssid> <pass>\n"+
+    "       tessel stop\n");
 }
 
 if (process.argv.length < 3) {
@@ -32,12 +33,20 @@ if (process.argv.length < 3) {
   process.exit(1);
 }
 
+function isPathAbsolute(file) {
+  return /^(?:[A-Za-z]:)?\\?\//.test(file);
+}
 
 // Compile a filename to code, detect error situation.
 
 function compile (file, safe, next) {
   try {
-    colony.bundleFiles(path.join(process.cwd(), file), {
+    var filepath = file;
+    if (!isPathAbsolute(filepath)) {
+      filepath = path.join(process.cwd(), file);
+    }
+
+    colony.bundleFiles(filepath, {
       tessel: __dirname + '/node_modules/tessel-lib',
       events: null,
       net: null,
@@ -196,7 +205,8 @@ var net = require('net');
         }
       });
       pushCode(process.argv[3], tesselclient);
-
+    } else if (process.argv[2] == 'stop') {
+      pushCode(path.dirname(require.main.filename)+'/scripts/stop.js', tesselclient);
     // } else if (process.argv[2] == 'pushall'){
     //   // listen for all possible 
     //   var client = dgram.createSocket('udp4');
