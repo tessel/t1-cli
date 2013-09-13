@@ -41,7 +41,8 @@ function compile (file, safe, next) {
       tessel: __dirname + '/node_modules/tessel-lib',
       events: null,
       net: null,
-      dgram: null
+      dgram: null,
+      util: null
     }, function (luacode) {
       next(new Buffer(luacode));
     });
