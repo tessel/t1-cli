@@ -5,7 +5,8 @@ var fs = require('fs')
   , repl = require('repl')
   , colony = require('colony')
   , net = require('net')
-  , spawn = require('child_process').spawn;
+  , spawn = require('child_process').spawn
+  , zlib = require('zlib');
 
 var choices = require('choices')
   , colors = require('colors')
@@ -47,11 +48,15 @@ function compile (file, safe, next) {
     }
 
     colony.bundleFiles(filepath, {
-      tessel: __dirname + '/node_modules/tessel-lib',
-      events: null,
-      net: null,
-      dgram: null,
-      util: null
+      minify: false,
+      bundleLib: true,
+      inject: {
+        tessel: __dirname + '/node_modules/tessel-lib',
+        events: null,
+        net: null,
+        dgram: null,
+        util: null
+      }
     }, function (luacode) {
       next(new Buffer(luacode));
     });
@@ -148,7 +153,15 @@ var net = require('net');
 
   function pushCode(file, client){
     compile(file, false, function (luacode) {
-      upload('U', client, luacode);
+      zlib.deflate(luacode, function(err, gzipbuf) {
+        if (!err) {
+          var sizebuf = new Buffer(4);
+          sizebuf.writeUInt32LE(luacode.length, 0);
+          upload('U', client, Buffer.concat([sizebuf, gzipbuf]));
+        } else {
+          console.error(err);
+        }
+      });
     });
   }
 
