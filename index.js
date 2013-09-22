@@ -373,7 +373,7 @@ function detectDevice (next) {
     jssc.list(onmodems);
   } else {
     onmodems(null, fs.readdirSync('/dev').filter(function (file) {
-      return file.match(/^cu.usbmodem.*$/);
+      return file.match(/^(cu.usbmodem.*|ttyACM*)$/);
     }).map(function (file) {
       return '/dev/' + file;
     }));
