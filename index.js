@@ -416,7 +416,7 @@ function handshake (modem, next) {
   portscanner.checkPortStatus(6540, 'localhost', function (err, status) {
     if (status != 'open') {
       var child = spawn(process.argv[0], [__dirname + '/server.js', modem], {
-        stdio: [process.stdin, process.stdout, process.stderr, 'ipc'],
+        stdio: [0, 1, 2, 'ipc'],
         //detached: true
       });
       child.on('message', function (m) {
