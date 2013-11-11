@@ -19,6 +19,10 @@ var choices = require('choices')
 
 var argv = optimist.argv;
 
+process.on('uncaughtException', function (err) {
+  console.error(err);
+})
+
 function usage () {
   console.error("Tessel CLI\nUsage:\n" +
     "       tessel <filename>\n" +
@@ -412,8 +416,8 @@ function handshake (modem, next) {
   portscanner.checkPortStatus(6540, 'localhost', function (err, status) {
     if (status != 'open') {
       var child = spawn(process.argv[0], [__dirname + '/server.js', modem], {
-        stdio: [0, 1, 2, 'ipc'],
-        detached: true
+        stdio: [process.stdin, process.stdout, process.stderr, 'ipc'],
+        //detached: true
       });
       child.on('message', function (m) {
         if (m.ready) {
