@@ -47,19 +47,20 @@ function compile (file, safe, next) {
       filepath = path.join(process.cwd(), file);
     }
 
-    colony.bundleFiles(filepath, {
-      minify: false,
-      bundleLib: true,
-      inject: {
-        tessel: __dirname + '/node_modules/tessel-lib',
-        events: null,
-        net: null,
-        dgram: null,
-        util: null
-      }
-    }, function (luacode) {
-      next(new Buffer(luacode));
-    });
+    next(colony.colonize(fs.readFileSync(filepath, 'utf-8')));
+    // colony.bundleFiles(filepath, {
+    //   minify: false,
+    //   bundleLib: true,
+    //   inject: {
+    //     tessel: __dirname + '/node_modules/tessel-lib',
+    //     events: null,
+    //     net: null,
+    //     dgram: null,
+    //     util: null
+    //   }
+    // }, function (luacode) {
+    //   next(new Buffer(luacode));
+    // });
   } catch (e) {
     if (!safe) {
       // console.error('Invalid JavaScript code (error ', code + '), aborting.');
