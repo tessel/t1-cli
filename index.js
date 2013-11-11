@@ -25,7 +25,9 @@ function usage () {
     "       tessel logs\n" +
     "       tessel push <filename> [-r <ip:port>]\n" +
     // "       tessel pushall <filename>\n"+
-    "       tessel wifi <ssid> <pass>\n"+
+    "       tessel wifi <ssid> <pass> <security (wep/wap/wap2, wap2 by default)>\n"+
+    "       tessel wifi <ssid>" +
+    "              connects to a wifi network without a password" + 
     "       tessel stop\n");
 }
 
@@ -267,15 +269,20 @@ var net = require('net');
 
     } else if (process.argv[2] == 'wifi') {
       var ssid = process.argv[3];
-      var pass = process.argv[4];
+      var pass = process.argv[4] || "";
+      var security = (process.argv[5] || "wep").toLowerCase();
 
-      if (process.argv.length < 5) {
+      if (pass == ""){
+        security = "unsecure";
+      }
+      if (process.argv.length < 4) {
         usage();
         process.exit(1);
       }
 
       tesselclient.once('connect', function () {
-        console.log(('Network ' + JSON.stringify(ssid) + ' (pass ' + JSON.stringify(pass) + ')'));
+        console.log(('Network ' + JSON.stringify(ssid) + 
+          ' (pass ' + JSON.stringify(pass) + ') with ' + security + ' security'));
       });
 
       tesselclient.on('command', function (command, data) {
@@ -287,16 +294,17 @@ var net = require('net');
       });
 
       
-      var outbuf = new Buffer(96);
+      var outbuf = new Buffer(128);
       outbuf.fill(0);
       // TODO use byteslength for node 0.8
       new Buffer(ssid).copy(outbuf, 0, 0, ssid.length);
       new Buffer(pass).copy(outbuf, 32, 0, pass.length);
+      new Buffer(security).copy(outbuf, 96, 0, security.length);
 
       var sizebuf = new Buffer(5);
       sizebuf.writeUInt8('W'.charCodeAt(0), 0);
       sizebuf.writeInt32LE(outbuf.length, 1);
-
+      console.log("buffer is", outbuf);
       tesselclient.write(Buffer.concat([sizebuf, outbuf]), function () {
         // console.log(String('[it is written]').grey);
       });
