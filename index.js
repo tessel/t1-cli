@@ -19,6 +19,10 @@ var choices = require('choices')
 
 var argv = optimist.argv;
 
+process.on('uncaughtException', function (err) {
+  console.error(err);
+})
+
 function usage () {
   console.error("Tessel CLI\nUsage:\n" +
     "       tessel <filename>\n" +
@@ -381,7 +385,7 @@ function detectDevice (next) {
     jssc.list(onmodems);
   } else {
     onmodems(null, fs.readdirSync('/dev').filter(function (file) {
-      return file.match(/^(cu.usbmodem.*|ttyACM*)$/);
+      return file.match(/^(cu.usbmodem.*|ttyACM.*)$/);
     }).map(function (file) {
       return '/dev/' + file;
     }));
@@ -413,7 +417,7 @@ function handshake (modem, next) {
     if (status != 'open') {
       var child = spawn(process.argv[0], [__dirname + '/server.js', modem], {
         stdio: [0, 1, 2, 'ipc'],
-        detached: true
+        //detached: true
       });
       child.on('message', function (m) {
         if (m.ready) {
