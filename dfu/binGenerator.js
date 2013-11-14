@@ -14,7 +14,7 @@ function BinGenerator (path){
   this.path = path;
   this.chunkSize = 2048;
   this.writeStart = [0x14, 0x00, 0x00, 0x00];
-  this.eraseStat = [0x00, 0x02, 0x00, 0x00];
+  this.eraseStart = [0x00, 0x04, 0x00, 0x00];
 }
 
 // check if erase file already exists
@@ -49,8 +49,8 @@ BinGenerator.prototype.eraseCmd = function(size, name) {
 
   var buff = new Buffer([eraseByte, 0x00, 0x00, 0x00, this.writeStart[3], 
     this.writeStart[2], this.writeStart[1], this.writeStart[0], 
-    this.eraseStat[3], this.eraseStat[2], this.eraseStat[1], 
-    this.eraseStat[0], 0x0B, 0x01, 0x43, 0x18], 'binary');
+    this.eraseStart[3], this.eraseStart[2], this.eraseStart[1], 
+    this.eraseStart[0], 0x0B, 0x01, 0x43, 0x18], 'binary');
 
   return this.writeFile(eraseName, buff);
 
