@@ -174,8 +174,7 @@ BinGenerator.prototype.split = function (file, size) {
 
 BinGenerator.prototype.makeScript = function (size){
   var that = this;
-  var download = 'dfu-util -D ';
-  var upload = 'dfu-util -U ';
+  var tool = './dfu-util ';
   var cmdByteLen = 16;
 
   var splits = [this.path];
@@ -196,33 +195,26 @@ BinGenerator.prototype.makeScript = function (size){
 
   // all the commands
   var cmds = [
-    'rm *-res.bin',
-    download + 'iram_dfu_util_any.bin.hdr', 
+    'rm *.bin.res',
+    tool + '-D iram_dfu_util_any.bin.hdr', 
     'echo "Sleeping for 4 seconds so that usb can reboot"',
     'sleep 4s', // wait for dfu to reconfigure on Tessel's ram
-    upload + 'iram-res.bin -t 80', 
-    "node -e \"var fs = require('fs'); console.log(fs.readFileSync('iram-res.bin', 'utf8'));\"", 
-    download + 'cmd1.bin -t 16',
-    upload + 'cmd1-res.bin -t 80',
-    download + 'cmd2.bin -t 16', 
-    upload + 'cmd2-res.bin -t 80',
-    download + eraseBin+'.bin -t 16',
-    'echo "Sleeping for 2 seconds until erase finishes"',
-    'sleep 2s', // wait for erase to finish
-    upload + eraseBin+'-res.bin -t 80',
-    "node -e \"var fs = require('fs'); console.log(fs.readFileSync('"+eraseBin+"-res.bin', 'utf8'));\""
+    tool + '-t 80 -U iram.bin.res -t 16 -D cmd1.bin -t 80 -U cmd1.bin.res -t 16 -D cmd2.bin -t 80 -U cmd2.bin.res -t 16 -D '+eraseBin+'.bin', 
+    'echo "Sleeping for 4 seconds until erase finishes"',
+    'sleep 4s', // wait for erase to finish
+    tool + '-t 80 -U ' + eraseBin+'.bin.res'
   ];
 
+  var uploadCmd = tool; 
+  var readBase = 'node read.js ';
+  var reads = [];
   splits.forEach(function(split, index) {
-    cmds.push(download+split.name+'-write.bin -t 16');
-    cmds.push(download+split.name+'.bin -t '+split.size);
-    cmds.push(upload+split.name+'-res.bin -t 80');
-    cmds.push("node -e \"var fs = require('fs'); console.log(fs.readFileSync('"+split.name+"-res.bin', 'utf8'));\"") 
-    cmds.push('echo "Done writing chunk #'+index+'"'); 
+    uploadCmd = uploadCmd+ '-t 16 -D '+split.name+'-write.bin -t '+split.size+' -D '+split.name+'.bin -t 80 -U '+split.name+'.bin.res ';
+    reads.push('echo "'+index+'"\n'+readBase+split.name+'.bin.res');
   });
 
   //put it all together
-  var str = cmds.join('\n');
+  var str = cmds.join('\n')+'\n'+uploadCmd+'\n'+reads.join('\n');
   // console.log("str ", str);
   var filename = "dfu-runner-"+path.basename(this.path, '.bin')+'.sh';
   var fd =  fs.openSync(filename, 'w');
