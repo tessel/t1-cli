@@ -308,7 +308,7 @@ var net = require('net');
       var sizebuf = new Buffer(5);
       sizebuf.writeUInt8('W'.charCodeAt(0), 0);
       sizebuf.writeInt32LE(outbuf.length, 1);
-      console.log("buffer is", outbuf);
+      // console.log("buffer is", outbuf);
       tesselclient.write(Buffer.concat([sizebuf, outbuf]), function () {
         // console.log(String('[it is written]').grey);
       });
