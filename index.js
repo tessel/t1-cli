@@ -40,17 +40,23 @@ if (process.argv.length < 3) {
   process.exit(1);
 }
 
-function isPathAbsolute(file) {
-  return /^(?:[A-Za-z]:)?\\?\//.test(file);
-}
-
 // Compile a filename to code, detect error situation.
 
 function compile (file, safe, next) {
   try {
     var filepath = file;
-    if (!isPathAbsolute(filepath)) {
-      filepath = path.join(process.cwd(), file);
+
+    //check if the file exists
+    if (fs.existsSync(file))
+    {
+      // ensure we have an absolute path
+      filepath = fs.realpathSync(file)
+    }
+    else
+    {
+      // if it still doesn't exist, quit
+      console.error('\nInput file "' + file + '" cannot be found.')
+      process.exit(1);
     }
 
     colony.bundleFiles(filepath, {
@@ -225,7 +231,8 @@ var net = require('net');
       });
       pushCode(process.argv[3], tesselclient);
     } else if (process.argv[2] == 'stop') {
-      pushCode(path.dirname(require.main.filename)+'/scripts/stop.js', tesselclient);
+      dir = path.dirname(require.main.filename);
+      pushCode(path.join(dir,'scripts','stop.js'), tesselclient);
     // } else if (process.argv[2] == 'pushall'){
     //   // listen for all possible 
     //   var client = dgram.createSocket('udp4');
