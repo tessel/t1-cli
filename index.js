@@ -27,7 +27,7 @@ function usage () {
   console.error("Tessel CLI\nUsage:\n" +
     "       tessel <filename>\n" +
     "       tessel logs\n" +
-    "       tessel push <filename> [-r <ip:port>]\n" +
+    "       tessel push <filename> [-r <ip[:port>]]\n" +
     // "       tessel pushall <filename>\n"+
     "       tessel wifi <ssid> <pass> <security (wep/wap/wap2, wap2 by default)>\n"+
     "       tessel wifi <ssid>\n" +
@@ -151,7 +151,7 @@ var net = require('net');
   if (argv.r) {
     var args = argv.r.split(':');
     host = args[0];
-    port = args[1];
+    port = args[1] || 4444;
     onconnect('[remote]', port, host);
   } else {
     detectDevice(function (modem) {
