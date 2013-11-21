@@ -281,7 +281,7 @@ var net = require('net');
     } else if (process.argv[2] == 'wifi') {
       var ssid = process.argv[3];
       var pass = process.argv[4] || "";
-      var security = (process.argv[5] || "wep").toLowerCase();
+      var security = (process.argv[5] || "wpa2").toLowerCase();
 
       if (pass == ""){
         security = "unsecure";
