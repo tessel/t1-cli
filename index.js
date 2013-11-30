@@ -23,7 +23,7 @@ var choices = require('choices')
 
 
 // Automatically track and cleanup files at exit
-temp.track();
+// temp.track();
 
 var argv = optimist.argv;
 
@@ -162,7 +162,8 @@ var net = require('net');
 
   function pushCode(file, client){
     temp.mkdir('colony', function (err, dirpath) {
-      wrench.copyDirRecursive(path.dirname(file), path.join(dirpath, 'app'), {forceDelete: false}, function (err) {
+      var pushdir = path.join(process.cwd(), path.dirname(file));
+      wrench.copyDirRecursive(pushdir, path.join(dirpath, 'app'), {forceDelete: false}, function (err) {
         var stub = 'require(' + JSON.stringify('./app/' + path.basename(file)) + ');';
         fs.writeFileSync(path.join(dirpath, 'index.js'), stub);
 
