@@ -169,47 +169,50 @@ var net = require('net');
   function pushCode(file, client){
     temp.mkdir('colony', function (err, dirpath) {
       var pushdir = path.join(process.cwd(), path.dirname(file));
-      wrench.copyDirRecursive(pushdir, path.join(dirpath, 'app'), {forceDelete: false}, function (err) {
-        var stub = 'require(' + JSON.stringify('./app/' + path.basename(file)) + ');';
-        fs.writeFileSync(path.join(dirpath, 'index.js'), stub);
-
-        wrench.readdirRecursive(path.join(dirpath), function (err, curFiles) {
-          if (!curFiles) {
-            return;
-          }
-          curFiles.forEach(function (f) {
-            if (f.match(/\.js$/)) {
-              fs.writeFileSync(path.join(dirpath, f), colony.colonize(fs.readFileSync(path.join(dirpath, f), 'utf-8')));
-            }
-          })
-        });
-        
-        var bufs = [];
-        var fstr = fstream.Reader({path: dirpath, type: "Directory"})
-        fstr.basename = '';
-
-        fstr.on('entry', function (e) {
-          e.root = {path: e.path};
-        })
-
-        fstr
-          .pipe(tar.Pack())
-          .on('data', function (buf) {
-            bufs.push(buf);
-          }).on('end', function () {
-            var luacode = Buffer.concat(bufs);
-
-            zlib.deflate(luacode, function(err, gzipbuf) {
-              if (!err) {
-                var sizebuf = new Buffer(4);
-                sizebuf.writeUInt32LE(luacode.length, 0);
-                upload('U', client, Buffer.concat([sizebuf, gzipbuf]));
-              } else {
-                console.error(err);
-              }
-            });
-          });
+      wrench.copyDirSyncRecursive(pushdir, path.join(dirpath, 'app'), {
+        forceDelete: false,
+        exclude: /^\./
       });
+
+      var stub = 'require(' + JSON.stringify('./app/' + path.basename(file)) + ');';
+      fs.writeFileSync(path.join(dirpath, 'index.js'), stub);
+
+      wrench.readdirRecursive(path.join(dirpath), function (err, curFiles) {
+        if (!curFiles) {
+          return;
+        }
+        curFiles.forEach(function (f) {
+          if (f.match(/\.js$/)) {
+            fs.writeFileSync(path.join(dirpath, f), colony.colonize(fs.readFileSync(path.join(dirpath, f), 'utf-8')));
+          }
+        })
+      });
+      
+      var bufs = [];
+      var fstr = fstream.Reader({path: dirpath, type: "Directory"})
+      fstr.basename = '';
+
+      fstr.on('entry', function (e) {
+        e.root = {path: e.path};
+      })
+
+      fstr
+        .pipe(tar.Pack())
+        .on('data', function (buf) {
+          bufs.push(buf);
+        }).on('end', function () {
+          var luacode = Buffer.concat(bufs);
+
+          zlib.deflate(luacode, function(err, gzipbuf) {
+            if (!err) {
+              var sizebuf = new Buffer(4);
+              sizebuf.writeUInt32LE(luacode.length, 0);
+              upload('U', client, Buffer.concat([sizebuf, gzipbuf]));
+            } else {
+              console.error(err);
+            }
+          });
+        });
     })
 
 
