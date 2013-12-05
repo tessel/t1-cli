@@ -15,7 +15,15 @@ var choices = require('choices')
   , optimist = require('optimist')
   , jssc = require('jssc')
   , dgram = require('dgram')
-  , carrier = require('carrier');
+  , carrier = require('carrier')
+  , temp = require('temp')
+  , wrench = require('wrench')
+  , fstream = require('fstream')
+  , tar = require('tar');
+
+
+// Automatically track and cleanup files at exit
+// temp.track();
 
 var argv = optimist.argv;
 
@@ -59,19 +67,20 @@ function compile (file, safe, next) {
       process.exit(1);
     }
 
-    colony.bundleFiles(filepath, {
-      minify: false,
-      bundleLib: true,
-      inject: {
-        tessel: __dirname + '/node_modules/tessel-lib',
-        events: null,
-        net: null,
-        dgram: null,
-        util: null
-      }
-    }, function (luacode) {
-      next(new Buffer(luacode));
-    });
+    next(colony.colonize(fs.readFileSync(filepath, 'utf-8')));
+    // colony.bundleFiles(filepath, {
+    //   minify: false,
+    //   bundleLib: true,
+    //   inject: {
+    //     tessel: __dirname + '/node_modules/tessel-lib',
+    //     events: null,
+    //     net: null,
+    //     dgram: null,
+    //     util: null
+    //   }
+    // }, function (luacode) {
+    //   next(new Buffer(luacode));
+    // });
   } catch (e) {
     if (!safe) {
       // console.error('Invalid JavaScript code (error ', code + '), aborting.');
@@ -164,17 +173,69 @@ var net = require('net');
   }
 
   function pushCode(file, client){
-    compile(file, false, function (luacode) {
-      zlib.deflate(luacode, function(err, gzipbuf) {
-        if (!err) {
-          var sizebuf = new Buffer(4);
-          sizebuf.writeUInt32LE(luacode.length, 0);
-          upload('U', client, Buffer.concat([sizebuf, gzipbuf]));
-        } else {
-          console.error(err);
-        }
+    temp.mkdir('colony', function (err, dirpath) {
+      var pushdir = path.join(process.cwd(), path.dirname(file));
+      wrench.copyDirSyncRecursive(pushdir, path.join(dirpath, 'app'), {
+        forceDelete: false,
+        exclude: /^\./
       });
-    });
+
+      var stub = 'require(' + JSON.stringify('./app/' + path.basename(file)) + ');';
+      fs.writeFileSync(path.join(dirpath, 'index.js'), stub);
+
+      wrench.readdirRecursive(path.join(dirpath), function (err, curFiles) {
+        if (!curFiles) {
+          return;
+        }
+        curFiles.forEach(function (f) {
+          if (f.match(/\.js$/)) {
+            fs.writeFileSync(path.join(dirpath, f), colony.colonize(fs.readFileSync(path.join(dirpath, f), 'utf-8')));
+          }
+        })
+      });
+      
+      var bufs = [];
+      var fstr = fstream.Reader({path: dirpath, type: "Directory"})
+      fstr.basename = '';
+
+      fstr.on('entry', function (e) {
+        e.root = {path: e.path};
+      })
+
+      fstr
+        .pipe(tar.Pack())
+        .on('data', function (buf) {
+          bufs.push(buf);
+        }).on('end', function () {
+          var luacode = Buffer.concat(bufs);
+
+          zlib.deflate(luacode, function(err, gzipbuf) {
+            if (!err) {
+              var sizebuf = new Buffer(4);
+              sizebuf.writeUInt32LE(luacode.length, 0);
+              upload('U', client, Buffer.concat([sizebuf, gzipbuf]));
+            } else {
+              console.error(err);
+            }
+          });
+        });
+    })
+
+
+    // // compile(file, false, function (luacode) {
+    // fs.readFile('file.tar', function (err, luacode) {
+    //   // console.log('LUACODE', err, luacode.length);
+    //   zlib.deflate(luacode, function(err, gzipbuf) {
+    //     // console.log('OKOK', err, gzipbuf.length);
+    //     if (!err) {
+    //       var sizebuf = new Buffer(4);
+    //       sizebuf.writeUInt32LE(luacode.length, 0);
+    //       upload('U', client, Buffer.concat([sizebuf, gzipbuf]));
+    //     } else {
+    //       console.error(err);
+    //     }
+    //   });
+    // });
   }
 
   function onconnect (modem, port, host) {
@@ -221,6 +282,10 @@ var net = require('net');
           console.log(data);
         } else if (command == 'S' && data == '1') {
           scriptrunning = true;
+        } else if (command == 'S' && scriptrunning && parseInt(data) <= 0) {
+          scriptrunning = false;
+          // process.exit(parseInt(data))
+          tesselclient.end();
         } else if (command == 'U') {
           if (updating) {
             // Interrupted by other deploy
