@@ -171,7 +171,8 @@ var net = require('net');
       var pushdir = path.join(process.cwd(), path.dirname(file));
       wrench.copyDirSyncRecursive(pushdir, path.join(dirpath, 'app'), {
         forceDelete: false,
-        exclude: /^\./
+        exclude: /^\./,
+        inflateSymlinks: true
       });
 
       var stub = 'require(' + JSON.stringify('./app/' + path.basename(file)) + ');';
