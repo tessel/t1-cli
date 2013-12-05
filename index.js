@@ -17,7 +17,7 @@ var choices = require('choices')
   , dgram = require('dgram')
   , carrier = require('carrier')
   , temp = require('temp')
-  , wrench = require('wrench')
+  , wrench = require('./wrench')
   , fstream = require('fstream')
   , tar = require('tar');
 
