@@ -236,13 +236,12 @@ if (process.argv[2] == 'dfu-restore') {
         curFiles.forEach(function (f) {
           if (f.match(/\.js$/)) {
             try {
-              var res = colony.colonize(fs.readFileSync(path.join(dirpath, f), 'utf-8');
-              if (!res) {
-                console.error('Syntax error in file', f);
-              }
-              fs.writeFileSync(path.join(dirpath, f), res));
+              var res = colony.colonize(fs.readFileSync(path.join(dirpath, f), 'utf-8'));
+              fs.writeFileSync(path.join(dirpath, f), res);
             } catch (e) {
-              console.log('Syntax error in', f, ':', e);
+              e.filename = f.substr(4);
+              console.log('Syntax error in', f, ':\n', e);
+              process.exit(1);
             }
           }
         })
