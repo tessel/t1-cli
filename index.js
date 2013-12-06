@@ -371,21 +371,21 @@ if (process.argv[2] == 'dfu-restore') {
       var pass = process.argv[4] || "";
       var security = (process.argv[5] || "wpa2").toLowerCase();
 
-      if (process.argv == 3) {
+      if (process.argv.length == 3) {
         // just request status
-        console.error('Requesting wifi status...'.grey);
 
         var sizebuf = new Buffer(5);
         sizebuf.writeUInt8('V'.charCodeAt(0), 0);
         sizebuf.writeInt32LE(0, 1);
         tesselclient.write(sizebuf, function () {
+          console.error('Requesting wifi status...'.grey);
           // console.log(String('[it is written]').grey);
         });
 
         tesselclient.on('command', function (command, data) {
           if (command == 'w') {
             console.log(data);
-          } else if (command == 'W') {
+          } else if (command == 'W' && 'connected' in data) {
             console.log(data);
             process.exit(0);
           }
