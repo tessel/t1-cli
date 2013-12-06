@@ -375,18 +375,20 @@ if (process.argv[2] == 'dfu-restore') {
         // just request status
 
         var sizebuf = new Buffer(5);
+        // the buffer here is useless, but a zero-length buffer has issues
+        var outbuf = new Buffer([0xde, 0xad, 0xbe, 0xef]);
         sizebuf.writeUInt8('V'.charCodeAt(0), 0);
-        sizebuf.writeInt32LE(0, 1);
-        tesselclient.write(sizebuf, function () {
+        sizebuf.writeInt32LE(outbuf.length, 1);
+        tesselclient.write(Buffer.concat([sizebuf, outbuf]), function () {
           console.error('Requesting wifi status...'.grey);
           // console.log(String('[it is written]').grey);
         });
 
         tesselclient.on('command', function (command, data) {
-          if (command == 'w') {
-            console.log(data);
-          } else if (command == 'V') {
-            console.log(data);
+          if (command == 'V') {
+            Object.keys(data).map(function (key) {
+              console.log(key.replace(/^./, function (a) { return a.toUpperCase(); }) + ':', data[key]);
+            })
             process.exit(0);
           }
         });
