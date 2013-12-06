@@ -193,7 +193,9 @@ if (process.argv[2] == 'dfu-restore') {
         inflateSymlinks: true
       });
 
-      var stub = 'require(' + JSON.stringify('./app/' + path.join(relpath, path.basename(file))) + ');';
+      var stub
+        = 'process.env.DEPLOY_IP = ' + JSON.stringify(require('my-local-ip')()) + ';\n'
+        + 'require(' + JSON.stringify('./app/' + path.join(relpath, path.basename(file))) + ');';
       fs.writeFileSync(path.join(dirpath, 'index.js'), stub);
 
       wrench.readdirRecursive(path.join(dirpath), function (err, curFiles) {
