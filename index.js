@@ -40,7 +40,8 @@ function usage () {
     "       tessel wifi <ssid> <pass> <security (wep/wap/wap2, wap2 by default)>\n"+
     "       tessel wifi <ssid>\n" +
     "              connects to a wifi network without a password\n" + 
-    "       tessel stop\n");
+    "       tessel stop\n" +
+    "       tessel dfu-restore <firmware.bin>");
 }
 
 if (process.argv.length < 3) {
@@ -116,8 +117,12 @@ var header = {
   }
 }
 
-var net = require('net');
 
+if (process.argv[2] == 'dfu-restore') {
+  require('child_process').spawn(__dirname + '/dfu/tessel-dfu-restore', process.argv.slice(3), {
+    stdio: 'inherit'
+  });
+} else {
 
 // TCP
 // if (process.argv[2] == 'remotepush') {
@@ -459,7 +464,7 @@ var net = require('net');
   //     });
   //   }
   // });
-// }
+}
 
 function detectDevice (next) {
   if (process.platform.match(/^win/)) {
