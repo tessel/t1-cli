@@ -235,7 +235,12 @@ if (process.argv[2] == 'dfu-restore') {
         }
         curFiles.forEach(function (f) {
           if (f.match(/\.js$/)) {
-            fs.writeFileSync(path.join(dirpath, f), colony.colonize(fs.readFileSync(path.join(dirpath, f), 'utf-8')));
+            try {
+              fs.writeFileSync(path.join(dirpath, f), colony.colonize(fs.readFileSync(path.join(dirpath, f), 'utf-8')));
+            } catch (e) {
+              console.log('Error in', f, ':', e);
+              throw e;
+            }
           }
         })
       });
