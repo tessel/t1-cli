@@ -316,7 +316,7 @@ BinGenerator.prototype.makeScript = function (size){
       // console.log('>>>>>>>>>>>', JSON.stringify(uploadCmd))
 
       console.log('>>> Initial bootloader write...');
-      dfu_util(['-D', 'bin/iram_dfu_util_any.bin.hdr'], {
+      dfu_util(['-D', __dirname + '/bin/iram_dfu_util_any.bin.hdr'], {
         stdio: 'inherit'
       }).on('close', function (code) {
         console.log('\n>>> Sleeping for 4 seconds so we can reboot into RAM bootloader...');
@@ -325,9 +325,9 @@ BinGenerator.prototype.makeScript = function (size){
           console.log('\n>>> Erasing...')
           dfu_util([
             '-t', '80', '-U', path.join(dirPath, 'iram.bin.res'), '-w', mssleep,
-            '-t', '16', '-D', 'bin/cmd1.bin', '-w', mssleep,
+            '-t', '16', '-D', __dirname + '/bin/cmd1.bin', '-w', mssleep,
             '-t', '80', '-U', path.join(dirPath, 'cmd1.bin.res'), '-w', mssleep,
-            '-t', '16', '-D', 'bin/cmd2.bin', '-w', mssleep,
+            '-t', '16', '-D', __dirname + '/bin/cmd2.bin', '-w', mssleep,
             '-t', '80', '-U', path.join(dirPath, 'cmd2.bin.res'), '-w', mssleep,
             '-t', '16', '-D', eraseBin + '.bin', '-w', mssleep,
           ], {
