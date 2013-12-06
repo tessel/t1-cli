@@ -371,42 +371,64 @@ if (process.argv[2] == 'dfu-restore') {
       var pass = process.argv[4] || "";
       var security = (process.argv[5] || "wpa2").toLowerCase();
 
-      if (pass == ""){
-        security = "unsecure";
-      }
-      if (process.argv.length < 4) {
-        usage();
-        process.exit(1);
-      }
+      if (process.argv == 3) {
+        // just request status
+        console.error('Requesting wifi status...'.grey);
 
-      tesselclient.once('connect', function () {
-        console.log(('Network ' + JSON.stringify(ssid) + 
-          ' (pass ' + JSON.stringify(pass) + ') with ' + security + ' security'));
-      });
+        var sizebuf = new Buffer(5);
+        sizebuf.writeUInt8('V'.charCodeAt(0), 0);
+        sizebuf.writeInt32LE(0, 1);
+        tesselclient.write(sizebuf, function () {
+          // console.log(String('[it is written]').grey);
+        });
 
-      tesselclient.on('command', function (command, data) {
-        if (command == 'w') {
-          console.log(data);
-        } else if (command == 'W' && 'ip' in data) {
-          process.exit(0);
+        tesselclient.on('command', function (command, data) {
+          if (command == 'w') {
+            console.log(data);
+          } else if (command == 'W') {
+            console.log(data);
+            process.exit(0);
+          }
+        });
+
+      } else {
+        if (pass == ""){
+          security = "unsecure";
         }
-      });
+        if (process.argv.length < 4) {
+          usage();
+          process.exit(1);
+        }
 
-      
-      var outbuf = new Buffer(128);
-      outbuf.fill(0);
-      // TODO use byteslength for node 0.8
-      new Buffer(ssid).copy(outbuf, 0, 0, ssid.length);
-      new Buffer(pass).copy(outbuf, 32, 0, pass.length);
-      new Buffer(security).copy(outbuf, 96, 0, security.length);
+        tesselclient.once('connect', function () {
+          console.log(('Network ' + JSON.stringify(ssid) + 
+            ' (pass ' + JSON.stringify(pass) + ') with ' + security + ' security'));
+        });
 
-      var sizebuf = new Buffer(5);
-      sizebuf.writeUInt8('W'.charCodeAt(0), 0);
-      sizebuf.writeInt32LE(outbuf.length, 1);
-      // console.log("buffer is", outbuf);
-      tesselclient.write(Buffer.concat([sizebuf, outbuf]), function () {
-        // console.log(String('[it is written]').grey);
-      });
+        tesselclient.on('command', function (command, data) {
+          if (command == 'w') {
+            console.log(data);
+          } else if (command == 'W' && 'ip' in data) {
+            process.exit(0);
+          }
+        });
+
+        
+        var outbuf = new Buffer(128);
+        outbuf.fill(0);
+        // TODO use byteslength for node 0.8
+        new Buffer(ssid).copy(outbuf, 0, 0, ssid.length);
+        new Buffer(pass).copy(outbuf, 32, 0, pass.length);
+        new Buffer(security).copy(outbuf, 96, 0, security.length);
+
+        var sizebuf = new Buffer(5);
+        sizebuf.writeUInt8('W'.charCodeAt(0), 0);
+        sizebuf.writeInt32LE(outbuf.length, 1);
+        // console.log("buffer is", outbuf);
+        tesselclient.write(Buffer.concat([sizebuf, outbuf]), function () {
+          // console.log(String('[it is written]').grey);
+        });
+      }
 
     } else if (process.argv[2] == 'logs' || process.argv[2] == 'listen') {
       tesselclient.on('command', function (command, data, debug) {
