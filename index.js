@@ -180,7 +180,7 @@ if (process.argv[2] == 'dfu-restore') {
     });
   }
 
-  function pushCode(file, client){
+  function pushCode(file, args, client){
     temp.mkdir('colony', function (err, dirpath) {
       var pushdir = path.join(process.cwd(), path.dirname(file));
 
@@ -204,6 +204,7 @@ if (process.argv[2] == 'dfu-restore') {
 
       var stub
         = 'process.env.DEPLOY_IP = ' + JSON.stringify(require('my-local-ip')()) + ';\n'
+        + 'process.argv = ' + JSON.stringify(args) + ';\n'
         + 'require(' + JSON.stringify('./app/' + path.join(relpath, path.basename(file))) + ');';
       fs.writeFileSync(path.join(dirpath, 'index.js'), stub);
 
@@ -300,6 +301,11 @@ if (process.argv[2] == 'dfu-restore') {
         process.exit(1);
       }
 
+      var argv = [];
+      if (process.argv[4] == '-a' || process.argv[4] == '--args') {
+        argv = process.argv.slice(5);
+      }
+
       var updating = 0, scriptrunning = false;
       tesselclient.on('command', function (command, data) {
         if (command == 'u') {
@@ -320,10 +326,11 @@ if (process.argv[2] == 'dfu-restore') {
           updating = true;
         }
       });
-      pushCode(process.argv[3], tesselclient);
+      pushCode(process.argv[3], argv, tesselclient);
+
     } else if (process.argv[2] == 'stop') {
-      dir = path.dirname(require.main.filename);
-      pushCode(path.join(dir,'scripts','stop.js'), tesselclient);
+      // haaaack
+      pushCode(path.join(__dirname,'scripts','stop.js'), [], tesselclient);
     // } else if (process.argv[2] == 'pushall'){
     //   // listen for all possible 
     //   var client = dgram.createSocket('udp4');
