@@ -166,6 +166,9 @@ if (process.argv[2] == 'dfu-restore') {
   header.init();
 
   if (argv.r) {
+    setImmediate(function () {
+      console.log('listening...'.grey);
+    })
     var args = argv.r.split(':');
     host = args[0];
     port = args[1] || 4444;
@@ -326,7 +329,7 @@ if (process.argv[2] == 'dfu-restore') {
           updating = true;
         }
       });
-      pushCode(process.argv[3], argv, tesselclient);
+      pushCode(process.argv[3], ['tessel', process.argv[3]].concat(argv), tesselclient);
 
     } else if (process.argv[2] == 'stop') {
       // haaaack
