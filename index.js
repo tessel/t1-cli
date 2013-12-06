@@ -184,6 +184,24 @@ if (process.argv[2] == 'dfu-restore') {
   }
 
   function pushCode(file, args, client){
+    if (!fs.existsSync(file)) {
+      setTimeout(function () {
+        console.error('ERROR'.red, 'File doesn\'t exist:', file);
+        process.exit(1);
+      }, 10)
+      return;
+    }
+    if (fs.lstatSync(file).isDirectory()) {
+      file = path.join(file, 'index.js');
+    }
+    if (!fs.existsSync(file)) {
+      setTimeout(function () {
+        console.error('ERROR'.red, 'File doesn\'t exist or isn\'t a source file:', file);
+        process.exit(1);
+      }, 10)
+      return;
+    }
+    
     temp.mkdir('colony', function (err, dirpath) {
       var pushdir = path.join(process.cwd(), path.dirname(file));
 
