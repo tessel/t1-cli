@@ -35,7 +35,7 @@ function usage () {
   console.error("Tessel CLI\nUsage:\n" +
     "       tessel <filename>\n" +
     "       tessel logs\n" +
-    "       tessel push <filename> [-r <ip:port>]\n" +
+    "       tessel push <filename> [-r <ip[:port>]]\n" +
     // "       tessel pushall <filename>\n"+
     "       tessel wifi <ssid> <pass> <security (wep/wap/wap2, wap2 by default)>\n"+
     "       tessel wifi <ssid>\n" +
@@ -49,17 +49,23 @@ if (process.argv.length < 3) {
   process.exit(1);
 }
 
-function isPathAbsolute(file) {
-  return /^(?:[A-Za-z]:)?\\?\//.test(file);
-}
-
 // Compile a filename to code, detect error situation.
 
 function compile (file, safe, next) {
   try {
     var filepath = file;
-    if (!isPathAbsolute(filepath)) {
-      filepath = path.join(process.cwd(), file);
+
+    //check if the file exists
+    if (fs.existsSync(file))
+    {
+      // ensure we have an absolute path
+      filepath = fs.realpathSync(file)
+    }
+    else
+    {
+      // if it still doesn't exist, quit
+      console.error('\nInput file "' + file + '" cannot be found.')
+      process.exit(1);
     }
 
     next(colony.colonize(fs.readFileSync(filepath, 'utf-8')));
@@ -159,7 +165,7 @@ if (process.argv[2] == 'dfu-restore') {
   if (argv.r) {
     var args = argv.r.split(':');
     host = args[0];
-    port = args[1];
+    port = args[1] || 4444;
     onconnect('[remote]', port, host);
   } else {
     detectDevice(function (modem) {
@@ -313,7 +319,8 @@ if (process.argv[2] == 'dfu-restore') {
       });
       pushCode(process.argv[3], tesselclient);
     } else if (process.argv[2] == 'stop') {
-      pushCode(path.dirname(require.main.filename)+'/scripts/stop.js', tesselclient);
+      dir = path.dirname(require.main.filename);
+      pushCode(path.join(dir,'scripts','stop.js'), tesselclient);
     // } else if (process.argv[2] == 'pushall'){
     //   // listen for all possible 
     //   var client = dgram.createSocket('udp4');
@@ -362,7 +369,7 @@ if (process.argv[2] == 'dfu-restore') {
     } else if (process.argv[2] == 'wifi') {
       var ssid = process.argv[3];
       var pass = process.argv[4] || "";
-      var security = (process.argv[5] || "wep").toLowerCase();
+      var security = (process.argv[5] || "wpa2").toLowerCase();
 
       if (pass == ""){
         security = "unsecure";
