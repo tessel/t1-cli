@@ -169,13 +169,26 @@ var net = require('net');
   function pushCode(file, client){
     temp.mkdir('colony', function (err, dirpath) {
       var pushdir = path.join(process.cwd(), path.dirname(file));
+
+      // Find node_modules dir
+      var pushdirbkp = pushdir;
+      var relpath = '';
+      while (path.dirname(pushdir) != '/' && !fs.existsSync(path.join(pushdir, 'node_modules'))) {
+        relpath = path.join(path.basename(pushdir), relpath);
+        pushdir = path.dirname(pushdir);
+      }
+      if (path.dirname(pushdir) == '/') {
+        pushdir = pushdirbkp;
+        relpath = '';
+      }
+
       wrench.copyDirSyncRecursive(pushdir, path.join(dirpath, 'app'), {
         forceDelete: false,
         exclude: /^\./,
         inflateSymlinks: true
       });
 
-      var stub = 'require(' + JSON.stringify('./app/' + path.basename(file)) + ');';
+      var stub = 'require(' + JSON.stringify('./app/' + path.join(relpath, path.basename(file))) + ');';
       fs.writeFileSync(path.join(dirpath, 'index.js'), stub);
 
       wrench.readdirRecursive(path.join(dirpath), function (err, curFiles) {
@@ -203,6 +216,8 @@ var net = require('net');
           bufs.push(buf);
         }).on('end', function () {
           var luacode = Buffer.concat(bufs);
+
+          console.error(('Deploying directory ' + pushdir).grey);
 
           zlib.deflate(luacode, function(err, gzipbuf) {
             if (!err) {
