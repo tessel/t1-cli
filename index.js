@@ -33,15 +33,18 @@ process.on('uncaughtException', function (err) {
 
 function usage () {
   console.error("Tessel CLI\nUsage:\n" +
-    "       tessel <filename>\n" +
-    "       tessel logs\n" +
-    "       tessel push <filename> [-r <ip[:port>]]\n" +
+    "   tessel <filename>\n" +
+    "   tessel logs\n" +
+    "   tessel push <filename> [-r <ip[:port>]]\n" +
     // "       tessel pushall <filename>\n"+
-    "       tessel wifi <ssid> <pass> <security (wep/wap/wap2, wap2 by default)>\n"+
-    "       tessel wifi <ssid>\n" +
-    "              connects to a wifi network without a password\n" + 
-    "       tessel stop\n" +
-    "       tessel dfu-restore <firmware.bin>");
+    "   tessel wifi <ssid> <pass> <security (wep/wap/wap2, wap2 by default)>\n"+
+    "   tessel wifi <ssid>\n" +
+    "          connects to a wifi network without a password\n" + 
+    "   tessel wifi\n" +
+    "          see current wifi status\n" + 
+    "   tessel stop\n" +
+    "   tessel dfu-restore <firmware.bin>\n" +
+    "          upload new firmware when in DFU mode\n");
 }
 
 if (process.argv.length < 3) {
