@@ -385,7 +385,7 @@ if (process.argv[2] == 'dfu-restore') {
         tesselclient.on('command', function (command, data) {
           if (command == 'w') {
             console.log(data);
-          } else if (command == 'W' && 'connected' in data) {
+          } else if (command == 'V') {
             console.log(data);
             process.exit(0);
           }
