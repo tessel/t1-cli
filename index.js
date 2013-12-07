@@ -593,7 +593,16 @@ function upload (car, client, luacode) {
   var sizebuf = new Buffer(5);
   sizebuf.writeUInt8(car.charCodeAt(0), 0);
   sizebuf.writeInt32LE(luacode.length, 1);
-  client.write(Buffer.concat([sizebuf, luacode]), function () {
+  var next = 0;
+  client.write(Buffer.concat([sizebuf, luacode.slice(0, 1024*4)]), function () {
+    console.error('Upload 0, 4096'.grey);
     // console.log(String('[it is written]').grey);
+    next = 1024*4;
+    while (luacode.length > next) {
+      client.write(luacode.slice(next, next + 1024*4), function () {
+        console.error('Upload '.grey, next, next + 1024*4);
+      });
+      next += 1024*4;
+    }
   });
 }
