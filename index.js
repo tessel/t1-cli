@@ -11,11 +11,9 @@ var fs = require('fs')
 var choices = require('choices')
   , colors = require('colors')
   , async = require('async')
-  , portscanner = require('portscanner')
   , optimist = require('optimist')
   , jssc = require('jssc')
   , dgram = require('dgram')
-  , carrier = require('carrier')
   , temp = require('temp')
   , wrench = require('./wrench')
   , fstream = require('fstream')
@@ -183,7 +181,7 @@ if (process.argv[2] == 'dfu-restore') {
     });
   }
 
-  function pushCode(file, args, client){
+  function tarCode (file, args, client, next) {
     if (!fs.existsSync(file)) {
       setTimeout(function () {
         console.error('ERROR'.red, 'File doesn\'t exist:', file);
@@ -226,6 +224,7 @@ if (process.argv[2] == 'dfu-restore') {
       var stub
         = 'process.env.DEPLOY_IP = ' + JSON.stringify(require('my-local-ip')()) + ';\n'
         + 'process.argv = ' + JSON.stringify(args) + ';\n'
+        + 'process.send = function (a) { console.log("#&M\\"hey there\\""); };\n'
         + 'require(' + JSON.stringify('./app/' + path.join(relpath, path.basename(file))) + ');';
       fs.writeFileSync(path.join(dirpath, 'index.js'), stub);
 
@@ -261,40 +260,29 @@ if (process.argv[2] == 'dfu-restore') {
           bufs.push(buf);
         }).on('end', function () {
           var luacode = Buffer.concat(bufs);
-
-          console.error(('Deploying directory ' + pushdir).grey);
-
-          zlib.deflate(luacode, function(err, gzipbuf) {
-            if (!err) {
-              var sizebuf = new Buffer(4);
-              sizebuf.writeUInt32LE(luacode.length, 0);
-              upload('U', client, Buffer.concat([sizebuf, gzipbuf]));
-            } else {
-              console.error(err);
-            }
-          });
+          next(null, pushdir, luacode);
         });
-    })
+    });
+  }
 
+  function pushCode (file, args, client) {
+    tarCode(file, args, client, function (err, pushdir, bundle) {
+      console.error(('Deploying directory ' + pushdir).grey);
 
-    // // compile(file, false, function (luacode) {
-    // fs.readFile('file.tar', function (err, luacode) {
-    //   // console.log('LUACODE', err, luacode.length);
-    //   zlib.deflate(luacode, function(err, gzipbuf) {
-    //     // console.log('OKOK', err, gzipbuf.length);
-    //     if (!err) {
-    //       var sizebuf = new Buffer(4);
-    //       sizebuf.writeUInt32LE(luacode.length, 0);
-    //       upload('U', client, Buffer.concat([sizebuf, gzipbuf]));
-    //     } else {
-    //       console.error(err);
-    //     }
-    //   });
-    // });
+      zlib.deflate(bundle, function(err, gzipbuf) {
+        if (!err) {
+          var sizebuf = new Buffer(4);
+          sizebuf.writeUInt32LE(bundle.length, 0);
+          client.command('U', client, Buffer.concat([sizebuf, gzipbuf]));
+        } else {
+          console.error(err);
+        }
+      });
+    });
   }
 
   function onconnect (modem, port, host) {
-    var tesselclient = net.connect(port, host);
+    var tesselclient = require('./tesselclient').connect(port, host);
     // tesselclient.pipe(process.stdout);
     tesselclient.on('error', function (err) {
       console.error('Error: Cannot connect to Tessel locally.', err);
@@ -302,25 +290,6 @@ if (process.argv[2] == 'dfu-restore') {
     tesselclient.on('connect', function () {
       header.connected(modem.replace(/\s+$/, ''));
     })
-
-    // Parse messages, crudely.
-    carrier.carry(tesselclient, function (data) {
-      data = String(data);
-      var type = 's';
-      if (data.match(/^\#\&/)) {
-        type = data.charAt(2);
-        data = data.substr(3);
-      }
-      if (type == type.toUpperCase()) {
-        try {
-          data = JSON.parse(data);
-        } catch (e) {
-          console.error('  error -'.red, 'Invalid message', data);
-          return;
-        }
-      }
-      tesselclient.emit('command', type, data, type == type.toLowerCase());
-    });
 
     if (process.argv[2] == 'push') {
       // Push new code to the device.
@@ -412,14 +381,8 @@ if (process.argv[2] == 'dfu-restore') {
       if (process.argv.length == 3) {
         // just request status
 
-        var sizebuf = new Buffer(5);
-        // the buffer here is useless, but a zero-length buffer has issues
-        var outbuf = new Buffer([0xde, 0xad, 0xbe, 0xef]);
-        sizebuf.writeUInt8('V'.charCodeAt(0), 0);
-        sizebuf.writeInt32LE(outbuf.length, 1);
-        tesselclient.write(Buffer.concat([sizebuf, outbuf]), function () {
+        tesselclient.command('V', new Buffer([0xde, 0xad, 0xbe, 0xef]), function () {
           console.error('Requesting wifi status...'.grey);
-          // console.log(String('[it is written]').grey);
         });
 
         tesselclient.on('command', function (command, data) {
@@ -456,18 +419,12 @@ if (process.argv[2] == 'dfu-restore') {
         
         var outbuf = new Buffer(128);
         outbuf.fill(0);
-        // TODO use byteslength for node 0.8
+        // TODO use "byteslength" for node 0.8
         new Buffer(ssid).copy(outbuf, 0, 0, ssid.length);
         new Buffer(pass).copy(outbuf, 32, 0, pass.length);
         new Buffer(security).copy(outbuf, 96, 0, security.length);
 
-        var sizebuf = new Buffer(5);
-        sizebuf.writeUInt8('W'.charCodeAt(0), 0);
-        sizebuf.writeInt32LE(outbuf.length, 1);
-        // console.log("buffer is", outbuf);
-        tesselclient.write(Buffer.concat([sizebuf, outbuf]), function () {
-          // console.log(String('[it is written]').grey);
-        });
+        tesselclient.command('W', outbuf);
       }
 
     } else if (process.argv[2] == 'logs' || process.argv[2] == 'listen') {
@@ -570,30 +527,5 @@ function detectDevice (next) {
 function handshake (modem, next) {
   header.connecting(modem);
 
-  portscanner.checkPortStatus(6540, 'localhost', function (err, status) {
-    if (status != 'open') {
-      var child = spawn(process.argv[0], [__dirname + '/server.js', modem], {
-        stdio: [0, 1, 2, 'ipc'],
-        //detached: true
-      });
-      child.on('message', function (m) {
-        if (m.ready) {
-          // child.unref();
-          // child.disconnect();
-          next(null);
-        }
-      });
-    } else {
-      next(null);
-    }
-  });
-}
-
-function upload (car, client, luacode) {
-  var sizebuf = new Buffer(5);
-  sizebuf.writeUInt8(car.charCodeAt(0), 0);
-  sizebuf.writeInt32LE(luacode.length, 1);
-  client.write(Buffer.concat([sizebuf, luacode]), function () {
-    // console.log(String('[it is written]').grey);
-  });
+  require('./tesselclient').connectServer(modem, next);
 }
