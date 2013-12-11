@@ -15,9 +15,11 @@ var choices = require('choices')
   , jssc = require('jssc')
   , dgram = require('dgram')
   , temp = require('temp')
-  , wrench = require('./wrench')
   , fstream = require('fstream')
   , tar = require('tar');
+
+var wrench = require('./wrench')
+  , tesselClient = require('./tessel-client');
 
 
 // Automatically track and cleanup files at exit
@@ -263,7 +265,7 @@ function pushCode (file, args, client) {
 //     process.exit(1);
 //   }
 
-//   upload('F', tesselclient, fs.readFileSync(process.argv[3]));
+//   upload('F', client, fs.readFileSync(process.argv[3]));
 
 // TCP
 // if (process.argv[2] == 'remotepush') {
@@ -344,18 +346,11 @@ function pushCode (file, args, client) {
 //   }
 // });
 
-function handshake (modem, next) {
-  header.connecting(modem);
-
-  require('./tesselclient').connectServer(modem, next);
-}
-
 
 if (process.argv.length < 3) {
   usage();
   process.exit(1);
 }
-
 
 if (process.argv[2] == 'dfu-restore') {
   require('child_process').spawn(__dirname + '/dfu/tessel-dfu-restore', process.argv.slice(3), {
@@ -371,12 +366,11 @@ if (process.argv[2] == 'dfu-restore') {
     var args = argv.r.split(':');
     host = args[0];
     port = args[1] || 4444;
-    onconnect('[remote]', port, host);
+    onconnect('[' + host + ':' + port + ']', port, host);
   } else {
-    detectDevice(function (modem) {
-      // Listening.
-      // if (process.argv[2] == '-l') {
-      handshake(modem, function () {
+    tesselClient.selectModem(function (err, modem) {
+      header.connecting(modem);
+      tesselClient.connectServer(modem, function () {
         onconnect(modem, 6540, 'localhost');
       });
     });
@@ -384,12 +378,12 @@ if (process.argv[2] == 'dfu-restore') {
 }
 
 function onconnect (modem, port, host) {
-  var tesselclient = require('./tesselclient').connect(port, host);
-  // tesselclient.pipe(process.stdout);
-  tesselclient.on('error', function (err) {
+  var client = tesselClient.connect(port, host);
+  // client.pipe(process.stdout);
+  client.on('error', function (err) {
     console.error('Error: Cannot connect to Tessel locally.', err);
   })
-  tesselclient.on('connect', function () {
+  client.on('connect', function () {
     header.connected(modem.replace(/\s+$/, ''));
   })
 
@@ -406,7 +400,7 @@ function onconnect (modem, port, host) {
     }
 
     var updating = 0, scriptrunning = false;
-    tesselclient.on('command', function (command, data) {
+    client.on('command', function (command, data) {
       if (command == 'u') {
         console.error(data.grey);
       } else if (command == 's' && scriptrunning) {
@@ -416,7 +410,7 @@ function onconnect (modem, port, host) {
       } else if (command == 'S' && scriptrunning && parseInt(data) <= 0) {
         scriptrunning = false;
         // process.exit(parseInt(data))
-        tesselclient.end();
+        client.end();
       } else if (command == 'U') {
         if (updating) {
           // Interrupted by other deploy
@@ -425,11 +419,11 @@ function onconnect (modem, port, host) {
         updating = true;
       }
     });
-    pushCode(process.argv[3], ['tessel', process.argv[3]].concat(argv), tesselclient);
+    pushCode(process.argv[3], ['tessel', process.argv[3]].concat(argv), client);
 
   } else if (process.argv[2] == 'stop') {
     // haaaack
-    pushCode(path.join(__dirname,'scripts','stop.js'), [], tesselclient);
+    pushCode(path.join(__dirname,'scripts','stop.js'), [], client);
 
   } else if (process.argv[2] == 'wifi') {
     var ssid = process.argv[3];
@@ -439,11 +433,11 @@ function onconnect (modem, port, host) {
     if (process.argv.length == 3) {
       // just request status
 
-      tesselclient.command('V', new Buffer([0xde, 0xad, 0xbe, 0xef]), function () {
+      client.command('V', new Buffer([0xde, 0xad, 0xbe, 0xef]), function () {
         console.error('Requesting wifi status...'.grey);
       });
 
-      tesselclient.on('command', function (command, data) {
+      client.on('command', function (command, data) {
         if (command == 'V') {
           Object.keys(data).map(function (key) {
             console.log(key.replace(/^./, function (a) { return a.toUpperCase(); }) + ':', data[key]);
@@ -461,12 +455,12 @@ function onconnect (modem, port, host) {
         process.exit(1);
       }
 
-      tesselclient.once('connect', function () {
+      client.once('connect', function () {
         console.log(('Network ' + JSON.stringify(ssid) + 
           ' (pass ' + JSON.stringify(pass) + ') with ' + security + ' security'));
       });
 
-      tesselclient.on('command', function (command, data) {
+      client.on('command', function (command, data) {
         if (command == 'w') {
           console.log(data);
         } else if (command == 'W' && 'ip' in data) {
@@ -481,18 +475,18 @@ function onconnect (modem, port, host) {
       new Buffer(pass).copy(outbuf, 32, 0, pass.length);
       new Buffer(security).copy(outbuf, 96, 0, security.length);
 
-      tesselclient.command('W', outbuf);
+      client.command('W', outbuf);
     }
 
   } else if (process.argv[2] == 'logs' || process.argv[2] == 'listen') {
-    tesselclient.on('command', function (command, data, debug) {
+    client.on('command', function (command, data, debug) {
       if (debug) {
         console.log(command.grey, data);
       }
     });
 
   } else if (process.argv[2] == 'verbose') {
-    tesselclient.on('command', function (command, data, debug) {
+    client.on('command', function (command, data, debug) {
       console.log(debug ? command.grey : command.red, data);
     });
 
@@ -500,24 +494,4 @@ function onconnect (modem, port, host) {
     usage();
     process.exit(1);
   }
-}
-
-function detectDevice (next) {
-  require('./tesselclient').detectModems(function (err, modems) {
-    if (modems.length == 0) {
-      if (!detectDevice.firstNoDevicesFound) {
-        header.nofound();
-        detectDevice.firstNoDevicesFound = true;
-      }
-      return setTimeout(detectDevice, 10, next);
-    }
-
-    if (modems.length > 1) {
-      choices('Select a device: ', modems, function (i) {
-        next(modems[i]);
-      });
-    } else {
-      next(modems[0]);
-    }
-  });
 }

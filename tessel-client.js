@@ -4,11 +4,13 @@ var portscanner = require('portscanner')
 var spawn = require('child_process').spawn;
 var fs = require('fs');
 
-exports.connect = function (port, host) {
-  var tesselclient = net.connect(port, host);
+var tesselClient = exports;
+
+tesselClient.connect = function (port, host) {
+  var client = net.connect(port, host);
 
   // Parse messages, crudely.
-  carrier.carry(tesselclient, function (data) {
+  carrier.carry(client, function (data) {
     data = String(data);
     var type = 's';
     if (data.match(/^\#\&/)) {
@@ -23,17 +25,17 @@ exports.connect = function (port, host) {
       }
     }
 
-    tesselclient.emit('command', type, data, type == type.toLowerCase());
+    client.emit('command', type, data, type == type.toLowerCase());
   });
 
   // Forward along messages
-  tesselclient.on('command', function (type, data) {
+  client.on('command', function (type, data) {
     if (type == 'M') {
-      tesselclient.emit('message', data);
+      client.emit('message', data);
     }
   })
 
-  tesselclient.command = function (type, buf, next) {
+  client.command = function (type, buf, next) {
     var sizebuf = new Buffer(5);
     sizebuf.writeUInt8(type.charCodeAt(0), 0);
     sizebuf.writeInt32LE(buf.length, 1);
@@ -42,10 +44,10 @@ exports.connect = function (port, host) {
     });
   };
 
-  return tesselclient;
+  return client;
 }
 
-exports.connectServer = function (modem, next) {
+tesselClient.connectServer = function (modem, next) {
   portscanner.checkPortStatus(6540, 'localhost', function (err, status) {
     if (status != 'open') {
       var child = spawn(process.argv[0], [__dirname + '/server.js', modem], {
@@ -68,7 +70,7 @@ exports.connectServer = function (modem, next) {
   });
 }
 
-exports.detectModems = function (next) {
+tesselClient.detectModems = function (next) {
   if (process.platform.match(/^win/)) {
     jssc.list(next);
   } else {
@@ -78,4 +80,32 @@ exports.detectModems = function (next) {
       return '/dev/' + file;
     }));
   }
+}
+
+tesselClient.selectModem = function (next) {
+  tesselClient.detectModems(function (err, modems) {
+    if (modems.length == 0) {
+      if (!detectDevice.firstNoDevicesFound) {
+        header.nofound();
+        detectDevice.firstNoDevicesFound = true;
+      }
+      return setTimeout(detectDevice, 10, next);
+    }
+
+    if (modems.length > 1) {
+      choices('Select a device: ', modems, function (i) {
+        next(null, modems[i]);
+      });
+    } else {
+      next(null, modems[0]);
+    }
+  });
+}
+
+tesselClient.acquire = function (next) {
+  tesselClient.selectModem(function (err, modem) {
+    tesselClient.connectServer(modem, function (err, port) {
+      next(err, tesselClient.connect(port));
+    });
+  })
 }
