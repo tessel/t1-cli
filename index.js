@@ -48,52 +48,6 @@ function usage () {
     "          upload new firmware when in DFU mode\n");
 }
 
-
-// Compile a filename to code, detect error situation.
-function compile (file, safe, next) {
-  try {
-    var filepath = file;
-
-    //check if the file exists
-    if (fs.existsSync(file))
-    {
-      // ensure we have an absolute path
-      filepath = fs.realpathSync(file)
-    }
-    else
-    {
-      // if it still doesn't exist, quit
-      console.error('\nInput file "' + file + '" cannot be found.')
-      process.exit(1);
-    }
-
-    next(colony.colonize(fs.readFileSync(filepath, 'utf-8')));
-    // colony.bundleFiles(filepath, {
-    //   minify: false,
-    //   bundleLib: true,
-    //   inject: {
-    //     tessel: __dirname + '/node_modules/tessel-lib',
-    //     events: null,
-    //     net: null,
-    //     dgram: null,
-    //     util: null
-    //   }
-    // }, function (luacode) {
-    //   next(new Buffer(luacode));
-    // });
-  } catch (e) {
-    if (!safe) {
-      // console.error('Invalid JavaScript code (error ', code + '), aborting.');
-      console.error(e);
-      process.on('exit', function() {
-        process.exit(1);
-      });
-    } else {
-      next(null);
-    }
-  }
-}
-
 function repeatstr (str, n) {
   return Array(n + 1).join(str);
 }
@@ -221,131 +175,6 @@ function pushCode (file, args, client) {
     });
   });
 }
-
-// } else if (process.argv[2] == 'pushall'){
-//   // listen for all possible 
-//   var client = dgram.createSocket('udp4');
-//   var addresses = [];
-//   client.bind(5454, function() {
-//     client.addMembership('224.0.1.187'); // hard coded for now
-//   });
-  
-//   console.log(('listening for tessel devices...').yellow);
-
-//   client.on('listening', function () {
-//       var address = s.address();
-//   });
-  
-//   client.on('message', function (message, remote) {   
-//     if (addresses.indexOf(remote.address) == -1) {
-//       addresses.push(remote.address);
-//       console.log("found ip: " + remote.address);
-//     } 
-//     // console.log('B: From: ' + remote.address + ':' + remote.port +' - ' + message);
-//   });
-
-//   // timeout of 2 seconds
-//   setTimeout(function () {
-//     client.close();
-//     console.log('pushing code to the following: ', addresses);
-//     // push to all gathered ips
-//     addresses.forEach(function(address){
-//       var tClient = net.connect(port, address);
-//       // tClient.on('connect', function () {
-//       //   header.connected(modem);
-//       // });
-//       pushCode(address, tClient);
-//     });
-    
-//   }, 2000);
-
-// } else if (process.argv[2] == 'firmware') {
-//   if (process.argv.length < 4) {
-//     usage();
-//     process.exit(1);
-//   }
-
-//   upload('F', client, fs.readFileSync(process.argv[3]));
-
-// TCP
-// if (process.argv[2] == 'remotepush') {
-//   if (process.argv.length < 6) {
-//     usage();
-//     process.exit(1);
-//   }
-
-//   var filename = process.argv[3];
-//   var ip = process.argv[4];
-//   var port = process.argv[5];
-
-//   var net = require('net');
-//   var fs = require('fs');
-
-//   compile(filename, false, function (luacode) {
-//     console.log('Writing', luacode.length, 'bytes by TCP...');
-//     var client = net.connect(port, ip, function () {
-//       console.log('connected');
-//       var sizebuf = new Buffer(4);
-//       sizebuf.writeInt32LE(luacode.length, 0);
-//       client.write(Buffer.concat([sizebuf, luacode]), function () {
-//         console.log('written');
-//         // client.end();
-//       });
-//     });
-//     client.on('end', function () {
-//       console.log('disconnected');
-//     });
-//   });
-// } else {
-// }
-
-// Interactive.
-// handshake(modem, function (serial) {
-//   if (process.argv[2] == '-i') {
-//     console.log('[connected]'.grey);
-
-//     repl.start({
-//       prompt: "",
-//       input: process.stdin,
-//       output: process.stdout,
-//       ignoreUndefined: true,
-//       eval: function eval(cmd, context, filename, callback) {
-//         cmd = cmd.replace(/^.|\n.$/g, '');
-//         runeval(cmd, function () {
-//           callback(null, undefined);
-//         });
-//       }
-//     }).on('exit', function (code) {
-//       process.exit(code);
-//     })
-
-//     // process.stdin.on('data', function (data) {
-
-//     function runeval (data, next) {
-//       fs.writeFileSync(path.join(__dirname, 'tmp', 'repl.js'), data);
-//       compile(path.join(__dirname, 'tmp', 'repl.js'), true, function (luacode) {
-//         if (luacode) {
-//           upload(serial, luacode);
-//           next();
-//         } else {
-//           process.stdout.write('> ');
-//           next();
-//         }
-//       });
-//     }
-
-//     serial.once('data', function () {
-//       console.log('global.board = require(\'tm\')');
-//       runeval('global.board = require(\'tm\')', function () { });
-//     })
-
-//   } else {
-//     compile(process.argv[2], false, function (luacode) {
-//       upload(serial, luacode);
-//     });
-//   }
-// });
-
 
 if (process.argv.length < 3) {
   usage();
@@ -501,3 +330,128 @@ function onconnect (modem, port, host) {
     process.exit(1);
   }
 }
+
+
+// } else if (process.argv[2] == 'pushall'){
+//   // listen for all possible 
+//   var client = dgram.createSocket('udp4');
+//   var addresses = [];
+//   client.bind(5454, function() {
+//     client.addMembership('224.0.1.187'); // hard coded for now
+//   });
+  
+//   console.log(('listening for tessel devices...').yellow);
+
+//   client.on('listening', function () {
+//       var address = s.address();
+//   });
+  
+//   client.on('message', function (message, remote) {   
+//     if (addresses.indexOf(remote.address) == -1) {
+//       addresses.push(remote.address);
+//       console.log("found ip: " + remote.address);
+//     } 
+//     // console.log('B: From: ' + remote.address + ':' + remote.port +' - ' + message);
+//   });
+
+//   // timeout of 2 seconds
+//   setTimeout(function () {
+//     client.close();
+//     console.log('pushing code to the following: ', addresses);
+//     // push to all gathered ips
+//     addresses.forEach(function(address){
+//       var tClient = net.connect(port, address);
+//       // tClient.on('connect', function () {
+//       //   header.connected(modem);
+//       // });
+//       pushCode(address, tClient);
+//     });
+    
+//   }, 2000);
+
+// } else if (process.argv[2] == 'firmware') {
+//   if (process.argv.length < 4) {
+//     usage();
+//     process.exit(1);
+//   }
+
+//   upload('F', client, fs.readFileSync(process.argv[3]));
+
+// TCP
+// if (process.argv[2] == 'remotepush') {
+//   if (process.argv.length < 6) {
+//     usage();
+//     process.exit(1);
+//   }
+
+//   var filename = process.argv[3];
+//   var ip = process.argv[4];
+//   var port = process.argv[5];
+
+//   var net = require('net');
+//   var fs = require('fs');
+
+//   compile(filename, false, function (luacode) {
+//     console.log('Writing', luacode.length, 'bytes by TCP...');
+//     var client = net.connect(port, ip, function () {
+//       console.log('connected');
+//       var sizebuf = new Buffer(4);
+//       sizebuf.writeInt32LE(luacode.length, 0);
+//       client.write(Buffer.concat([sizebuf, luacode]), function () {
+//         console.log('written');
+//         // client.end();
+//       });
+//     });
+//     client.on('end', function () {
+//       console.log('disconnected');
+//     });
+//   });
+// } else {
+// }
+
+// Interactive.
+// handshake(modem, function (serial) {
+//   if (process.argv[2] == '-i') {
+//     console.log('[connected]'.grey);
+
+//     repl.start({
+//       prompt: "",
+//       input: process.stdin,
+//       output: process.stdout,
+//       ignoreUndefined: true,
+//       eval: function eval(cmd, context, filename, callback) {
+//         cmd = cmd.replace(/^.|\n.$/g, '');
+//         runeval(cmd, function () {
+//           callback(null, undefined);
+//         });
+//       }
+//     }).on('exit', function (code) {
+//       process.exit(code);
+//     })
+
+//     // process.stdin.on('data', function (data) {
+
+//     function runeval (data, next) {
+//       fs.writeFileSync(path.join(__dirname, 'tmp', 'repl.js'), data);
+//       compile(path.join(__dirname, 'tmp', 'repl.js'), true, function (luacode) {
+//         if (luacode) {
+//           upload(serial, luacode);
+//           next();
+//         } else {
+//           process.stdout.write('> ');
+//           next();
+//         }
+//       });
+//     }
+
+//     serial.once('data', function () {
+//       console.log('global.board = require(\'tm\')');
+//       runeval('global.board = require(\'tm\')', function () { });
+//     })
+
+//   } else {
+//     compile(process.argv[2], false, function (luacode) {
+//       upload(serial, luacode);
+//     });
+//   }
+// });
