@@ -368,7 +368,13 @@ if (process.argv[2] == 'dfu-restore') {
     port = args[1] || 4444;
     onconnect('[' + host + ':' + port + ']', port, host);
   } else {
-    tesselClient.selectModem(function (err, modem) {
+    var firstNoDevicesFound = false;
+    tesselClient.selectModem(function notfound () {
+      if (!firstNoDevicesFound) {
+        header.nofound();
+        firstNoDevicesFound = true;
+      }
+    }, function found (err, modem) {
       header.connecting(modem);
       tesselClient.connectServer(modem, function () {
         onconnect(modem, 6540, 'localhost');

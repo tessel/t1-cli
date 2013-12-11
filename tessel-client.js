@@ -82,14 +82,11 @@ tesselClient.detectModems = function (next) {
   }
 }
 
-tesselClient.selectModem = function (next) {
+tesselClient.selectModem = function detectDevice (notfound, next) {
   tesselClient.detectModems(function (err, modems) {
     if (modems.length == 0) {
-      if (!detectDevice.firstNoDevicesFound) {
-        header.nofound();
-        detectDevice.firstNoDevicesFound = true;
-      }
-      return setTimeout(detectDevice, 10, next);
+      notfound();
+      return setTimeout(detectDevice, 10, notfound, next);
     }
 
     if (modems.length > 1) {
