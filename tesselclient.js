@@ -2,6 +2,7 @@ var net = require('net');
 var carrier = require('carrier');
 var portscanner = require('portscanner')
 var spawn = require('child_process').spawn;
+var fs = require('fs');
 
 exports.connect = function (port, host) {
   var tesselclient = net.connect(port, host);
@@ -29,7 +30,6 @@ exports.connect = function (port, host) {
   tesselclient.on('command', function (type, data) {
     if (type == 'M') {
       tesselclient.emit('message', data);
-      console.log('[MESSAGE]'.cyan, JSON.stringify(data));
     }
   })
 
@@ -37,7 +37,7 @@ exports.connect = function (port, host) {
     var sizebuf = new Buffer(5);
     sizebuf.writeUInt8(type.charCodeAt(0), 0);
     sizebuf.writeInt32LE(buf.length, 1);
-    client.write(Buffer.concat([sizebuf, buf]), function () {
+    this.write(Buffer.concat([sizebuf, buf]), function () {
       next && next();
     });
   };
@@ -59,11 +59,23 @@ exports.connectServer = function (modem, next) {
         if (m.ready) {
           // child.unref();
           // child.disconnect();
-          next(null);
+          next(null, 6540);
         }
       });
     } else {
-      next(null);
+      next(null, 6540);
     }
   });
+}
+
+exports.detectModems = function (next) {
+  if (process.platform.match(/^win/)) {
+    jssc.list(next);
+  } else {
+    next(null, fs.readdirSync('/dev').filter(function (file) {
+      return file.match(/^(cu.usbmodem.*|ttyACM.*)$/);
+    }).map(function (file) {
+      return '/dev/' + file;
+    }));
+  }
 }
