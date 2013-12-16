@@ -23,7 +23,7 @@ var wrench = require('./wrench')
 
 
 // Automatically track and cleanup files at exit
-temp.track();
+// temp.track();
 
 var argv = optimist.argv;
 
@@ -77,6 +77,8 @@ var header = {
 }
 
 function tarCode (file, args, client, next) {
+  console.log("tar code");
+
   if (!fs.existsSync(file)) {
     setTimeout(function () {
       console.error('ERROR'.red, 'File doesn\'t exist:', file);
@@ -95,6 +97,7 @@ function tarCode (file, args, client, next) {
     return;
   }
   
+  // console.log("making directory");
   temp.mkdir('colony', function (err, dirpath) {
     var pushdir = path.join(process.cwd(), path.dirname(file));
 
@@ -126,15 +129,18 @@ function tarCode (file, args, client, next) {
     var docompile = [];
 
     wrench.readdirRecursive(path.join(dirpath), function (err, curFiles) {
+      // console.log(curFiles);
       if (!curFiles) {
+        afterColonizing();
         return;
       }
       curFiles.forEach(function (f) {
+        // console.log("current file", f);
         if (f.match(/\.js$/)) {
           try {
             var res = colony.colonize(fs.readFileSync(path.join(dirpath, f), 'utf-8'));
             fs.writeFileSync(path.join(dirpath, f), res);
-            docompile.push(path.join(dirpath, f));
+            docompile.push([f, path.join(dirpath, f)]);
           } catch (e) {
             e.filename = f.substr(4);
             console.log('Syntax error in', f, ':\n', e);
@@ -144,52 +150,65 @@ function tarCode (file, args, client, next) {
       })
     });
 
-    // compile with compile_lua
-    async.each(docompile, function (f, next) {
-      // uncomment these to do compile_lua
-      // var bufs = [];
-      // var c = spawn(__dirname + '/../runtime/tools/compile_lua');
-      // c.stdout.on('data', function (buf) {
-      //   bufs.push(buf);
-      // })
-      // c.on('close', function () {
-      //   var res = Buffer.concat(bufs);
-      //   fs.writeFileSync(res);
-        next(null);
-      // })
-      // c.stdin.write(fs.readFileSync(f, 'utf-8'));
-      // c.stdin.end();
-    }, function (err) {
+    function afterColonizing () {
+      // compile with compile_lua
+      async.each(docompile, function (f_, next) {
+        var f = f_[1];
+        // console.log("going through files", f);
 
-      var bufs = [];
-      var fstr = fstream.Reader({path: dirpath, type: "Directory"})
-      fstr.basename = '';
-
-      fstr.on('entry', function (e) {
-        e.root = {path: e.path};
-      })
-
-      fstr
-        .pipe(tar.Pack())
-        .on('data', function (buf) {
+        // uncomment these to do compile_lua
+        var bufs = [];
+        console.log(f);
+        var c = spawn(__dirname + '/../runtime/tools/compile_lua', ['//']);
+        c.stdout.on('data', function (buf) {
           bufs.push(buf);
-        }).on('end', function () {
-          var luacode = Buffer.concat(bufs);
-          next(null, pushdir, luacode);
         });
-    });
+        c.stdout.on('close', function (code) {
+          var res = Buffer.concat(bufs);
+          fs.writeFileSync(f, res);
+          // console.log("bufs", res.length, code);
+          next(null);
+        });
+        c.stdin.write(fs.readFileSync(f, 'utf-8'));
+        c.stdin.end();
+
+      }, function (err) {
+        var bufs = [];
+        var fstr = fstream.Reader({path: dirpath, type: "Directory"})
+        fstr.basename = '';
+
+        fstr.on('entry', function (e) {
+          e.root = {path: e.path};
+        })
+
+        fstr
+          .pipe(tar.Pack())
+          .on('data', function (buf) {
+            bufs.push(buf);
+          }).on('end', function () {
+            var luacode = Buffer.concat(bufs);
+            next(null, pushdir, luacode);
+          });
+      });
+    }
   });
 }
 
 function pushCode (file, args, client) {
   tarCode(file, args, client, function (err, pushdir, bundle) {
     console.error(('Deploying directory ' + pushdir).grey);
-
+    
     zlib.deflate(bundle, function(err, gzipbuf) {
+
       if (!err) {
         var sizebuf = new Buffer(4);
         sizebuf.writeUInt32LE(bundle.length, 0);
+      
+        // fs.writeFileSync("builtin.tar.gz", Buffer.concat([sizebuf, gzipbuf]));
+        // console.log("wrote builtin.tar.gz");
+      
         client.command('U', Buffer.concat([sizebuf, gzipbuf]));
+
       } else {
         console.error(err);
       }
