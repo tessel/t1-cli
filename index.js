@@ -123,6 +123,8 @@ function tarCode (file, args, client, next) {
       + 'require(' + JSON.stringify('./app/' + path.join(relpath, path.basename(file))) + ');';
     fs.writeFileSync(path.join(dirpath, 'index.js'), stub);
 
+    var docompile = [];
+
     wrench.readdirRecursive(path.join(dirpath), function (err, curFiles) {
       if (!curFiles) {
         return;
@@ -132,6 +134,7 @@ function tarCode (file, args, client, next) {
           try {
             var res = colony.colonize(fs.readFileSync(path.join(dirpath, f), 'utf-8'));
             fs.writeFileSync(path.join(dirpath, f), res);
+            comp.push(path.join(dirpath, f));
           } catch (e) {
             e.filename = f.substr(4);
             console.log('Syntax error in', f, ':\n', e);
@@ -140,23 +143,42 @@ function tarCode (file, args, client, next) {
         }
       })
     });
-    
-    var bufs = [];
-    var fstr = fstream.Reader({path: dirpath, type: "Directory"})
-    fstr.basename = '';
 
-    fstr.on('entry', function (e) {
-      e.root = {path: e.path};
-    })
+    // compile with compile_lua
+    async.each(docompile, function (f, next) {
+      console.log(f);
+      // uncomment these to do compile_lua
+      // var bufs = [];
+      // var c = spawn(__dirname + '/../runtime/tools/compile_lua');
+      // c.stdout.on('data', function (buf) {
+      //   bufs.push(buf);
+      // })
+      // c.on('close', function () {
+      //   var res = Buffer.concat(bufs);
+      //   fs.writeFileSync(res);
+        next(null);
+      // })
+      // c.stdin.write(fs.readFileSync(f, 'utf-8'));
+      // c.stdin.end();
+    }, function (err) {
 
-    fstr
-      .pipe(tar.Pack())
-      .on('data', function (buf) {
-        bufs.push(buf);
-      }).on('end', function () {
-        var luacode = Buffer.concat(bufs);
-        next(null, pushdir, luacode);
-      });
+      var bufs = [];
+      var fstr = fstream.Reader({path: dirpath, type: "Directory"})
+      fstr.basename = '';
+
+      fstr.on('entry', function (e) {
+        e.root = {path: e.path};
+      })
+
+      fstr
+        .pipe(tar.Pack())
+        .on('data', function (buf) {
+          bufs.push(buf);
+        }).on('end', function () {
+          var luacode = Buffer.concat(bufs);
+          next(null, pushdir, luacode);
+        });
+    });
   });
 }
 

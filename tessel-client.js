@@ -43,7 +43,7 @@ tesselClient.connect = function (port, host) {
       next && next();
     });
   };
-
+  
   return client;
 }
 
