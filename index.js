@@ -23,7 +23,7 @@ var wrench = require('./wrench')
 
 
 // Automatically track and cleanup files at exit
-// temp.track();
+temp.track();
 
 var argv = optimist.argv;
 
@@ -150,27 +150,33 @@ function tarCode (file, args, client, next) {
       })
     });
 
+    var compile_lua = null; //__dirname + '/../runtime/tools/compile_lua';
+
     function afterColonizing () {
       // compile with compile_lua
       async.each(docompile, function (f_, next) {
-        var f = f_[1];
-        // console.log("going through files", f);
-
-        // uncomment these to do compile_lua
-        var bufs = [];
-        console.log(f);
-        var c = spawn(__dirname + '/../runtime/tools/compile_lua', ['//']);
-        c.stdout.on('data', function (buf) {
-          bufs.push(buf);
-        });
-        c.stdout.on('close', function (code) {
-          var res = Buffer.concat(bufs);
-          fs.writeFileSync(f, res);
-          // console.log("bufs", res.length, code);
+        if (!compile_lua) {
           next(null);
-        });
-        c.stdin.write(fs.readFileSync(f, 'utf-8'));
-        c.stdin.end();
+        } else {
+          var f = f_[1];
+          // console.log("going through files", f);
+
+          // uncomment these to do compile_lua
+          var bufs = [];
+          // console.log(f);
+          var c = spawn(compile_lua, ['//']);
+          c.stdout.on('data', function (buf) {
+            bufs.push(buf);
+          });
+          c.stdout.on('close', function (code) {
+            var res = Buffer.concat(bufs);
+            fs.writeFileSync(f, res);
+            // console.log("bufs", res.length, code);
+            next(null);
+          });
+          c.stdin.write(fs.readFileSync(f, 'utf-8'));
+          c.stdin.end();
+        }
 
       }, function (err) {
         var bufs = [];
@@ -204,8 +210,8 @@ function pushCode (file, args, client) {
         var sizebuf = new Buffer(4);
         sizebuf.writeUInt32LE(bundle.length, 0);
       
-        // fs.writeFileSync("builtin.tar.gz", Buffer.concat([sizebuf, gzipbuf]));
-        // console.log("wrote builtin.tar.gz");
+        fs.writeFileSync("builtin.tar.gz", Buffer.concat([sizebuf, gzipbuf]));
+        console.log("wrote builtin.tar.gz");
       
         client.command('U', Buffer.concat([sizebuf, gzipbuf]));
 
