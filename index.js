@@ -134,7 +134,7 @@ function tarCode (file, args, client, next) {
           try {
             var res = colony.colonize(fs.readFileSync(path.join(dirpath, f), 'utf-8'));
             fs.writeFileSync(path.join(dirpath, f), res);
-            comp.push(path.join(dirpath, f));
+            docompile.push(path.join(dirpath, f));
           } catch (e) {
             e.filename = f.substr(4);
             console.log('Syntax error in', f, ':\n', e);
@@ -146,7 +146,6 @@ function tarCode (file, args, client, next) {
 
     // compile with compile_lua
     async.each(docompile, function (f, next) {
-      console.log(f);
       // uncomment these to do compile_lua
       // var bufs = [];
       // var c = spawn(__dirname + '/../runtime/tools/compile_lua');
