@@ -1,3 +1,4 @@
+var choices = require('choices');
 var net = require('net');
 var carrier = require('carrier');
 var portscanner = require('portscanner')
