@@ -4,6 +4,7 @@ var carrier = require('carrier');
 var portscanner = require('portscanner')
 var spawn = require('child_process').spawn;
 var fs = require('fs');
+var jssc = require('jssc')
 
 var tesselClient = exports;
 
