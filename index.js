@@ -28,7 +28,7 @@ temp.track();
 var argv = optimist.argv;
 
 process.on('uncaughtException', function (err) {
-  console.error(err);
+  console.error(err.stack);
 })
 
 
