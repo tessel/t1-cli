@@ -138,7 +138,7 @@ function tarCode (file, args, client, next) {
           try {
             var res = colony.colonize(fs.readFileSync(path.join(dirpath, f), 'utf-8'));
             fs.writeFileSync(path.join(dirpath, f), res);
-            docompile.push(path.join(dirpath, f));
+            docompile.push([f, path.join(dirpath, f)]);
           } catch (e) {
             e.filename = f.substr(4);
             console.log('Syntax error in', f, ':\n', e);
@@ -148,7 +148,7 @@ function tarCode (file, args, client, next) {
       })
     });
 
-    var compileBytecode = false;
+    var compileBytecode = true;
 
     function afterColonizing () {
       // compile with compile_lua
@@ -156,8 +156,8 @@ function tarCode (file, args, client, next) {
         if (!compileBytecode) {
           next(null);
         } else {
-          colony.toBytecode(fs.readFileSync(f, 'utf-8'), function (err, res) {
-            !err && fs.writeFileSync(f, res);
+          colony.toBytecode(fs.readFileSync(f[1], 'utf-8'), '/' + f[0], function (err, res) {
+            !err && fs.writeFileSync(f[1], res);
             next(err);
           });
         }
