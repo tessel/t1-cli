@@ -148,7 +148,7 @@ function tarCode (file, args, client, next) {
       })
     });
 
-    var compileBytecode = true;
+    var compileBytecode = false;
 
     function afterColonizing () {
       // compile with compile_lua
