@@ -194,8 +194,8 @@ function pushCode (file, args, client) {
         var sizebuf = new Buffer(4);
         sizebuf.writeUInt32LE(bundle.length, 0);
       
-        // fs.writeFileSync("builtin.tar.gz", Buffer.concat([sizebuf, gzipbuf]));
-        // console.log("wrote builtin.tar.gz");
+        fs.writeFileSync("builtin.tar.gz", gzipbuf);
+        console.log("wrote builtin.tar.gz");
       
         client.command('U', Buffer.concat([sizebuf, gzipbuf]));
 
