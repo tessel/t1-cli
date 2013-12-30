@@ -14,12 +14,9 @@ var choices = require('choices')
   , optimist = require('optimist')
   , jssc = require('jssc')
   , dgram = require('dgram')
-  , temp = require('temp')
-  , fstream = require('fstream')
-  , tar = require('tar');
+  , temp = require('temp');
 
-var wrench = require('./wrench')
-  , tesselClient = require('./tessel-client');
+var tesselClient = require('tessel-client');
 
 
 // Automatically track and cleanup files at exit
@@ -76,133 +73,10 @@ var header = {
   }
 }
 
-function tarCode (file, args, client, next) {
-  if (!fs.existsSync(file)) {
-    setTimeout(function () {
-      console.error('ERROR'.red, 'File doesn\'t exist:', file);
-      process.exit(1);
-    }, 10)
-    return;
-  }
-  if (fs.lstatSync(file).isDirectory()) {
-    file = path.join(file, 'index.js');
-  }
-  if (!fs.existsSync(file)) {
-    setTimeout(function () {
-      console.error('ERROR'.red, 'File doesn\'t exist or isn\'t a source file:', file);
-      process.exit(1);
-    }, 10)
-    return;
-  }
-  
-  // console.log("making directory");
-  temp.mkdir('colony', function (err, dirpath) {
-    var pushdir = path.join(process.cwd(), path.dirname(file));
-
-    // Find node_modules dir
-    var pushdirbkp = pushdir;
-    var relpath = '';
-    while (path.dirname(pushdir) != '/' && !fs.existsSync(path.join(pushdir, 'node_modules'))) {
-      relpath = path.join(path.basename(pushdir), relpath);
-      pushdir = path.dirname(pushdir);
-    }
-    if (path.dirname(pushdir) == '/') {
-      pushdir = pushdirbkp;
-      relpath = '';
-    }
-
-    wrench.copyDirSyncRecursive(pushdir, path.join(dirpath, 'app'), {
-      forceDelete: false,
-      exclude: /^\./,
-      inflateSymlinks: true
-    });
-
-    var stub
-      = 'process.env.DEPLOY_IP = ' + JSON.stringify(require('my-local-ip')()) + ';\n'
-      + 'process.argv = ' + JSON.stringify(args) + ';\n'
-      + 'process.send = function (a) { console.log("#&M" + JSON.stringify(a)); };\n'
-      + 'require(' + JSON.stringify('./app/' + path.join(relpath, path.basename(file))) + ');';
-    fs.writeFileSync(path.join(dirpath, 'index.js'), stub);
-
-    var docompile = [];
-
-    wrench.readdirRecursive(path.join(dirpath), function (err, curFiles) {
-      // console.log(curFiles);
-      if (!curFiles) {
-        afterColonizing();
-        return;
-      }
-      curFiles.forEach(function (f) {
-        // console.log("current file", f);
-        if (f.match(/\.js$/)) {
-          try {
-            var res = colony.colonize(fs.readFileSync(path.join(dirpath, f), 'utf-8'));
-            fs.writeFileSync(path.join(dirpath, f), res);
-            docompile.push([f, path.join(dirpath, f)]);
-          } catch (e) {
-            e.filename = f.substr(4);
-            console.log('Syntax error in', f, ':\n', e);
-            process.exit(1);
-          }
-        }
-      })
-    });
-
-    var compileBytecode = true;
-
-    function afterColonizing () {
-      // compile with compile_lua
-      async.each(docompile, function (f, next) {
-        if (!compileBytecode) {
-          next(null);
-        } else {
-          colony.toBytecode(fs.readFileSync(f[1], 'utf-8'), '/' + f[0], function (err, res) {
-            !err && fs.writeFileSync(f[1], res);
-            next(err);
-          });
-        }
-
-      }, function (err) {
-        var bufs = [];
-        var fstr = fstream.Reader({path: dirpath, type: "Directory"})
-        fstr.basename = '';
-
-        fstr.on('entry', function (e) {
-          e.root = {path: e.path};
-        })
-
-        fstr
-          .pipe(tar.Pack())
-          .on('data', function (buf) {
-            bufs.push(buf);
-          }).on('end', function () {
-            var luacode = Buffer.concat(bufs);
-            next(null, pushdir, luacode);
-          });
-      });
-    }
-  });
-}
-
 function pushCode (file, args, client) {
-  tarCode(file, args, client, function (err, pushdir, bundle) {
+  tesselClient.bundleCode(file, args, function (err, pushdir, tarstream) {
     console.error(('Deploying directory ' + pushdir).grey);
-    
-    zlib.deflate(bundle, function(err, gzipbuf) {
-
-      if (!err) {
-        var sizebuf = new Buffer(4);
-        sizebuf.writeUInt32LE(bundle.length, 0);
-      
-        // fs.writeFileSync("builtin.tar.gz", Buffer.concat([sizebuf, gzipbuf]));
-        // console.log("wrote builtin.tar.gz");
-      
-        client.command('U', Buffer.concat([sizebuf, gzipbuf]));
-
-      } else {
-        console.error(err);
-      }
-    });
+    client.deployBundle(tarstream);
   });
 }
 
@@ -214,6 +88,10 @@ if (process.argv.length < 3) {
 if (process.argv[2] == 'dfu-restore') {
   require('child_process').spawn(__dirname + '/dfu/tessel-dfu-restore', process.argv.slice(3), {
     stdio: 'inherit'
+  }).on('close', function (code) {
+    process.on('exit', function () {
+      process.exit(code);
+    })
   });
 } else {
   header.init();
@@ -291,56 +169,41 @@ function onconnect (modem, port, host) {
     pushCode(path.join(__dirname,'scripts','stop.js'), [], client);
 
   } else if (process.argv[2] == 'wifi') {
-    var ssid = process.argv[3];
-    var pass = process.argv[4] || "";
-    var security = (process.argv[5] || "wpa2").toLowerCase();
-
     if (process.argv.length == 3) {
       // just request status
-
-      client.command('V', new Buffer([0xde, 0xad, 0xbe, 0xef]), function () {
-        console.error('Requesting wifi status...'.grey);
-      });
-
-      client.on('command', function (command, data) {
-        if (command == 'V') {
-          Object.keys(data).map(function (key) {
-            console.log(key.replace(/^./, function (a) { return a.toUpperCase(); }) + ':', data[key]);
-          })
-          process.exit(0);
-        }
-      });
+      client.wifiStatus(function (err, data) {
+        Object.keys(data).map(function (key) {
+          console.log(key.replace(/^./, function (a) { return a.toUpperCase(); }) + ':', data[key]);
+        })
+        process.exit(0);
+      })
 
     } else {
-      if (pass == ""){
-        security = "unsecure";
-      }
       if (process.argv.length < 4) {
         usage();
         process.exit(1);
       }
 
+      var ssid = process.argv[3];
+      var pass = process.argv[4] || "";
+      var security = (process.argv[5] || (pass ? 'wpa2' : 'unsecure')).toLowerCase();
+
+      // Only defer to make print after thing.
       client.once('connect', function () {
         console.log(('Network ' + JSON.stringify(ssid) + 
           ' (pass ' + JSON.stringify(pass) + ') with ' + security + ' security'));
       });
 
+      // This is just for fun logs
       client.on('command', function (command, data) {
         if (command == 'w') {
           console.log(data);
-        } else if (command == 'W' && 'ip' in data) {
-          process.exit(0);
         }
       });
 
-      // Package Wifi arguments
-      var outbuf = new Buffer(128);
-      outbuf.fill(0);
-      new Buffer(ssid).copy(outbuf, 0, 0, ssid.length);
-      new Buffer(pass).copy(outbuf, 32, 0, pass.length);
-      new Buffer(security).copy(outbuf, 96, 0, security.length);
-
-      client.command('W', outbuf);
+      client.configureWifi(ssid, pass, security, function (err) {
+        process.exit(0);
+      });
     }
 
   } else if (process.argv[2] == 'logs' || process.argv[2] == 'listen') {
