@@ -267,6 +267,9 @@ if (process.argv[2] == 'dfu-restore') {
           zlib.deflate(luacode, function(err, gzipbuf) {
             if (!err) {
               var sizebuf = new Buffer(4);
+              fs.writeFileSync("builtin.tar.gz", gzipbuf);
+              console.log("wrote builtin.tar.gz");
+
               sizebuf.writeUInt32LE(luacode.length, 0);
               upload('U', client, Buffer.concat([sizebuf, gzipbuf]));
             } else {
