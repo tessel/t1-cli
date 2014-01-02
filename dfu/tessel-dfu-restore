@@ -14,7 +14,8 @@ var dfu_util_tm = require('dfu-util-tm')
   , temp = require('temp');
 
 var slow_mode = false
-  , vendor = "1fc9:000c";
+  , vendor = "1fc9:000c"
+  , serial = "ABCD";
 
 function dfu_util (args) {
   if (slow_mode) {
@@ -252,12 +253,13 @@ function checkForDevices (next) {
   var bufs = [];
   dfu_util(['-l']).on('close', function (code) {
     var data = String(Buffer.concat(bufs));
-    var listing = data.split(/\r?\n/g).slice(7).join('\n');
-    if (!listing) {
+    if (data.indexOf(vendor) == -1) {
       console.error('No tessel in DFU mode connected. Please restart device in DFU mode and try again.');
       console.error('NOTE: If tessel is connected but this message appears, try running tessel dfu-restore in sudo mode.');
       process.exit(1);
     }
+
+    serial = data.substr(data.indexOf(vendor)).match(/serial="([^"]+)"/)[1];
     next();
   }).stdout.on('data', function (data) {
     bufs.push(data);
@@ -319,7 +321,7 @@ BinGenerator.prototype.makeScript = function (size){
 
       console.log('>>> Initial bootloader write...');
       dfu_util([
-        '-d', vendor,
+        '-S', serial,
         '-D', __dirname + '/bin/iram_dfu_util_any.bin.hdr'
       ], {
         stdio: 'inherit'
@@ -329,7 +331,7 @@ BinGenerator.prototype.makeScript = function (size){
           
           console.log('\n>>> Erasing...')
           dfu_util([
-            '-d', vendor,
+            '-S', serial,
             '-t', '80', '-U', path.join(dirPath, 'iram.bin.res'), '-w', mssleep,
             '-t', '16', '-D', __dirname + '/bin/cmd1.bin', '-w', mssleep,
             '-t', '80', '-U', path.join(dirPath, 'cmd1.bin.res'), '-w', mssleep,
@@ -345,7 +347,7 @@ BinGenerator.prototype.makeScript = function (size){
 
               console.log('\n>>> Dumping erased binary...');
               dfu_util([
-                '-d', vendor,
+                '-S', serial,
                 '-t', '80', '-U', eraseBin + '.bin.res'
               ], {
                 stdio: 'inherit'
@@ -353,7 +355,7 @@ BinGenerator.prototype.makeScript = function (size){
 
                 function uploadProcess (splits) {
                   var uploadCmd = [
-                    '-d', vendor
+                    '-S', serial
                   ]; 
                   splits.forEach(function(split, index) {
                     uploadCmd = uploadCmd.concat([
