@@ -44,7 +44,7 @@ function dfu_util (args) {
 var writeByte = 0x08;
 var eraseByte = 0x07;
 
-// temp.track();
+temp.track();
 
 function puts(error, stdout, stderr) { sys.puts(stdout) }
 
@@ -324,7 +324,7 @@ BinGenerator.prototype.makeScript = function (size){
 
       console.log('>>> Initial bootloader write...');
       dfu_util([
-        '-d', vendor,
+        // '-d', vendor,
         '-D', __dirname + '/bin/iram_dfu_util_any.bin.hdr'
       ], {
         stdio: 'inherit'
@@ -334,7 +334,7 @@ BinGenerator.prototype.makeScript = function (size){
           
           console.log('\n>>> Erasing...')
           dfu_util([
-            '-d', vendor,
+            // '-d', vendor,
             '-t', '80', '-U', path.join(dirPath, 'iram.bin.res'), '-w', mssleep,
             '-t', '16', '-D', __dirname + '/bin/cmd1.bin', '-w', mssleep,
             '-t', '80', '-U', path.join(dirPath, 'cmd1.bin.res'), '-w', mssleep,
@@ -350,7 +350,7 @@ BinGenerator.prototype.makeScript = function (size){
 
               console.log('\n>>> Dumping erased binary...');
               dfu_util([
-                '-d', vendor,
+                // '-d', vendor,
                 '-t', '80', '-U', eraseBin + '.bin.res'
               ], {
                 stdio: 'inherit'
@@ -358,7 +358,7 @@ BinGenerator.prototype.makeScript = function (size){
 
                 function uploadProcess (splits) {
                   var uploadCmd = [
-                    '-d', vendor
+                    // '-d', vendor
                   ]; 
                   splits.forEach(function(split, index) {
                     uploadCmd = uploadCmd.concat([
