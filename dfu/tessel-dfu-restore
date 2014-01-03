@@ -45,7 +45,7 @@ function dfu_util (args) {
 var writeByte = 0x08;
 var eraseByte = 0x07;
 
-temp.track();
+// temp.track();
 
 function puts(error, stdout, stderr) { sys.puts(stdout) }
 
