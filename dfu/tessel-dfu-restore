@@ -14,8 +14,7 @@ var dfu_util_tm = require('dfu-util-tm')
   , temp = require('temp');
 
 var slow_mode = false
-  , vendor = "1fc9:000c"
-  , serial = "ABCD";
+  , vendor = "1fc9:000c";
 
 function dfu_util (args) {
   if (slow_mode) {
@@ -259,7 +258,11 @@ function checkForDevices (next) {
       process.exit(1);
     }
 
-    serial = data.substr(data.indexOf(vendor)).match(/serial="([^"]+)"/)[1];
+    if ((data.split(vendor) || []).length > 2) {
+      console.error('Multiple tessels connected. Disconnect one and try again.');
+      process.exit(1);
+    }
+
     next();
   }).stdout.on('data', function (data) {
     bufs.push(data);
@@ -321,7 +324,7 @@ BinGenerator.prototype.makeScript = function (size){
 
       console.log('>>> Initial bootloader write...');
       dfu_util([
-        '-S', serial,
+        '-d', vendor,
         '-D', __dirname + '/bin/iram_dfu_util_any.bin.hdr'
       ], {
         stdio: 'inherit'
@@ -331,7 +334,7 @@ BinGenerator.prototype.makeScript = function (size){
           
           console.log('\n>>> Erasing...')
           dfu_util([
-            '-S', serial,
+            '-d', vendor,
             '-t', '80', '-U', path.join(dirPath, 'iram.bin.res'), '-w', mssleep,
             '-t', '16', '-D', __dirname + '/bin/cmd1.bin', '-w', mssleep,
             '-t', '80', '-U', path.join(dirPath, 'cmd1.bin.res'), '-w', mssleep,
@@ -347,7 +350,7 @@ BinGenerator.prototype.makeScript = function (size){
 
               console.log('\n>>> Dumping erased binary...');
               dfu_util([
-                '-S', serial,
+                '-d', vendor,
                 '-t', '80', '-U', eraseBin + '.bin.res'
               ], {
                 stdio: 'inherit'
@@ -355,7 +358,7 @@ BinGenerator.prototype.makeScript = function (size){
 
                 function uploadProcess (splits) {
                   var uploadCmd = [
-                    '-S', serial
+                    '-d', vendor
                   ]; 
                   splits.forEach(function(split, index) {
                     uploadCmd = uploadCmd.concat([
