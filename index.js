@@ -6,6 +6,7 @@ var fs = require('fs')
   , colony = require('colony')
   , net = require('net')
   , spawn = require('child_process').spawn
+  , exec = require('child_process').exec
   , zlib = require('zlib');
 
 var choices = require('choices')
@@ -22,7 +23,9 @@ var tesselClient = require('tessel-client');
 // Automatically track and cleanup files at exit
 temp.track();
 
-var argv = optimist.argv;
+var argv = optimist
+  .boolean('v')
+  .argv;
 
 // process.on('uncaughtException', function (err) {
 //   console.error(err.stack);
@@ -86,7 +89,17 @@ if (process.argv.length < 3) {
   process.exit(1);
 }
 
-if (process.argv[2] == 'dfu-restore') {
+if (argv.v || process.argv[2] == 'version') {
+  exec("git log --pretty=format:'%h' -n 1", {
+    cwd: __dirname,
+  }, function (err, stdout, stderr) {
+    if (err) {
+      console.log(require('./package.json').version.replace(/^v?/, 'v'))
+    } else {
+      console.log(stdout);
+    }
+  })
+} else if (process.argv[2] == 'dfu-restore') {
   require('child_process').spawn(__dirname + '/dfu/tessel-dfu-restore', process.argv.slice(3), {
     stdio: 'inherit'
   }).on('close', function (code) {
