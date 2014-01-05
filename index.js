@@ -32,6 +32,7 @@ process.on('uncaughtException', function (err) {
 function usage () {
   console.error("Tessel CLI\nUsage:\n" +
     "   tessel <filename>\n" +
+    "   tessel list\n" +
     "   tessel logs\n" +
     "   tessel push <filename> [-r <ip[:port>]]\n" +
     // "       tessel pushall <filename>\n"+
@@ -93,6 +94,12 @@ if (process.argv[2] == 'dfu-restore') {
       process.exit(code);
     })
   });
+} else if (process.argv[2] == 'list') {
+  tesselClient.detectModems(function (err, modems) {
+    modems.map(function (modem) {
+      console.log(modem);
+    });
+  })
 } else {
   header.init();
 
