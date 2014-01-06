@@ -31,13 +31,15 @@ var argv = optimist
 //   console.error(err.stack);
 // })
 
-
 function usage () {
   console.error("Tessel CLI\nUsage:\n" +
     "   tessel <filename>\n" +
     "   tessel list\n" +
     "   tessel logs\n" +
-    "   tessel push <filename> [-r <ip[:port>]]\n" +
+    "   tessel push <filename> [-r <ip[:port>]] [-s] [-a [options]]\n" +
+    "          -r wireless pushing of code (inactive at the moment)\n" + 
+    "          -s saves the file that is getting passed to Tessel as builtin.tar.gz\n" + 
+    "          -a passes arguments to tessel scripts\n" + 
     // "       tessel pushall <filename>\n"+
     "   tessel wifi <ssid> <pass> <security (wep/wap/wap2, wap2 by default)>\n"+
     "   tessel wifi <ssid>\n" +
@@ -77,10 +79,11 @@ var header = {
   }
 }
 
-function pushCode (file, args, client) {
+function pushCode (file, args, client, save) {
+  console.log("saving", save);
   tesselClient.bundleCode(file, args, function (err, pushdir, tarstream) {
     console.error(('Deploying directory ' + pushdir).grey);
-    client.deployBundle(tarstream);
+    client.deployBundle(tarstream, save);
   });
 }
 
@@ -158,13 +161,27 @@ function onconnect (modem, port, host) {
     }
 
     var argv = [];
-    if (process.argv[4] == '-a' || process.argv[4] == '--args') {
-      argv = process.argv.slice(5);
+    var save = false;
+    // for all the process args
+    for (var i = 4; i<process.argv.length; i++){
+      switch(process.argv[i])
+      {
+      case '-a' || '--args':
+        // TODO: only supports 1 argument right now
+        argv = process.argv.slice(i+1);
+        break;
+      case '-s' || '--save':
+        save = true;
+        break;
+      default:
+        break;
+      }
     }
 
     var updating = 0, scriptrunning = false;
     client.on('command', function (command, data) {
       if (command == 'u') {
+
         console.error(data.grey);
       } else if (command == 's' && scriptrunning) {
         console.log(data);
@@ -182,7 +199,8 @@ function onconnect (modem, port, host) {
         updating = true;
       }
     });
-    pushCode(process.argv[3], ['tessel', process.argv[3]].concat(argv), client);
+
+    pushCode(process.argv[3], ['tessel', process.argv[3]].concat(argv), client, save);
 
   } else if (process.argv[2] == 'stop') {
     // haaaack
