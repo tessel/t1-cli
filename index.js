@@ -36,9 +36,10 @@ function usage () {
     "   tessel <filename>\n" +
     "   tessel list\n" +
     "   tessel logs\n" +
-    "   tessel push <filename> [-r <ip[:port>]] [-s] [-a [options]]\n" +
+    "   tessel push <filename> [-r <ip[:port>]] [-s] [-b <file>] [-a [options]]\n" +
     "          -r wireless pushing of code (inactive at the moment)\n" + 
     "          -s saves the file that is getting passed to Tessel as builtin.tar.gz\n" + 
+    "          -b pushes a binary\n" + 
     "          -a passes arguments to tessel scripts\n" + 
     // "       tessel pushall <filename>\n"+
     "   tessel wifi <ssid> <pass> <security (wep/wap/wap2, wap2 by default)>\n"+
@@ -80,11 +81,15 @@ var header = {
 }
 
 function pushCode (file, args, client, save) {
-  console.log("saving", save);
   tesselClient.bundleCode(file, args, function (err, pushdir, tarstream) {
     console.error(('Deploying directory ' + pushdir).grey);
     client.deployBundle(tarstream, save);
   });
+}
+
+function pushBinary (file, client) {
+  console.error(('Deploying binary ' + file).grey);
+  client.deployBinary(file);
 }
 
 if (process.argv.length < 3) {
@@ -162,8 +167,9 @@ function onconnect (modem, port, host) {
 
     var argv = [];
     var save = false;
+    var binary = false;
     // for all the process args
-    for (var i = 4; i<process.argv.length; i++){
+    for (var i = 2; i<process.argv.length; i++){
       switch(process.argv[i])
       {
       case '-a' || '--args':
@@ -172,6 +178,11 @@ function onconnect (modem, port, host) {
         break;
       case '-s' || '--save':
         save = true;
+        break;
+      case '-b' || '--binary':
+        console.log("binary", i , process.argv.slice(i+1));
+        pushBinary(process.argv.slice(i+1)[0], client);
+        binary = true;
         break;
       default:
         break;
@@ -200,8 +211,9 @@ function onconnect (modem, port, host) {
       }
     });
 
-    pushCode(process.argv[3], ['tessel', process.argv[3]].concat(argv), client, save);
-
+    if (!binary) {
+      pushCode(process.argv[3], ['tessel', process.argv[3]].concat(argv), client, save);
+    }
   } else if (process.argv[2] == 'stop') {
     // haaaack
     pushCode(path.join(__dirname,'scripts','stop.js'), [], client);
