@@ -15,7 +15,8 @@ var choices = require('choices')
   , optimist = require('optimist')
   , jssc = require('jssc')
   , dgram = require('dgram')
-  , temp = require('temp');
+  , temp = require('temp')
+  , read = require('read');
 
 var tesselClient = require('tessel-client');
 
@@ -150,11 +151,17 @@ function onconnect (modem, port, host) {
     header.connected(modem.replace(/\s+$/, ''));
   })
 
-  if (process.argv[2] == 'push') {
+  if (process.argv[2] == 'push' || process.argv[2] == 'cli') {
     // Push new code to the device.
-    if (process.argv.length < 4) {
-      usage();
-      process.exit(1);
+    if (process.argv[2] == 'push') {
+      if (process.argv.length < 4) {
+        usage();
+        process.exit(1);
+      } 
+
+      var pushpath = process.argv[3];
+    } else if (process.argv[2] == 'cli') {
+      var pushpath = __dirname + '/repl';
     }
 
     var argv = [];
@@ -170,6 +177,30 @@ function onconnect (modem, port, host) {
         console.log(data);
       } else if (command == 'S' && data == '1') {
         scriptrunning = true;
+
+        if (process.argv[2] == 'cli') {
+          function cool () {
+            read({prompt: '>>'}, function (err, data) {
+              try {
+                if (err) {
+                  throw err;
+                }
+                var script
+                  // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
+                  + 'local function _run ()\n' + colony.colonize(data, false) + '\nend\nsetfenv(_run, colony.global);\n_run()';
+                client.command('M', new Buffer(JSON.stringify(script)));
+                client.once('message', function (ret) {
+                  console.log(ret.ret);
+                  setImmediate(cool);
+                })
+              } catch (e) {
+                setImmediate(cool);
+              }
+            });
+          }
+          client.once('message', cool);
+        }
+
       } else if (command == 'S' && scriptrunning && parseInt(data) <= 0) {
         scriptrunning = false;
         // process.exit(parseInt(data))
@@ -182,7 +213,7 @@ function onconnect (modem, port, host) {
         updating = true;
       }
     });
-    pushCode(process.argv[3], ['tessel', process.argv[3]].concat(argv), client);
+    pushCode(pushpath, ['tessel', process.argv[3]].concat(argv), client);
 
   } else if (process.argv[2] == 'stop') {
     // haaaack
