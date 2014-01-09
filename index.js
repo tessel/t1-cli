@@ -151,7 +151,7 @@ function onconnect (modem, port, host) {
     header.connected(modem.replace(/\s+$/, ''));
   })
 
-  if (process.argv[2] == 'push' || process.argv[2] == 'cli') {
+  if (process.argv[2] == 'push' || process.argv[2] == 'repl') {
     // Push new code to the device.
     if (process.argv[2] == 'push') {
       if (process.argv.length < 4) {
@@ -160,7 +160,7 @@ function onconnect (modem, port, host) {
       } 
 
       var pushpath = process.argv[3];
-    } else if (process.argv[2] == 'cli') {
+    } else if (process.argv[2] == 'repl') {
       var pushpath = __dirname + '/repl';
     }
 
@@ -178,7 +178,7 @@ function onconnect (modem, port, host) {
       } else if (command == 'S' && data == '1') {
         scriptrunning = true;
 
-        if (process.argv[2] == 'cli') {
+        if (process.argv[2] == 'repl') {
           function cool () {
             read({prompt: '>>'}, function (err, data) {
               try {
@@ -187,13 +187,14 @@ function onconnect (modem, port, host) {
                 }
                 var script
                   // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
-                  + 'local function _run ()\n' + colony.colonize(data, false) + '\nend\nsetfenv(_run, colony.global);\n_run()';
+                  = 'local function _run ()\n' + colony.colonize(data, false) + '\nend\nsetfenv(_run, colony.global);\n_run()';
                 client.command('M', new Buffer(JSON.stringify(script)));
                 client.once('message', function (ret) {
                   console.log(ret.ret);
                   setImmediate(cool);
                 })
               } catch (e) {
+                console.error(e.stack);
                 setImmediate(cool);
               }
             });
