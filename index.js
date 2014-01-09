@@ -16,7 +16,8 @@ var choices = require('choices')
   , jssc = require('jssc')
   , dgram = require('dgram')
   , temp = require('temp')
-  , read = require('read');
+  , read = require('read')
+  , keypress = require('keypress');
 
 var tesselClient = require('tessel-client');
 
@@ -180,6 +181,16 @@ function onconnect (modem, port, host) {
 
         if (process.argv[2] == 'repl') {
           function cool () {
+              
+            // make `process.stdin` begin emitting "keypress" events
+            keypress(process.stdin);
+            // listen for the ctrl+c event, which seems not to be caught in read loop
+            process.stdin.on('keypress', function (ch, key) {
+              if (key && key.ctrl && key.name == 'c') {
+                process.exit(0);
+              }
+            });
+
             read({prompt: '>>'}, function (err, data) {
               try {
                 if (err) {
