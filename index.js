@@ -98,15 +98,18 @@ if (process.argv.length < 3) {
 }
 
 if (argv.v || process.argv[2] == 'version') {
-  exec("git log --pretty=format:'%h' -n 1", {
+  // open up the version number
+  // should have gotten it from the install script
+  // eventually we should change this to package.json when its more stable
+  exec("more VERSION", {
     cwd: __dirname,
-  }, function (err, stdout, stderr) {
+  }, function (err, stdout, stderr){
     if (err) {
       console.log(require('./package.json').version.replace(/^v?/, 'v'))
     } else {
       console.log(stdout);
     }
-  })
+  });
 } else if (process.argv[2] == 'dfu-restore') {
   require('child_process').spawn(__dirname + '/dfu/tessel-dfu-restore', process.argv.slice(3), {
     stdio: 'inherit'
