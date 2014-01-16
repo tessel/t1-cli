@@ -13,7 +13,6 @@ var choices = require('choices')
   , colors = require('colors')
   , async = require('async')
   , optimist = require('optimist')
-  , jssc = require('jssc')
   , dgram = require('dgram')
   , temp = require('temp');
 
