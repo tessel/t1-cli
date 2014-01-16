@@ -48,7 +48,7 @@ function usage () {
     "          see current wifi status\n" + 
     "   tessel stop\n" +
     "   tessel check <file>\n" + 
-    "          dumps the tessel binary code\n");
+    "          dumps the tessel binary code\n" + 
     "   tessel dfu-restore <firmware.bin>\n" +
     "          upload new firmware when in DFU mode\n");
 }
