@@ -36,7 +36,7 @@ function usage () {
     "   tessel <filename>\n" +
     "   tessel list\n" +
     "   tessel logs\n" +
-    "   tessel push <filename> [-r <ip[:port>]] [-s] [-b <file>] [-a [options]]\n" +
+    "   tessel push <filename> [-r <ip[:port>]] [-s] [-b <file>] [-c] [-a [options]]\n" +
     "          -r wireless pushing of code (inactive at the moment)\n" + 
     "          -s saves the file that is getting passed to Tessel as builtin.tar.gz\n" + 
     "          -b pushes a binary\n" + 
@@ -48,6 +48,8 @@ function usage () {
     "   tessel wifi\n" +
     "          see current wifi status\n" + 
     "   tessel stop\n" +
+    "   tessel check <file>\n" + 
+    "          dumps the tessel binary code\n");
     "   tessel dfu-restore <firmware.bin>\n" +
     "          upload new firmware when in DFU mode\n");
 }
@@ -80,10 +82,11 @@ var header = {
   }
 }
 
-function pushCode (file, args, client, save) {
+function pushCode (file, args, client, options) {
   tesselClient.bundleCode(file, args, function (err, pushdir, tarstream) {
     console.error(('Deploying directory ' + pushdir).grey);
-    client.deployBundle(tarstream, save);
+
+    client.deployBundle(tarstream, options.save);
   });
 }
 
@@ -92,15 +95,48 @@ function pushBinary (file, client) {
   client.deployBinary(file);
 }
 
+function dumpBinary(file){
+
+  var gzBuff = fs.readFileSync(file);
+  var newGzipBuff = new Buffer(gzBuff.length - 4);
+  gzBuff.copy(newGzipBuff, 0, 4, gzBuff.length);
+
+  zlib.inflate(newGzipBuff, function(err, inflated) {
+    console.log("dumping binary");
+
+    if (!err) {
+      // untar it
+      fs.mkdir('dump', function(error) {
+        if (!err) {
+          fs.writeFileSync("dump/"+file+"-tarred", inflated);
+          exec("tar xvf "+file+"-tarred", {
+            cwd: process.cwd()+"/dump"
+          }, function (err, stdout, stderr){
+            if (err) {
+              console.log("error couldn't untar", file, stderr);
+            } else {
+              console.log("dumped ", file);
+            }
+            // remove tarball
+            fs.unlinkSync("dump/"+file+"-tarred");
+            process.exit(1);
+          });
+        } else {
+          console.log("can't make dump dir", error);
+        }
+      });
+    } else {
+      console.error("can't inflate", file, err);
+    }
+  });
+}
+
 if (process.argv.length < 3) {
   usage();
   process.exit(1);
 }
 
 if (argv.v || process.argv[2] == 'version') {
-  // open up the version number
-  // should have gotten it from the install script
-  // eventually we should change this to package.json when its more stable
   exec("more VERSION", {
     cwd: __dirname,
   }, function (err, stdout, stderr){
@@ -124,6 +160,8 @@ if (argv.v || process.argv[2] == 'version') {
       console.log(modem);
     });
   })
+} else if (process.argv[2] == 'check') {
+  dumpBinary(process.argv[3]);
 } else {
   header.init();
 
@@ -169,8 +207,11 @@ function onconnect (modem, port, host) {
     }
 
     var argv = [];
-    var save = false;
-    var binary = false;
+    var options = {
+      save: false,
+      binary: false
+    };
+
     // for all the process args
     for (var i = 2; i<process.argv.length; i++){
       switch(process.argv[i])
@@ -180,12 +221,12 @@ function onconnect (modem, port, host) {
         argv = process.argv.slice(i+1);
         break;
       case '-s' || '--save':
-        save = true;
+        options.save = true;
         break;
       case '-b' || '--binary':
-        console.log("binary", i , process.argv.slice(i+1));
+        console.log("uploading binary", process.argv.slice(i+1));
         pushBinary(process.argv.slice(i+1)[0], client);
-        binary = true;
+        options.binary = true;
         break;
       default:
         break;
@@ -214,8 +255,8 @@ function onconnect (modem, port, host) {
       }
     });
 
-    if (!binary) {
-      pushCode(process.argv[3], ['tessel', process.argv[3]].concat(argv), client, save);
+    if (!options.binary) {
+      pushCode(process.argv[3], ['tessel', process.argv[3]].concat(argv), client, options);
     }
   } else if (process.argv[2] == 'stop') {
     // haaaack
