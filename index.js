@@ -82,8 +82,9 @@ var header = {
 }
 
 function pushCode (file, args, client, options) {
+  console.error(('Bundling directory ' + pushdir).grey);
   tesselClient.bundleCode(file, args, function (err, pushdir, tarstream) {
-    console.error(('Deploying directory ' + pushdir).grey);
+    console.error(('Deploying...').grey);
 
     client.deployBundle(tarstream, options.save);
   });
