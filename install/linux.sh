@@ -56,6 +56,9 @@ touch `npm -g prefix`/lib/node_modules && npm install -g || sudo npm install -g
 
 # Install rules on Linux
 if [ "$(uname)" != "Darwin" ]; then
-  echo 'ATTRS{idVendor}=="1fc9", ATTRS{idProduct}=="2002", ENV{ID_MM_DEVICE_IGNORE}="1", MODE="0666"' | sudo tee -a /etc/udev/rules.d/10-tessel.rules
+  sudo tee /etc/udev/rules.d/10-tessel.rules > /dev/null << EOF
+ATTRS{idVendor}=="1fc9", ATTRS{idProduct}=="2002", ENV{ID_MM_DEVICE_IGNORE}="1", MODE="0666"
+ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="6097", ENV{ID_MM_DEVICE_IGNORE}="1", MODE="0666"
+EOF
   sudo udevadm control --reload-rules
 fi
