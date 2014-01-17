@@ -248,8 +248,8 @@ function onconnect (modem, port, host) {
         scriptrunning = true;
       } else if (command == 'S' && scriptrunning && parseInt(data) <= 0) {
         scriptrunning = false;
-        // process.exit(parseInt(data))
         client.end();
+        process.exit(-parseInt(data));
       } else if (command == 'U') {
         if (updating) {
           // Interrupted by other deploy
