@@ -82,11 +82,15 @@ var header = {
 }
 
 function pushCode (file, args, client, options) {
-  console.error(('Bundling directory ' + pushdir).grey);
-  tesselClient.bundleCode(file, args, function (err, pushdir, tarstream) {
-    console.error(('Deploying...').grey);
+  tesselClient.detectDirectory(file, function (err, pushdir) {
+    setTimeout(function () {
+      console.error(('Bundling directory ' + pushdir).grey);
+    }, 100);
+    tesselClient.bundleCode(pushdir, file, args, function (err, pushdir, tarstream) {
+      console.error(('Deploying...').grey);
 
-    client.deployBundle(tarstream, options.save);
+      client.deployBundle(tarstream, options.save);
+    });
   });
 }
 
