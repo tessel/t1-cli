@@ -14,11 +14,8 @@ var DFU_ABORT     = 6; // OUT        Zero        Interface   Zero        None
 var TYPE_IN = 0xA1;
 var TYPE_OUT = 0x21;
 
-function DFU(vid, pid) {
-    this.device = usb.findByIds(vid, pid);
-    if (!this.device) {
-        throw new Error("Device not found (or not in DFU mode)");
-    }
+function DFU(device) {
+    this.device = device;
     this.device.open();
     this.device.timeout = 10 * 1000;
 
