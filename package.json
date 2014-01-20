@@ -8,7 +8,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "tessel": "./index.js"
+    "tessel": "./index.js",
+    "tessel-node": "./tessel-node.js"
   },
   "repository": "",
   "author": "Tim Cameron Ryan <tim@technical.io>",
