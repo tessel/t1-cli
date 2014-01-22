@@ -28,7 +28,8 @@
     "temp": "~0.6.0",
     "fstream": "~0.1.25",
     "osenv": "0.0.3",
-    "keypress": "~0.2.1"
+    "keypress": "~0.2.1",
+    "read": "~1.0.5"
   },
   "optionalDependencies": {
     "usb": "~0.3.0"
