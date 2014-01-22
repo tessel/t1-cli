@@ -170,13 +170,7 @@ if (argv.v || process.argv[2] == 'version') {
     }
   });
 } else if (process.argv[2] == 'dfu-restore') {
-  require('child_process').spawn(__dirname + '/dfu/tessel-dfu-restore', process.argv.slice(3), {
-    stdio: 'inherit'
-  }).on('close', function (code) {
-    process.on('exit', function () {
-      process.exit(code);
-    })
-  });
+  require('./dfu/tessel-dfu').write(process.argv[3])
 } else if (process.argv[2] == 'list') {
   tesselClient.detectModems(function (err, modems) {
     modems.map(function (modem) {

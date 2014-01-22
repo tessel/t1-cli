@@ -35,7 +35,68 @@ function guessDeviceState(device) {
     }
 }
 
-exports.flashTessel = function(fw_image_filename) {
+/// Read flash to `filename`
+exports.read = function(filename) {
+    exports.enterStage2(function(device) {
+        var dfu = new DFU(device);
+        console.log("Reading flash...")
+        dfu.upload(function(error, data){
+            if (error) {
+                return console.log('read error', error);
+            }
+            fs.writeFileSync(filename, data);
+            console.log("Wrote ", filename)
+        });
+    });
+}
+
+/// Write `filename` to flash
+exports.write = function(filename) {
+    exports.enterStage2(function(device) {
+        var dfu = new DFU(device);
+        var image = fs.readFileSync(filename);
+
+        dfu.dnload(image, function(error) {
+            if (error) {
+                return console.log(error);
+            }
+            process.stdout.write("\nDone! \n");
+        }, showStatus);
+    });
+}
+
+// This file is compiled in the boot/ directory of the Tessel firmware source
+var stage2_image = __dirname + '/stage2.bin';
+
+/// Use image_filename to boot the device via the ROM bootloader
+exports.romBoot = function(device, image_filename, callback) {
+    var dfu = new DFU(device);
+
+    var image = fs.readFileSync(image_filename);
+
+    var header = new Buffer(16);
+    header.fill(0)
+    header.writeUInt8(0xda, 0);
+    header.writeUInt8(0xff, 1);
+    header.writeUInt16LE(Math.floor(image.length / 512)+1, 2);
+    header.writeUInt32LE(0xFFFFFFFF, 12)
+
+    dfu.dnload(Buffer.concat([header, image]), callback);
+}
+
+exports.runRam = function (image_filename) {
+    var device = findDevice();
+    if (guessDeviceState(device) !== 'rom') {
+        console.log("Not in ROM bootloader");
+        process.exit(1);
+    }
+    exports.romBoot(device, image_filename, function () {
+        console.log("Done");
+    });
+}
+
+/// Boot into stage2 and call `callback` with the resulting device
+exports.enterStage2 = function(callback) {
     var device = findDevice();
 
     if (!device) {
@@ -50,58 +111,20 @@ exports.flashTessel = function(fw_image_filename) {
         console.error("Connect the pins above the TESSEL logo together and press the reset button");
         process.exit(1);
     } else if (state === 'rom') {
-        bootload();
-    } else if (state === 'dfu') {
-        stage2();
-    }
-
-    function bootload() {
-        var dfu = new DFU(device);
-
-        // This file is compiled in the boot/ directory of the Tessel firmware source
-        var image = fs.readFileSync(__dirname + '/stage2.bin');
-
-        var header = new Buffer(16);
-        header.fill(0)
-        header.writeUInt8(0xda, 0);
-        header.writeUInt8(0xff, 1);
-        header.writeUInt16LE(Math.floor(image.length / 512)+1, 2);
-        header.writeUInt32LE(0xFFFFFFFF, 12)
-
         process.stdout.write("Loading flash bootloader...\n");
-        dfu.dnload(Buffer.concat([header, image]), function(error) {
+        exports.romBoot(device, stage2_image, function() {
             process.stdout.write("Waiting for bootloader....\n");
-            setTimeout(function() {
+            setTimeout(function(error) {
                 device = findDevice();
                 state = guessDeviceState(device);
                 if (state !== 'dfu') {
                     console.error("Failed to load bootloader: found state "+ state);
                     process.exit(2);
                 }
-                stage2();
+                callback(device);
             }, 1000);
         });
-    }
-
-    function stage2_read() {
-        var dfu = new DFU(device);
-        dfu.upload(function(error, data){
-            if (error) {
-                return console.log('read error', error);
-            }
-            fs.writeFileSync('out.bin', data);
-        });
-    }
-
-    function stage2() {
-        var dfu = new DFU(device);
-        var image = fs.readFileSync(fw_image_filename);
-
-        dfu.dnload(image, function(error) {
-            if (error) {
-                return console.log(error);
-            }
-            process.stdout.write("\nDone! \n");
-        }, showStatus);
+    } else if (state === 'dfu') {
+        callback(device);
     }
 }

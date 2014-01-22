@@ -79,6 +79,7 @@ DFU.prototype.dnload = function(data, callback, statuscb) {
     var pos = 0;
     var seq = 0;
     function step() {
+        statuscb && statuscb(pos, data.length);
         self.dnloadChunk(seq, data.slice(pos, pos+self.transferSize), function(error) {
             if (error) {
                 console.log('chunk error', error)
@@ -94,10 +95,10 @@ DFU.prototype.dnload = function(data, callback, statuscb) {
                 seq += 1;
                 pos += self.transferSize;
 
-                if (pos <= data.length) {
-                    statuscb && statuscb(pos, data.length);
+                if (pos < data.length) {
                     step();
                 } else {
+                    statuscb && statuscb(data.length, data.length);
                     self.dnloadChunk(seq, new Buffer(0),  function(error) {
                         if (error) return callback(error);
 
