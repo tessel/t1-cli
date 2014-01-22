@@ -22,78 +22,37 @@ var tesselClient = require('tessel-client');
 temp.track();
 
 var argv = optimist
-  .boolean('v')
+  .boolean('q').alias('quiet', 'q')
   .argv;
 
 // process.on('uncaughtException', function (err) {
 //   console.error(err.stack);
 // })
 
+var verbose = !argv.q;
+
+// Push new code to the device.
+if (argv._.length < 1) {
+  usage();
+  process.exit(1);
+}
+
 function usage () {
-  console.error("Tessel CLI\nUsage:\n" +
-    "   tessel <filename>\n" +
-    "   tessel list\n" +
-    "   tessel logs\n" +
-    "   tessel push <filename> [-r <ip[:port>]] [-s] [-b <file>] [-c] [-a [options]]\n" +
-    "          -r wireless pushing of code (inactive at the moment)\n" + 
-    "          -s saves the file that is getting passed to Tessel as builtin.tar.gz\n" + 
-    "          -b pushes a binary\n" + 
-    "          -a passes arguments to tessel scripts\n" + 
-    // "       tessel pushall <filename>\n"+
-    "   tessel wifi <ssid> <pass> <security (wep/wap/wap2, wap2 by default)>\n"+
-    "   tessel wifi <ssid>\n" +
-    "          connects to a wifi network without a password\n" + 
-    "   tessel wifi\n" +
-    "          see current wifi status\n" + 
-    "   tessel stop\n" +
-    "   tessel check <file>\n" + 
-    "          dumps the tessel binary code\n" + 
-    "   tessel dfu-restore <firmware.bin>\n" +
-    "          upload new firmware when in DFU mode\n");
-}
-
-function repeatstr (str, n) {
-  return Array(n + 1).join(str);
-}
-
-var header = {
-  init: function () {
-    header._msg('TESSEL? '.grey);
-  },
-  _unwrite: function (n) {
-    process.stderr.write(repeatstr('\b', n));
-    header.len = 0;
-  },
-  _msg: function (str) {
-    header._unwrite(header.len || 0);
-    header.len = str.stripColors.length;
-    process.stderr.write(str);
-  },
-  nofound: function () {
-    header._msg('TESSEL? No Tessel found, waiting...'.grey);
-  },
-  connecting: function (modem) {
-    header._msg('TESSEL? Connecting to '.grey + modem.grey + '...');
-  },
-  connected: function (modem) {
-    header._msg('TESSEL!'.bold.cyan + ' Connected to '.cyan + modem.green + '.          \n'.cyan);
-  }
+  console.error("Usage: tessel [-q] script.js")
 }
 
 function pushCode (file, args, client, options) {
   tesselClient.detectDirectory(file, function (err, pushdir) {
     setTimeout(function () {
-      console.error(('Bundling directory ' + pushdir).grey);
+      verbose && console.error(('Bundling directory ' + pushdir).grey);
     }, 100);
     tesselClient.bundleCode(pushdir, file, args, function (err, pushdir, tarstream) {
-      console.error(('Deploying...').grey);
+      verbose && console.error(('Deploying...').grey);
 
       client.deployBundle(tarstream, options.save);
     });
   });
 }
-
-header.init();
 
 if (argv.r) {
   setImmediate(function () {
@@ -106,12 +65,10 @@ if (argv.r) {
 } else {
   var firstNoDevicesFound = false;
   tesselClient.selectModem(function notfound () {
-    if (!firstNoDevicesFound) {
-      header.nofound();
-      firstNoDevicesFound = true;
-    }
+    console.error('Error: No tessel devices detected.');
+    process.exit(1);
   }, function found (err, modem) {
-    header.connecting(modem);
+    verbose && console.error(('Connecting to ' + modem).grey);
     tesselClient.connectServer(modem, function () {
       onconnect(modem, 6540, 'localhost');
     });
@@ -124,15 +81,7 @@ function onconnect (modem, port, host) {
   client.on('error', function (err) {
     console.error('Error: Cannot connect to Tessel locally.', err);
   })
-  header.connected(modem.replace(/\s+$/, ''));
 
-  // Push new code to the device.
-  if (process.argv.length < 3) {
-    usage();
-    process.exit(1);
-  }
-
-  var argv = process.argv.slice(3);
   var options = {
     save: false,
     binary: false
@@ -141,8 +90,7 @@ function onconnect (modem, port, host) {
   var updating = 0, scriptrunning = false;
   client.on('command', function (command, data) {
     if (command == 'u') {
-
-      console.error(data.grey);
+      verbose && console.error(data.grey);
     } else if (command == 's' && scriptrunning) {
       console.log(data);
     } else if (command == 'S' && data == '1') {
@@ -160,7 +108,5 @@ function onconnect (modem, port, host) {
     }
   });
 
-  if (!options.binary) {
-    pushCode(process.argv[2], ['tessel', process.argv[2]].concat(argv), client, options);
-  }
+  pushCode(argv._[0], ['tessel', argv._[0]].concat(argv._.slice(1)), client, options);
 }
