@@ -1,0 +1,25 @@
+#!/usr/bin/env node
+
+function usage () {
+  console.error("Usage: tessel-dfu-tool <read|write|run_bl> <file>");
+  process.exit(1);
+}
+
+var tessel_dfu = require('./tessel-dfu');
+
+var op = process.argv[2];
+var file = process.argv[3];
+
+if (!file) {
+  usage();
+}
+
+if (op === "run_bl") {
+	tessel_dfu.runRam(file);
+} else if (op === "read") {
+	tessel_dfu.read(file);
+} else if (op === "write") {
+	tessel_dfu.write(file);
+} else {
+	usage();
+}
