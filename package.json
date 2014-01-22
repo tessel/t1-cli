@@ -27,9 +27,10 @@
     "tar": "~0.1.18",
     "temp": "~0.6.0",
     "fstream": "~0.1.25",
-    "osenv": "0.0.3"
+    "osenv": "0.0.3",
+    "keypress": "~0.2.1"
   },
   "optionalDependencies": {
     "usb": "~0.3.0"
-  }   
+  }
 }
