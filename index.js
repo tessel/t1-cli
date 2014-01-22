@@ -96,7 +96,7 @@ function pushCode (file, args, client, options) {
     setTimeout(function () {
       console.error(('Bundling directory ' + pushdir).grey);
     }, 100);
-    tesselClient.bundleCode(pushdir, relpath, args, function (err, pushdir, tarstream) {
+    tesselClient.bundleCode(pushdir, relpath, args, function (err, tarstream) {
       console.error(('Deploying...').grey);
 
       client.deployBundle(tarstream, options.save);
