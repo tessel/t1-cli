@@ -14,7 +14,9 @@ var choices = require('choices')
   , async = require('async')
   , optimist = require('optimist')
   , dgram = require('dgram')
-  , temp = require('temp');
+  , temp = require('temp')
+  , read = require('read')
+  , keypress = require('keypress');
 
 var tesselClient = require('tessel-client');
 
@@ -82,24 +84,31 @@ var header = {
   }
 }
 
+function zipCode (dir, client) {
+  tesselClient.tarCode(dir, dir, function (err, pushdir, tarstream){
+  // deploy that bundle
+  console.error(('Deploying...').grey);
+  client.deployBundle(tarstream, false);
+}
+
 function pushCode (file, args, client, options) {
-  tesselClient.detectDirectory(file, function (err, pushdir) {
+  tesselClient.detectDirectory(file, function (err, pushdir, relpath) {
+    if (err) {
+      setTimeout(function () {
+        console.error('ERR'.red, err.message);
+        process.exit(1);
+      }, 10)
+      return;
+    }
+
     setTimeout(function () {
       console.error(('Bundling directory ' + pushdir).grey);
     }, 100);
-    tesselClient.bundleCode(pushdir, file, args, function (err, pushdir, tarstream) {
+    tesselClient.bundleCode(pushdir, relpath, args, function (err, pushdir, tarstream) {
       console.error(('Deploying...').grey);
 
       client.deployBundle(tarstream, options.save);
     });
-  });
-}
-
-function zipCode (dir, client) {
-  tesselClient.tarCode(dir, dir, function (err, pushdir, tarstream){
-    // deploy that bundle
-    console.error(('Deploying...').grey);
-    client.deployBundle(tarstream, false);
   });
 }
 
@@ -212,11 +221,17 @@ function onconnect (modem, port, host) {
     header.connected(modem.replace(/\s+$/, ''));
   })
 
-  if (process.argv[2] == 'push') {
+  if (process.argv[2] == 'push' || process.argv[2] == 'repl') {
     // Push new code to the device.
-    if (process.argv.length < 4) {
-      usage();
-      process.exit(1);
+    if (process.argv[2] == 'push') {
+      if (process.argv.length < 4) {
+        usage();
+        process.exit(1);
+      } 
+
+      var pushpath = process.argv[3];
+    } else if (process.argv[2] == 'repl') {
+      var pushpath = __dirname + '/repl';
     }
 
     var argv = [];
@@ -252,19 +267,10 @@ function onconnect (modem, port, host) {
       }
     }
 
-    var updating = 0, scriptrunning = false;
+    var updating = false;
     client.on('command', function (command, data) {
       if (command == 'u') {
-
-        console.error(data.grey);
-      } else if (command == 's' && scriptrunning) {
-        console.log(data);
-      } else if (command == 'S' && data == '1') {
-        scriptrunning = true;
-      } else if (command == 'S' && scriptrunning && parseInt(data) <= 0) {
-        scriptrunning = false;
-        client.end();
-        process.exit(-parseInt(data));
+        console.error(data.grey)
       } else if (command == 'U') {
         if (updating) {
           // Interrupted by other deploy
@@ -274,8 +280,52 @@ function onconnect (modem, port, host) {
       }
     });
 
+    client.once('script-start', function () {
+      // Pipe output to client
+      client.stdout.pipe(process.stdout);
+
+      // Repl hack
+      if (process.argv[2] == 'repl') {
+        function cool () {
+          // make `process.stdin` begin emitting "keypress" events
+          keypress(process.stdin);
+          // listen for the ctrl+c event, which seems not to be caught in read loop
+          process.stdin.on('keypress', function (ch, key) {
+            if (key && key.ctrl && key.name == 'c') {
+              process.exit(0);
+            }
+          });
+
+          read({prompt: '>>'}, function (err, data) {
+            try {
+              if (err) {
+                throw err;
+              }
+              var script
+                // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
+                = 'local function _run ()\n' + colony.colonize(data, false) + '\nend\nsetfenv(_run, colony.global);\n_run()';
+              client.command('M', new Buffer(JSON.stringify(script)));
+              client.once('message', function (ret) {
+                console.log(ret.ret);
+                setImmediate(cool);
+              })
+            } catch (e) {
+              console.error(e.stack);
+              setImmediate(cool);
+            }
+          });
+        }
+        client.once('message', cool);
+      }
+
+      client.once('script-stop', function (code) {
+        client.end();
+        process.exit(code);
+      });
+    });
+
     if (!options.binary && !options.compress) {
-      pushCode(process.argv[3], ['tessel', process.argv[3]].concat(argv), client, options);
+      pushCode(pushpath, ['tessel', process.argv[3]].concat(argv), client, options);
     }
   } else if (process.argv[2] == 'stop') {
     // haaaack
