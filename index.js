@@ -39,6 +39,7 @@ function usage () {
     "          -r wireless pushing of code (inactive at the moment)\n" + 
     "          -s saves the file that is getting passed to Tessel as builtin.tar.gz\n" + 
     "          -b pushes a binary\n" + 
+    "          -c compresses and pushes a dump dir\n" + 
     "          -a passes arguments to tessel scripts\n" + 
     // "       tessel pushall <filename>\n"+
     "   tessel wifi <ssid> <pass> <security (wep/wap/wap2, wap2 by default)>\n"+
@@ -82,10 +83,23 @@ var header = {
 }
 
 function pushCode (file, args, client, options) {
-  tesselClient.bundleCode(file, args, function (err, pushdir, tarstream) {
-    console.error(('Deploying directory ' + pushdir).grey);
+  tesselClient.detectDirectory(file, function (err, pushdir) {
+    setTimeout(function () {
+      console.error(('Bundling directory ' + pushdir).grey);
+    }, 100);
+    tesselClient.bundleCode(pushdir, file, args, function (err, pushdir, tarstream) {
+      console.error(('Deploying...').grey);
 
-    client.deployBundle(tarstream, options.save);
+      client.deployBundle(tarstream, options.save);
+    });
+  });
+}
+
+function zipCode (dir, client) {
+  tesselClient.tarCode(dir, dir, function (err, pushdir, tarstream){
+    // deploy that bundle
+    console.error(('Deploying...').grey);
+    client.deployBundle(tarstream, false);
   });
 }
 
@@ -208,7 +222,8 @@ function onconnect (modem, port, host) {
     var argv = [];
     var options = {
       save: false,
-      binary: false
+      binary: false,
+      compress: false
     };
 
     // for all the process args
@@ -223,9 +238,14 @@ function onconnect (modem, port, host) {
         options.save = true;
         break;
       case '-b' || '--binary':
-        console.log("uploading binary", process.argv.slice(i+1));
+        console.log("\nuploading binary", process.argv.slice(i+1));
         pushBinary(process.argv.slice(i+1)[0], client);
         options.binary = true;
+        break;
+      case '-c' || '--compress':
+        console.log("\ncompressing and uploading dir", process.argv.slice(i+1)[0]);
+        zipCode(process.argv.slice(i+1)[0], client);
+        options.compress = true;
         break;
       default:
         break;
@@ -243,8 +263,8 @@ function onconnect (modem, port, host) {
         scriptrunning = true;
       } else if (command == 'S' && scriptrunning && parseInt(data) <= 0) {
         scriptrunning = false;
-        // process.exit(parseInt(data))
         client.end();
+        process.exit(-parseInt(data));
       } else if (command == 'U') {
         if (updating) {
           // Interrupted by other deploy
@@ -254,7 +274,7 @@ function onconnect (modem, port, host) {
       }
     });
 
-    if (!options.binary) {
+    if (!options.binary && !options.compress) {
       pushCode(process.argv[3], ['tessel', process.argv[3]].concat(argv), client, options);
     }
   } else if (process.argv[2] == 'stop') {
