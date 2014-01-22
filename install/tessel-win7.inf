@@ -22,9 +22,9 @@ DefaultDestDir=12
 [SourceDisksNames]
 
 [DeviceList.NT] 
-%DESCRIPTION%=LPC18xxUSB, USB\VID_1FC9&PID_2002 
+%DESCRIPTION%=LPC18xxUSB, USB\VID_1D50&PID_6097
 [DeviceList.NTamd64]
-%DESCRIPTION%=LPC18xxUSB, USB\VID_1FC9&PID_2002
+%DESCRIPTION%=LPC18xxUSB, USB\VID_1D50&PID_6097
 
 ;------------------------------------------------------------------------------
 ;  Windows Sections
@@ -56,5 +56,4 @@ LoadOrderGroup = Base
 ;------------------------------------------------------------------------------
 
 [Strings] 
-NXP="NXP - Founded by Philips"
-DESCRIPTION="LPC18xx USB VCom Port" 
+DESCRIPTION="Tessel" 

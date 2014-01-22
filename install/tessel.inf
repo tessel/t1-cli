@@ -22,7 +22,7 @@ DefaultDestDir=12
 [SourceDisksNames]
 
 [DeviceList] 
-%DESCRIPTION%=LPC18xxUSB, USB\VID_1FC9&PID_2002 
+%DESCRIPTION%=LPC18xxUSB, USB\VID_1D50&PID_6097
 
 ;------------------------------------------------------------------------------
 ;  Windows 2000/XP Sections
@@ -61,5 +61,4 @@ ServiceBinary=%12%\usbser.sys
 ;------------------------------------------------------------------------------
 
 [Strings] 
-NXP="NXP - Founded by Philips"
-DESCRIPTION="LPC18xx USB VCom Port" 
+DESCRIPTION="Tessel"
