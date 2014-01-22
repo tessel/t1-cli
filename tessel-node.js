@@ -42,9 +42,9 @@ function usage () {
 }
 
 function pushCode (file, args, client, options) {
-  tesselClient.detectDirectory(file, function (err, pushdir) {
+  tesselClient.detectDirectory(file, function (err, pushdir, relpath) {
     verbose && console.error(('Bundling directory ' + pushdir).grey);
-    tesselClient.bundleCode(pushdir, file, args, function (err, pushdir, tarstream) {
+    tesselClient.bundleCode(pushdir, relpath, args, function (err, pushdir, tarstream) {
       verbose && console.error(('Deploying...').grey);
 
       client.deployBundle(tarstream, options.save);
