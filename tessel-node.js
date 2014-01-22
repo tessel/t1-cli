@@ -23,6 +23,7 @@ temp.track();
 
 var argv = optimist
   .boolean('q').alias('quiet', 'q')
+  .boolean('m')
   .argv;
 
 // process.on('uncaughtException', function (err) {
@@ -84,6 +85,14 @@ function onconnect (modem, port, host) {
     save: false,
     binary: false
   };
+
+  // Forward stdin as messages with "-m" option
+  if (argv.m) {
+    process.stdin.resume();
+    require('readline').createInterface(process.stdin, {}, null).on('line', function (std) {
+      client.send(JSON.stringify(std));
+    })
+  }
 
   var updating = 0, scriptrunning = false;
   client.on('command', function (command, data) {
