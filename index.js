@@ -86,9 +86,10 @@ var header = {
 
 function zipCode (dir, client) {
   tesselClient.tarCode(dir, dir, function (err, pushdir, tarstream){
-  // deploy that bundle
-  console.error(('Deploying...').grey);
-  client.deployBundle(tarstream, false);
+    // deploy that bundle
+    console.error(('Deploying...').grey);
+    client.deployBundle(tarstream, false);
+  });
 }
 
 function pushCode (file, args, client, options) {
