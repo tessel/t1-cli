@@ -113,6 +113,12 @@ function pushCode (file, args, client, options) {
   });
 }
 
+function pushTar (file, client) {
+  console.error(('Deploying tar ' + file).grey);
+  var tarbuff = fs.readFileSync(file);
+  client.deployBundle(tarbuff, false);
+}
+
 function pushBinary (file, client) {
   console.error(('Deploying binary ' + file).grey);
   client.deployBinary(file);
@@ -233,7 +239,8 @@ function onconnect (modem, port, host) {
     var options = {
       save: false,
       binary: false,
-      compress: false
+      compress: false,
+      tar: false
     };
 
     // for all the process args
@@ -256,6 +263,11 @@ function onconnect (modem, port, host) {
         console.log("\ncompressing and uploading dir", process.argv.slice(i+1)[0]);
         zipCode(process.argv.slice(i+1)[0], client);
         options.compress = true;
+        break;
+      case '-t' || '--tar':
+        console.error(("\nuploading tarball", process.argv.slice(i+1)[0]).grey);
+        pushTar(process.argv.slice(i+1)[0], client);
+        options.tar = true;
         break;
       default:
         break;
@@ -319,7 +331,7 @@ function onconnect (modem, port, host) {
       });
     });
 
-    if (!options.binary && !options.compress) {
+    if (!options.binary && !options.compress && !options.tar) {
       pushCode(pushpath, ['tessel', process.argv[3]].concat(argv), client, options);
     }
   } else if (process.argv[2] == 'stop') {
