@@ -114,12 +114,18 @@ exports.enterStage2 = function(callback) {
         process.stdout.write("Loading flash bootloader...\n");
         exports.romBoot(device, stage2_image, function() {
             process.stdout.write("Waiting for bootloader....\n");
-            setTimeout(function(error) {
+
+            var retrycount = 5;
+            setTimeout(function retry (error) {
                 device = findDevice();
                 state = guessDeviceState(device);
                 if (state !== 'dfu') {
-                    console.error("Failed to load bootloader: found state "+ state);
-                    process.exit(2);
+                    if (--retrycount > 0) {
+                        return setTimeout(retry, 1000)
+                    } else {
+                        console.error("Failed to load bootloader: found state", state);
+                        process.exit(2);
+                    }
                 }
                 callback(device);
             }, 1000);
