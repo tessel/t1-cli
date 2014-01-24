@@ -30,7 +30,7 @@
     "osenv": "0.0.3",
     "keypress": "~0.2.1",
     "read": "~1.0.5",
-    "request" : "~2.33.0",
+    "request" : "~2.33.0"
   },
   "optionalDependencies": {
     "usb": "~0.3.0"
