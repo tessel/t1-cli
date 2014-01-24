@@ -26,6 +26,7 @@ temp.track();
 
 var argv = optimist
   .boolean('v')
+  .boolean('no-retry')
   .argv;
 
 // process.on('uncaughtException', function (err) {
@@ -235,7 +236,7 @@ function onconnect (modem, port, host) {
       var pushpath = __dirname + '/repl';
     }
 
-    var argv = [];
+    var args = [];
     var options = {
       save: false,
       binary: false,
@@ -249,7 +250,7 @@ function onconnect (modem, port, host) {
       {
       case '-a' || '--args':
         // TODO: only supports 1 argument right now
-        argv = process.argv.slice(i+1);
+        args = process.argv.slice(i+1);
         break;
       case '-s' || '--save':
         options.save = true;
@@ -332,14 +333,14 @@ function onconnect (modem, port, host) {
     });
 
     if (!options.binary && !options.compress && !options.tar) {
-      pushCode(pushpath, ['tessel', process.argv[3]].concat(argv), client, options);
+      pushCode(pushpath, ['tessel', process.argv[3]].concat(args), client, options);
     }
   } else if (process.argv[2] == 'stop') {
     // haaaack
     pushCode(path.join(__dirname,'scripts','stop.js'), [], client);
 
   } else if (process.argv[2] == 'wifi') {
-    if (process.argv.length == 3) {
+    if (argv._.length == 1) {
       // just request status
       client.wifiStatus(function (err, data) {
         Object.keys(data).map(function (key) {
@@ -349,31 +350,45 @@ function onconnect (modem, port, host) {
       })
 
     } else {
-      if (process.argv.length < 4) {
-        usage();
-        process.exit(1);
+      // if (argv._.length < 3) {
+      //   usage();
+      //   process.exit(1);
+      // }
+
+      function retry () {
+        var ssid = argv._[1];
+        var pass = argv._[2] || "";
+        var security = (argv._[3] || (pass ? 'wpa2' : 'unsecure')).toLowerCase();
+
+        // Only defer to make print after thing.
+        client.once('connect', function () {
+          console.log(('Network ' + JSON.stringify(ssid) + 
+            ' (pass ' + JSON.stringify(pass) + ') with ' + security + ' security'));
+        });
+
+        // This is just for fun logs
+        client.on('command', function listener (command, data) {
+          if (command == 'w') {
+            console.log(data);
+          }
+          if (command == 'W' && 'connected' in data) {
+            client.removeListener('command', listener);
+          }
+        });
+
+        client.configureWifi(ssid, pass, security, {
+          timeout: argv.timeout || 8
+        }, function (err) {
+          if (err && !argv['no-retry']) {
+            console.error('Retrying...');
+            setImmediate(retry);
+          } else {
+            process.exit(err ? 1 : 0);
+          }
+        });
       }
 
-      var ssid = process.argv[3];
-      var pass = process.argv[4] || "";
-      var security = (process.argv[5] || (pass ? 'wpa2' : 'unsecure')).toLowerCase();
-
-      // Only defer to make print after thing.
-      client.once('connect', function () {
-        console.log(('Network ' + JSON.stringify(ssid) + 
-          ' (pass ' + JSON.stringify(pass) + ') with ' + security + ' security'));
-      });
-
-      // This is just for fun logs
-      client.on('command', function (command, data) {
-        if (command == 'w') {
-          console.log(data);
-        }
-      });
-
-      client.configureWifi(ssid, pass, security, function (err) {
-        process.exit(0);
-      });
+      retry();
     }
 
   } else if (process.argv[2] == 'logs' || process.argv[2] == 'listen') {
