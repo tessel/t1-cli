@@ -206,10 +206,18 @@ if (argv.v || process.argv[2] == 'version') {
           'User-Agent': 'tessel',
           'Accept': 'application/octet-stream'
         },
+        encoding: null,
         followRedirect: false
       }, function (err, res, body) {
         if (res.statusCode == 302) {
-          request(res.headers.location, function (err, res, body) {
+          request(res.headers.location, {
+            headers: {
+              'User-Agent': 'tessel',
+              'Accept': 'application/octet-stream'
+            },
+            encoding: null,
+            followRedirect: true
+          }, function (err, res, body) {
             writeDfuFile(body);
           });
         } else {
@@ -220,8 +228,9 @@ if (argv.v || process.argv[2] == 'version') {
   }
 
   function writeDfuFile (body) {
+    temp.track(false);
     var tempName = temp.path({suffix: '.bin'});
-    fs.writeFileSync(tempName, body);
+    fs.writeFileSync(tempName, body, 'binary');
     dfuRestoreFunc(tempName);
   }
 
