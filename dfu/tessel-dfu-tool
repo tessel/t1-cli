@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+var fs = require('fs');
+
 function usage () {
   console.error("Usage: tessel-dfu-tool <read|write|run_bl> <file>");
   process.exit(1);
@@ -19,7 +21,7 @@ if (op === "run_bl") {
 } else if (op === "read") {
 	tessel_dfu.read(file);
 } else if (op === "write") {
-	tessel_dfu.write(file);
+	tessel_dfu.write(fs.readFileSync(filename));
 } else {
 	usage();
 }

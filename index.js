@@ -178,7 +178,7 @@ if (argv.v || process.argv[2] == 'version') {
   });
 } else if (process.argv[2] == 'dfu-restore') {
   if (process.argv[3] != '--latest') {
-    dfuRestoreFunc(process.argv[3]);
+    dfuRestoreFunc(fs.readFileSync(process.argv[3]));
   } else {
     request('https://api.github.com/repos/tessel/firmware/releases', {
       headers: {
@@ -218,24 +218,17 @@ if (argv.v || process.argv[2] == 'version') {
             encoding: null,
             followRedirect: true
           }, function (err, res, body) {
-            writeDfuFile(body);
+            dfuRestoreFunc(body);
           });
         } else {
-          writeDfuFile(body);
+          dfuRestoreFunc(body);
         }
       });
     });
   }
 
-  function writeDfuFile (body) {
-    temp.track(false);
-    var tempName = temp.path({suffix: '.bin'});
-    fs.writeFileSync(tempName, body, 'binary');
-    dfuRestoreFunc(tempName);
-  }
-
-  function dfuRestoreFunc (file) {
-    require('./dfu/tessel-dfu').write(file)
+  function dfuRestoreFunc (body) {
+    require('./dfu/tessel-dfu').write(body)
   }
 } else if (process.argv[2] == 'list') {
   tesselClient.detectModems(function (err, modems) {
