@@ -51,10 +51,9 @@ exports.read = function(filename) {
 }
 
 /// Write `filename` to flash
-exports.write = function(filename) {
+exports.write = function(image) {
     exports.enterStage2(function(device) {
         var dfu = new DFU(device);
-        var image = fs.readFileSync(filename);
 
         dfu.dnload(image, function(error) {
             if (error) {

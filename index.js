@@ -16,7 +16,8 @@ var choices = require('choices')
   , dgram = require('dgram')
   , temp = require('temp')
   , read = require('read')
-  , keypress = require('keypress');
+  , keypress = require('keypress')
+  , request = require('request');
 
 var tesselClient = require('tessel-client');
 
@@ -177,7 +178,59 @@ if (argv.v || process.argv[2] == 'version') {
     }
   });
 } else if (process.argv[2] == 'dfu-restore') {
-  require('./dfu/tessel-dfu').write(process.argv[3])
+  if (process.argv[3] != '--latest') {
+    dfuRestoreFunc(fs.readFileSync(process.argv[3]));
+  } else {
+    request('https://api.github.com/repos/tessel/firmware/releases', {
+      headers: {
+        'User-Agent': 'tessel',
+        'Authorization': 'Basic ' + new Buffer('tmTestUser:tmTestUser1').toString('base64')
+      },
+      json: true
+    }, function (err, res, body) {
+      if (err) {
+        console.error('Cannot download latest binary or connect to Github, aborting.');
+        process.exit(1);
+      }
+
+      var file = ((body.shift() || {}).assets || []).filter(function (file) {
+        return file.name.match(/\.bin$/);
+      }).pop();
+      if (!file) {
+        console.error('Cannot find a latest binary, aborting.');
+        process.exit(1); 
+      }
+
+      console.log('Downloading', file.name, '...')
+      request(file.url.replace('//', '//tmTestUser:tmTestUser1@'), {
+        headers: {
+          'User-Agent': 'tessel',
+          'Accept': 'application/octet-stream'
+        },
+        encoding: null,
+        followRedirect: false
+      }, function (err, res, body) {
+        if (res.statusCode == 302) {
+          request(res.headers.location, {
+            headers: {
+              'User-Agent': 'tessel',
+              'Accept': 'application/octet-stream'
+            },
+            encoding: null,
+            followRedirect: true
+          }, function (err, res, body) {
+            dfuRestoreFunc(body);
+          });
+        } else {
+          dfuRestoreFunc(body);
+        }
+      });
+    });
+  }
+
+  function dfuRestoreFunc (body) {
+    require('./dfu/tessel-dfu').write(body)
+  }
 } else if (process.argv[2] == 'list') {
   tesselClient.detectModems(function (err, modems) {
     modems.map(function (modem) {
