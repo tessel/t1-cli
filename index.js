@@ -54,8 +54,10 @@ function usage () {
     "   tessel stop\n" +
     "   tessel check <file>\n" + 
     "          dumps the tessel binary code\n" + 
-    "   tessel dfu-restore <firmware.bin>\n" +
-    "          upload new firmware when in DFU mode\n");
+    "   tessel dfu-restore <firmware.bin> [--latest]\n" +
+    "          upload new firmware when in DFU mode\n" +
+    "          --latest grabs latest binary automatically\n"
+    );
 }
 
 function repeatstr (str, n) {
