@@ -161,6 +161,7 @@ function bundle (arg)
   return ret;
 }
 
+<<<<<<< HEAD
 function pushCode (file, args, client, options) {
   setTimeout(function () {
     var ret = bundle(file);
@@ -194,6 +195,8 @@ function pushCode (file, args, client, options) {
   // });
 }
 
+=======
+>>>>>>> added ability to save from tarpush
 function pushTar (file, client, options) {
   console.error(('Deploying tar ' + file).grey);
   var tarbuff = fs.readFileSync(file);
