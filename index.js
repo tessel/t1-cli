@@ -117,10 +117,10 @@ function pushCode (file, args, client, options) {
   });
 }
 
-function pushTar (file, client) {
+function pushTar (file, client, options) {
   console.error(('Deploying tar ' + file).grey);
   var tarbuff = fs.readFileSync(file);
-  client.deployBundle(tarbuff, false);
+  client.deployBundle(tarbuff, options.save);
 }
 
 function pushBinary (file, client) {
@@ -322,8 +322,8 @@ function onconnect (modem, port, host) {
         break;
       case '-t' || '--tar':
         console.error(("\nuploading tarball", process.argv.slice(i+1)[0]).grey);
-        pushTar(process.argv.slice(i+1)[0], client);
         options.tar = true;
+        pushTar(process.argv.slice(i+1)[0], client, options);
         break;
       default:
         break;
