@@ -144,24 +144,32 @@ function bundle (arg)
     ret.pushdir = pushdir;
     ret.relpath = relpath;
     ret.files = files;
-
-    // Update files values to be full paths in pushFiles.
-    Object.keys(ret.files).forEach(function (file) {
-      ret.files[file] = fs.realpathSync(path.join(pushdir, ret.files[file]));
-    })
   })
 
-  if (argv.verbose) {
-    console.error('LOG'.cyan.blueBG, 'Bundling...')
-    Object.keys(ret.files).forEach(function (file) {
-      console.error('LOG'.cyan.blueBG, ' \u2192', file);
+  Object.keys(ret.files).forEach(function (file) {
+    ret.files[file] = fs.realpathSync(ret.files[file]);
+  })
+
+  return ret;
+}
+
+function pushCode (file, args, client, options) {
+  setTimeout(function () {
+    var ret = bundle(file);
+    if (ret.warning) {
+      console.error(('WARN').yellow, ret.warning.grey);
+    }
+    console.error(('Bundling directory ' + ret.pushdir).grey);
+
+    tesselClient.bundleFiles(ret.relpath, args, ret.files, function (err, tarbundle) {
+      console.error(('Deploying...').grey);
+      client.deployBundle(tarstream, options);
     });
   }
 
   return ret;
 }
 
-<<<<<<< HEAD
 function pushCode (file, args, client, options) {
   setTimeout(function () {
     var ret = bundle(file);
@@ -195,8 +203,6 @@ function pushCode (file, args, client, options) {
   // });
 }
 
-=======
->>>>>>> added ability to save from tarpush
 function pushTar (file, client, options) {
   console.error(('Deploying tar ' + file).grey);
   var tarbuff = fs.readFileSync(file);
