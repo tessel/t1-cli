@@ -48,7 +48,7 @@ function usage () {
     "          -a passes arguments to tessel scripts\n" + 
     "          -f writes the script to flash so it is run automatically on boot\n" + 
     // "       tessel pushall <filename>\n"+
-    "   tessel wifi <ssid> <pass> <security (wep/wap/wap2, wap2 by default)>\n"+
+    "   tessel wifi <ssid> <pass> <security (wep/wpa/wpa2, wpa2 by default)>\n"+
     "   tessel wifi <ssid>\n" +
     "          connects to a wifi network without a password\n" + 
     "   tessel wifi\n" +
