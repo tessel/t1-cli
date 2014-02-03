@@ -470,8 +470,9 @@ function onconnect (modem, port, host) {
       pushCode(pushpath, ['tessel', process.argv[3]].concat(args), client, options);
     }
   } else if (process.argv[2] == 'stop') {
-    // haaaack
-    pushCode(path.join(__dirname,'scripts','stop.js'), [], client);
+    client.stop(function () {
+      client.end();
+    });
 
   } else if (process.argv[2] == 'wifi') {
     if (argv._.length == 1) {
