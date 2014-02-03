@@ -381,29 +381,35 @@ function onconnect (modem, port, host) {
     for (var i = 2; i<process.argv.length; i++){
       switch(process.argv[i])
       {
-      case '-a' || '--args':
+      case '-a' :
+      case '--args':
         // TODO: only supports 1 argument right now
         args = process.argv.slice(i+1);
         break;
-      case '-s' || '--save':
+      case '-s' :
+      case '--save':
         options.save = true;
         break;
-      case '-b' || '--binary':
+      case '-b' :
+      case '--binary':
         console.log("\nuploading binary", process.argv.slice(i+1));
         pushBinary(process.argv.slice(i+1)[0], client);
         options.binary = true;
         break;
-      case '-c' || '--compress':
+      case '-c' :
+      case '--compress':
         console.log("\ncompressing and uploading dir", process.argv.slice(i+1)[0]);
         zipCode(process.argv.slice(i+1)[0], client);
         options.compress = true;
         break;
-      case '-t' || '--tar':
+      case '-t' :
+      case '--tar':
         console.error(("\nuploading tarball", process.argv.slice(i+1)[0]).grey);
         options.tar = true;
         pushTar(process.argv.slice(i+1)[0], client, options);
         break;
-      case '-f' || '--flash':
+      case '-f' :
+      case '--flash':
         options.flash = true;
         break;
       default:
