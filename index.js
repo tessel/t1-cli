@@ -170,39 +170,6 @@ function pushCode (file, args, client, options) {
   return ret;
 }
 
-function pushCode (file, args, client, options) {
-  setTimeout(function () {
-    var ret = bundle(file);
-    if (ret.warning) {
-      console.error(('WARN').yellow, ret.warning.grey);
-    }
-    console.error(('Bundling directory ' + ret.pushdir).grey);
-
-    tesselClient.bundleFiles(ret.relpath, args, ret.files, function (err, tarbundle) {
-      console.error(('Deploying...').grey);
-      client.deployBundle(tarbundle, options.save);
-    })
-  }, 100);
-  // tesselClient.detectDirectory(file, function (err, pushdir, relpath) {
-  //   if (err) {
-  //     setTimeout(function () {
-  //       console.error('ERR'.red, err.message);
-  //       process.exit(1);
-  //     }, 10)
-  //     return;
-  //   }
-
-  //   setTimeout(function () {
-  //     console.error(('Bundling directory ' + pushdir).grey);
-  //   }, 100);
-  //   tesselClient.bundleCode(pushdir, relpath, args, function (err, tarstream) {
-  //     console.error(('Deploying...').grey);
-
-  //     client.deployBundle(tarstream, options.save);
-  //   });
-  // });
-}
-
 function pushTar (file, client, options) {
   console.error(('Deploying tar ' + file).grey);
   var tarbuff = fs.readFileSync(file);

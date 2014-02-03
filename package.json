@@ -17,13 +17,8 @@
   "dependencies": {
     "choices": "0.0.2",
     "colors": "~0.6.0-1",
-<<<<<<< HEAD
     "colony": "git+https://tmTestUser:tmTestUser1@github.com/tessel/colony.git",
     "tessel-client": "git+https://tmTestUser:tmTestUser1@github.com/tessel/tessel-client.git",
-=======
-    "colony": "git+https://tmTestUser:tmTestUser1@github.com/tessel/colony.git#0.3.3",
-    "tessel-client": "git+https://tmTestUser:tmTestUser1@github.com/tessel/tessel-client.git#0.1.1",
->>>>>>> New bundling semantics and support for "hardware" black/whitelisting in
     "my-local-ip": "~1.0.0",
     "portscanner": "~0.1.3",
     "optimist": "~0.6.0",
@@ -36,13 +31,8 @@
     "keypress": "~0.2.1",
     "read": "~1.0.5",
     "request": "~2.33.0",
-<<<<<<< HEAD
     "hardware-resolve": "~0.0.8",
     "effess": "~0.0.3"
-=======
-    "hardware-resolve": "~0.0.5",
-    "effess": "~0.0.1"
->>>>>>> New bundling semantics and support for "hardware" black/whitelisting in
   },
   "optionalDependencies": {
     "usb": "~0.3.0"
