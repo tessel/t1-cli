@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// Slimmed down Tessel client that emulates Node.js
+
 var fs = require('fs')
   , path = require('path')
   , repl = require('repl')
