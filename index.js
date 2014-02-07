@@ -17,7 +17,8 @@ var choices = require('choices')
   , temp = require('temp')
   , read = require('read')
   , keypress = require('keypress')
-  , request = require('request');
+  , request = require('request')
+  , humanize = require('humanize');
 
 var tesselClient = require('tessel-client');
 
@@ -154,7 +155,7 @@ function bundle (arg)
   if (argv.verbose) {
     console.error('LOG'.cyan.blueBG, 'Bundling...')
     Object.keys(ret.files).forEach(function (file) {
-      console.error('LOG'.cyan.blueBG, ' \u2192', file);
+      console.error('LOG'.cyan.blueBG, ' \u2192', file, '(' + humanize.filesize(fs.lstatSync(ret.files[file]).size) + ')');
     });
   }
 
@@ -170,7 +171,7 @@ function pushCode (file, args, client, options) {
     console.error(('Bundling directory ' + ret.pushdir).grey);
 
     tesselClient.bundleFiles(ret.relpath, args, ret.files, function (err, tarbundle) {
-      console.error(('Deploying...').grey);
+      console.error(('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...').grey);
       client.deployBundle(tarbundle, options);
     })
   }, 100);

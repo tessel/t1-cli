@@ -32,7 +32,8 @@
     "read": "~1.0.5",
     "request": "~2.33.0",
     "hardware-resolve": "~0.0.8",
-    "effess": "~0.0.3"
+    "effess": "~0.0.3",
+    "humanize": "0.0.9"
   },
   "optionalDependencies": {
     "usb": "~0.3.0"
