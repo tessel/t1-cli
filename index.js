@@ -173,12 +173,23 @@ function bundle (arg)
     })
   })
 
+  // Dump stats for files and their sizes.
+  var sizelookup = {};
+  Object.keys(ret.files).forEach(function (file) {
+    sizelookup[file] = fs.lstatSync(ret.files[file]).size;
+    var dir = file;
+    do {
+      dir = path.dirname(dir);
+      sizelookup[dir + '/'] = (sizelookup[dir + '/'] || 0) + sizelookup[file];
+    } while (path.dirname(dir) != dir);
+  });
   if (argv.verbose) {
-    console.error('LOG'.cyan.blueBG, 'Bundling...')
-    Object.keys(ret.files).forEach(function (file) {
-      console.error('LOG'.cyan.blueBG, ' \u2192', file, '(' + humanize.filesize(fs.lstatSync(ret.files[file]).size) + ')');
+    Object.keys(sizelookup).sort().forEach(function (file) {
+      console.error('LOG'.cyan.blueBG, file.match(/\/$/) ? ' ' + file.underline : ' \u2192 ' + file, '(' + humanize.filesize(sizelookup[file]) + ')');
     });
+    console.error('LOG'.cyan.blueBG, 'Total file size:', humanize.filesize(sizelookup['./'] || 0));
   }
+  ret.size = sizelookup['./'] || 0;
 
   return ret;
 }
@@ -189,7 +200,7 @@ function pushCode (file, args, client, options) {
     if (ret.warning) {
       console.error(('WARN').yellow, ret.warning.grey);
     }
-    console.error(('Bundling directory ' + ret.pushdir).grey);
+    console.error(('Bundling directory ' + ret.pushdir + ' (~' + humanize.filesize(ret.size) + ')').grey);
 
     tesselClient.bundleFiles(ret.relpath, args, ret.files, function (err, tarbundle) {
       console.error(('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...').grey);
