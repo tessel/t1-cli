@@ -30,6 +30,8 @@ var argv = optimist
   .boolean('v')
   .boolean('no-retry')
   .boolean('verbose')
+  .alias('exclude', 'x')
+  .alias('include', 'i')
   .argv;
 
 // process.on('uncaughtException', function (err) {
