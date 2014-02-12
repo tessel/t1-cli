@@ -134,9 +134,28 @@ function bundle (arg)
         files = duparg([path.basename(arg)]);
       }
     } else {
-      files = hardwareResolve.list(pushdir)
+      // Parse defaults from command line for inclusion or exclusion
+      var defaults = {};
+      if (typeof argv.x == 'string') {
+        argv.x = [argv.x];
+      }
+      if (argv.x) {
+        argv.x.forEach(function (arg) {
+          defaults[arg] = false;
+        })
+      }
+      if (typeof argv.i == 'string') {
+        argv.i = [argv.i];
+      }
+      if (argv.i) {
+        argv.i.forEach(function (arg) {
+          defaults[arg] = true;
+        })
+      }
 
-      // Ensure the request file is pushed even if blacklisted
+      // Get list of hardware files.
+      files = hardwareResolve.list(pushdir, null, null, defaults);
+      // Ensure the requested file from command line is included, even if blacklisted
       if (!(relpath in files)) {
         files[relpath] = relpath;
       }
