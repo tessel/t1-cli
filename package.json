@@ -33,7 +33,8 @@
     "request": "~2.33.0",
     "hardware-resolve": "~0.1.0",
     "effess": "~0.0.3",
-    "humanize": "0.0.9"
+    "humanize": "0.0.9",
+    "nomnom": "~1.6.2"
   },
   "optionalDependencies": {
     "usb": "~0.3.0"

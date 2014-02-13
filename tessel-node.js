@@ -7,86 +7,226 @@ var fs = require('fs')
   , repl = require('repl')
   , colony = require('colony')
   , net = require('net')
-  , spawn = require('child_process').spawn
-  , exec = require('child_process').exec
   , zlib = require('zlib');
 
 var choices = require('choices')
   , colors = require('colors')
   , async = require('async')
-  , optimist = require('optimist')
+  , nomnom = require('nomnom')
   , dgram = require('dgram')
-  , temp = require('temp');
+  , humanize = require('humanize')
+  , keypress = require('keypress')
+  , read = require('read');
 
-var tesselClient = require('tessel-client');
+var tessel = require('tessel-client');
 
-// Automatically track and cleanup files at exit
-temp.track();
+// Command-line arguments
+var argv = require("nomnom")
+  .script('tessel-node')
+  .option('script', {
+    position: 0,
+    // required: true,
+    full: 'script.js',
+    help: 'Run this script on Tessel.',
+  })
+  .option('arguments', {
+    position: 1,
+    list: true,
+    help: 'Arguments to pass in as process.argv.'
+  })
+  .option('version', {
+    abbr: 'v',
+    flag: true,
+    help: 'Print tessel-node\'s version.',
+    callback: function() {
+      return require('./package.json').version.replace(/^v?/, 'v');
+    }
+  })
+  .option('interactive', {
+    abbr: 'i',
+    flag: true,
+    help: 'Enter the REPL.'
+  })
+  .option('remote', {
+    abbr: 'r',
+    flag: true,
+    help: '[Tessel] Push code to a Tessel by IP address.'
+  })
+  .option('quiet', {
+    abbr: 'q',
+    flag: true,
+    help: '[Tessel] Hide tessel deployment messages.'
+  })
+  .option('messages', {
+    abbr: 'm',
+    flag: true,
+    help: '[Tessel] Forward stdin as child process messages.'
+  })
+  .parse();
 
-var argv = optimist
-  .boolean('q').alias('quiet', 'q')
-  .boolean('m')
-  .argv;
-
-// process.on('uncaughtException', function (err) {
-//   console.error(err.stack);
-// })
-
-var verbose = !argv.q;
-
-// Push new code to the device.
-if (argv._.length < 1) {
-  usage();
+function usage () {
+  console.error(require('nomnom').getUsage());
   process.exit(1);
 }
 
-function usage () {
-  console.error("Usage: tessel [-q] script.js")
+var verbose = !argv.quiet;
+
+
+// Push code to device.
+function bundle (arg)
+{
+  var hardwareResolve = require('hardware-resolve');
+  var effess = require('effess');
+
+  function duparg (arr) {
+    var obj = {};
+    arr.forEach(function (arg) {
+      obj[arg] = arg;
+    })
+    return obj;
+  }
+
+  var ret = {};
+
+  hardwareResolve.root(arg, function (err, pushdir, relpath) {
+    var files;
+    if (!pushdir) {
+      if (fs.lstatSync(arg).isDirectory()) {
+        ret.warning = String(err).replace(/\.( |$)/, ', pushing just this directory.');
+
+        pushdir = fs.realpathSync(arg);
+        relpath = fs.lstatSync(path.join(arg, 'index.js')) && 'index.js';
+        files = duparg(effess.readdirRecursiveSync(arg, {
+          inflateSymlinks: true,
+          excludeHiddenUnix: true
+        }))
+      } else {
+        ret.warning = String(err).replace(/\.( |$)/, ', pushing just this file.');
+
+        pushdir = path.dirname(fs.realpathSync(arg));
+        relpath = path.basename(arg);
+        files = duparg([path.basename(arg)]);
+      }
+    } else {
+      // Parse defaults from command line for inclusion or exclusion
+      var defaults = {};
+      if (typeof argv.x == 'string') {
+        argv.x = [argv.x];
+      }
+      if (argv.x) {
+        argv.x.forEach(function (arg) {
+          defaults[arg] = false;
+        })
+      }
+      if (typeof argv.i == 'string') {
+        argv.i = [argv.i];
+      }
+      if (argv.i) {
+        argv.i.forEach(function (arg) {
+          defaults[arg] = true;
+        })
+      }
+
+      // Get list of hardware files.
+      files = hardwareResolve.list(pushdir, null, null, defaults);
+      // Ensure the requested file from command line is included, even if blacklisted
+      if (!(relpath in files)) {
+        files[relpath] = relpath;
+      }
+    }
+
+    ret.pushdir = pushdir;
+    ret.relpath = relpath;
+    ret.files = files;
+
+    // Update files values to be full paths in pushFiles.
+    Object.keys(ret.files).forEach(function (file) {
+      ret.files[file] = fs.realpathSync(path.join(pushdir, ret.files[file]));
+    })
+  })
+
+  // Dump stats for files and their sizes.
+  var sizelookup = {};
+  Object.keys(ret.files).forEach(function (file) {
+    sizelookup[file] = fs.lstatSync(ret.files[file]).size;
+    var dir = file;
+    do {
+      dir = path.dirname(dir);
+      sizelookup[dir + '/'] = (sizelookup[dir + '/'] || 0) + sizelookup[file];
+    } while (path.dirname(dir) != dir);
+  });
+  if (argv.verbose) {
+    Object.keys(sizelookup).sort().forEach(function (file) {
+      console.error('LOG'.cyan.blueBG, file.match(/\/$/) ? ' ' + file.underline : ' \u2192 ' + file, '(' + humanize.filesize(sizelookup[file]) + ')');
+    });
+    console.error('LOG'.cyan.blueBG, 'Total file size:', humanize.filesize(sizelookup['./'] || 0));
+  }
+  ret.size = sizelookup['./'] || 0;
+
+  return ret;
 }
 
 function pushCode (file, args, client, options) {
-  tesselClient.detectDirectory(file, function (err, pushdir, relpath) {
-    verbose && console.error(('Bundling directory ' + pushdir).grey);
-    tesselClient.bundleCode(pushdir, relpath, args, function (err, tarstream) {
-      verbose && console.error(('Deploying...').grey);
+  var ret = bundle(file);
+  if (ret.warning) {
+    console.error(('WARN').yellow, ret.warning.grey);
+  }
+  console.error(('Bundling directory ' + ret.pushdir + ' (~' + humanize.filesize(ret.size) + ')').grey);
 
-      client.deployBundle(tarstream, options.save);
-    });
-  });
+  tessel.bundleFiles(ret.relpath, args, ret.files, function (err, tarbundle) {
+    console.error(('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...').grey);
+    client.deployBundle(tarbundle, options);
+  })
 }
 
-if (argv.r) {
+
+// Check flags.
+if (!argv.interactive && !argv.script) {
+  usage();
+}
+
+// Listen to remote or local device.
+if (argv.remote) {
+  // Use remote IP address.
   setImmediate(function () {
-    console.log('listening...'.grey);
+    console.log('Listening on remote port...'.grey);
   })
-  var args = argv.r.split(':');
-  host = args[0];
-  port = args[1] || 4444;
+  var _ = argv.remote.split(':')
+    , host = _[0]
+    , port = _[1] || 4444;
   onconnect('[' + host + ':' + port + ']', port, host);
 } else {
+  // Poll for devices.
   var firstNoDevicesFound = false;
-  tesselClient.selectModem(function notfound () {
-    console.error('Error: No tessel devices detected.');
-    process.exit(1);
+  tessel.selectModem(function notfound () {
+    if (!verbose) {
+      throw new Error('No Tessel device found.');
+    }
+
+    if (!firstNoDevicesFound) {
+      firstNoDevicesFound = true;
+      console.error('No tessel devices detected, waiting...'.grey);
+    }
   }, function found (err, modem) {
     verbose && console.error(('Connecting to ' + modem).grey);
-    tesselClient.connectServer(modem, function () {
+    tessel.connectServer(modem, function () {
       onconnect(modem, 6540, 'localhost');
     });
   });
 }
 
-function onconnect (modem, port, host) {
-  var client = tesselClient.connect(port, host);
-  // client.pipe(process.stdout);
-  client.on('error', function (err) {
-    console.error('Error: Cannot connect to Tessel locally.', err);
-  })
 
-  var options = {
-    save: false,
-    binary: false
-  };
+// Once client is connected, run.
+function onconnect (modem, port, host) {
+  var client = tessel.connect(port, host);
+  
+  client.on('error', function (err) {
+    if (err.code == 'ENOENT') {
+      console.error('Error: Cannot connect to Tessel locally.')
+    } else {
+      console.error(err);
+    }
+  })
 
   // Forward stdin as messages with "-m" option
   if (argv.m) {
@@ -96,18 +236,20 @@ function onconnect (modem, port, host) {
     })
   }
 
-  var updating = 0, scriptrunning = false;
+  // Check pushing path.
+  if (argv.interactive) {
+    var pushpath = __dirname + '/repl';
+  } else if (!argv.script) {
+    usage();
+  } else {
+    var pushpath = argv.script;
+  }
+
+  // Command command.
+  var updating = false;
   client.on('command', function (command, data) {
     if (command == 'u') {
-      verbose && console.error(data.grey);
-    } else if (command == 's' && scriptrunning) {
-      console.log(data);
-    } else if (command == 'S' && data == '1') {
-      scriptrunning = true;
-    } else if (command == 'S' && scriptrunning && parseInt(data) <= 0) {
-      scriptrunning = false;
-      client.end();
-      process.exit(-parseInt(data));
+      console.error(data.grey)
     } else if (command == 'U') {
       if (updating) {
         // Interrupted by other deploy
@@ -117,5 +259,62 @@ function onconnect (modem, port, host) {
     }
   });
 
-  pushCode(argv._[0], ['tessel', argv._[0]].concat(argv._.slice(1)), client, options);
+  client.once('script-start', function () {
+    // Stop on Ctrl+C.
+    process.on('SIGINT', function() {
+      client.once('script-stop', function (code) {
+        process.exit(code);
+      });
+      client.stop();
+    });
+    process.on('SIGTERM', function() {
+    });
+
+    // Flush existing output, then pipe output to client
+    while (null !== (chunk = client.stdout.read())) {
+      ;
+    }
+    client.stdout.pipe(process.stdout);
+
+    client.once('script-stop', function (code) {
+      client.end();
+      process.exit(code);
+    });
+
+    // Hack to get repl working.
+    if (argv.interactive) {
+      function pollInteractive () {
+        // make `process.stdin` begin emitting "keypress" events
+        keypress(process.stdin);
+        // listen for the ctrl+c event, which seems not to be caught in read loop
+        process.stdin.on('keypress', function (ch, key) {
+          if (key && key.ctrl && key.name == 'c') {
+            process.exit(0);
+          }
+        });
+
+        read({prompt: '>>'}, function (err, data) {
+          try {
+            if (err) {
+              throw err;
+            }
+            var script
+              // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
+              = 'local function _run ()\n' + colony.colonize(data, false) + '\nend\nsetfenv(_run, colony.global);\n_run()';
+            client.command('M', new Buffer(JSON.stringify(script)));
+            client.once('message', function (ret) {
+              console.log(ret.ret);
+              setImmediate(pollInteractive);
+            })
+          } catch (e) {
+            console.error(e.stack);
+            setImmediate(pollInteractive);
+          }
+        });
+      }
+      client.once('message', pollInteractive);
+    }
+  });
+
+  pushCode(pushpath, ['tessel', pushpath].concat(argv.arguments || []), client, {});
 }
