@@ -50,17 +50,11 @@ Interactive menu for selecting a Tessel to connect to. Will continue to poll unt
 &#x20;<a href="#api-tessel-acquire-path-callback-err-client-" name="api-tessel-acquire-path-callback-err-client-">#</a> tessel<b>.acquire</b>( [path, ], callback(err, client) )  
 Acquires a Tessel client, either interactively (via `selectModem`) or directly given the supplied `path`. The callback is passed a `TesselClient` object.
 
-&#x20;<a href="#api-tesselClient-bundleFiles-relpath-args-files-callback-err-bundle-" name="api-tesselClient-bundleFiles-relpath-args-files-callback-err-bundle-">#</a> tesselClient<b>.bundleFiles</b>( relpath, args, files, callback(err, bundle) )  
+&#x20;<a href="#api-tessel-bundleFiles-relpath-args-files-callback-err-bundle-" name="api-tessel-bundleFiles-relpath-args-files-callback-err-bundle-">#</a> tessel<b>.bundleFiles</b>( relpath, args, files, callback(err, bundle) )  
 `relpath` is the starting path of the application relative to root. `args` is the `process.argv` array. `files` is a map of tessel filesystem paths to local filesystem paths from the computer. This function returns to the callback with a bundle that can be deployed to Tessel.
 
 ### `TesselClient` object
-Created by `tessel.connect`. Emits the following events:
-
-```
-"script-start"
-"script-stop"
-"command" &rarr; (command, data)
-```
+Created by `tessel.connect`.
 
 &#x20;<a href="#api-DuplexStream-client-stdout" name="api-DuplexStream-client-stdout">#</a> <i>DuplexStream</i>&nbsp; client<b>.stdout</b>  
 Stream of output from the client module.
@@ -85,6 +79,12 @@ Stops the current script.
 
 &#x20;<a href="#api-client-deploy-filepath-argv-onScriptStart-err-" name="api-client-deploy-filepath-argv-onScriptStart-err-">#</a> client<b>.deploy</b>( filepath, argv, onScriptStart(err) )  
 Given a file path, automatically deploys the file and its nearest directory with a `package.json` file to Tessel.
+
+&#x20;<a href="#api-client-emits-script-start-" name="api-client-emits-script-start-">#</a> client &rarr; <i>emits "script-start"</i>  
+Emitted when a client script starts.
+
+&#x20;<a href="#api-client-emits-script-stop-" name="api-client-emits-script-stop-">#</a> client &rarr; <i>emits "script-stop"</i>  
+Emitted when a client script exits.
 
 <!--/markdocs-->
 

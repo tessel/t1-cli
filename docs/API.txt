@@ -37,13 +37,7 @@ tessel.bundleFiles(relpath, args, files, callback(err, bundle))
 
 # `TesselClient` object
 
-Created by `tessel.connect`. Emits the following events:
-
-```
-"script-start"
-"script-stop"
-"command" &rarr; (command, data)
-```
+Created by `tessel.connect`.
 
 DuplexStream client.stdout
 Stream of output from the client module.
@@ -68,3 +62,9 @@ Stops the current script.
 
 client.deploy(filepath, argv, onScriptStart(err))
 Given a file path, automatically deploys the file and its nearest directory with a `package.json` file to Tessel.
+
+client -> emits "script-start"
+Emitted when a client script starts.
+
+client -> emits "script-stop"
+Emitted when a client script exits.
