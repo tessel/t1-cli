@@ -1,15 +1,15 @@
 {
   "name": "tessel",
-  "version": "0.0.2",
-  "description": "",
-  "main": "index.js",
+  "version": "0.1.0",
+  "description": "Connect to your Tessel and upload code!",
+  "main": "src/index.js",
   "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "tessel": "./index.js",
-    "tessel-node": "./tessel-node.js"
+    "tessel": "./bin/tessel.js",
+    "tessel-node": "./bin/tessel-node.js"
   },
   "repository": "",
   "author": "Tim Cameron Ryan <tim@technical.io>",
@@ -18,7 +18,6 @@
     "choices": "0.0.2",
     "colors": "~0.6.0-1",
     "colony": "git+https://tmTestUser:tmTestUser1@github.com/tessel/colony.git",
-    "tessel-client": "git+https://tmTestUser:tmTestUser1@github.com/tessel/tessel-client.git",
     "my-local-ip": "~1.0.0",
     "portscanner": "~0.1.3",
     "optimist": "~0.6.0",
@@ -34,8 +33,11 @@
     "hardware-resolve": "~0.1.0",
     "effess": "~0.0.3",
     "humanize": "0.0.9",
-    "nomnom": "~1.6.2"
+    "nomnom": "~1.6.2",
+    "mkdirp": "~0.3.5",
+    "libserialport": "~0.2.3"
   },
+
   "optionalDependencies": {
     "usb": "~0.3.0"
   }

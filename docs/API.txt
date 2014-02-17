@@ -1,0 +1,70 @@
+# Module
+
+This module creates a single-threaded local server to which multiple processes can connect to a single Tessel over USB, as well as a `TesselClient` object that acts as a connection to the Tessel.
+
+```
+var tessel = require('tessel-client');
+```
+
+Object tessel.descriptors
+Hash of USB descriptors.
+
+```
+{
+  TESSEL_VID: 0x1d50, TESSEL_PID: 0x6097,
+  TESSEL_OLD_VID: 0x1fc9, TESSEL_OLD_PID: 0x2002,
+  NXP_ROM_VID: 0x1fc9, NXP_ROM_PID: 0x000c
+}
+```
+
+tessel.connect(port, host) -> TesselClient
+Connects to a local Tessel server.
+
+tessel.connectServer(path, callback(err, port))
+Connects a detached child server to a Tessel USB port. Returns the port at which the local Tessel server is listening.
+
+tessel.detectModems(callback(err, paths))
+Retrieve the path of each Tessel connected by USB in an array.
+
+tessel.selectModem(onnotfound(), callback(err, path))
+Interactive menu for selecting a Tessel to connect to. Will continue to poll until a suitable client is found, calling the `onnotfound` callback (perhaps continuously). Once a device is found, if multiple options exist, user is prompted for a selection. Then the `callback` is passed the path of the chosen device.
+
+tessel.acquire([path, ], callback(err, client))
+Acquires a Tessel client, either interactively (via `selectModem`) or directly given the supplied `path`. The callback is passed a `TesselClient` object.
+
+tessel.bundleFiles(relpath, args, files, callback(err, bundle))
+`relpath` is the starting path of the application relative to root. `args` is the `process.argv` array. `files` is a map of tessel filesystem paths to local filesystem paths from the computer. This function returns to the callback with a bundle that can be deployed to Tessel.
+
+# `TesselClient` object
+
+Created by `tessel.connect`.
+
+DuplexStream client.stdout
+Stream of output from the client module.
+
+client.send(json)
+Sends a message to be read by `process.on('message', callback)` by the child script.
+
+client.wifiStatus(callback(err, wifiStatus))
+Returns the status of the board's Wifi. `wifiStatus` has the properties "connected" and "ip".
+
+client.configureWifi(ssid, pass, security, [opts,] callback(err, wifiStatus))
+Connects to the given Wifi network. `security` can be one of "wpa2", "wep", or null. `pass` can be null if no security is chosen. `err` is true if the network could not be connected to. An optional `opts` object allows an integer `timeout` number to be specified in seconds.
+
+client.deployBundle(tarbundle, opts, onScriptStart(err))
+Deploys a tar bundle of code to the device. `opts` can have a flag `save` to write the bundle to the local filesystem, or `flash` to flash the device instead of running from RAM.
+
+client.erase()
+Erases internal flash on the device of any running code.
+
+client.stop()
+Stops the current script.
+
+client.deploy(filepath, argv, onScriptStart(err))
+Given a file path, automatically deploys the file and its nearest directory with a `package.json` file to Tessel.
+
+client -> emits "script-start"
+Emitted when a client script starts.
+
+client -> emits "script-stop"
+Emitted when a client script exits.

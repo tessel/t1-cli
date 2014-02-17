@@ -5,20 +5,19 @@
 var fs = require('fs')
   , path = require('path')
   , repl = require('repl')
-  , colony = require('colony')
   , net = require('net')
-  , zlib = require('zlib');
+  , zlib = require('zlib')
 
-var choices = require('choices')
-  , colors = require('colors')
+var colors = require('colors')
   , async = require('async')
   , nomnom = require('nomnom')
   , dgram = require('dgram')
   , humanize = require('humanize')
   , keypress = require('keypress')
-  , read = require('read');
+  , colony = require('colony')
+  , read = require('read')
 
-var tessel = require('tessel-client');
+var tessel = require('../')
 
 // Command-line arguments
 var argv = require("nomnom")
@@ -62,6 +61,12 @@ var argv = require("nomnom")
     flag: true,
     help: '[Tessel] Forward stdin as child process messages.'
   })
+  .option('single', {
+    abbr: 's',
+    flag: true,
+    help: '[Tessel] Push a single script file to Tessel.'
+  })
+
   .parse();
 
 function usage () {
@@ -72,7 +77,15 @@ function usage () {
 var verbose = !argv.quiet;
 
 
-// Push code to device.
+/**
+ * Library functions
+ */
+
+
+// bundle (string arg) -> { pushdir, relpath, files, size }
+// Given a command-line file path, resolve whether we are bundling a file, 
+// its directory, or its ancestral node module.
+
 function bundle (arg)
 {
   var hardwareResolve = require('hardware-resolve');
@@ -90,9 +103,9 @@ function bundle (arg)
 
   hardwareResolve.root(arg, function (err, pushdir, relpath) {
     var files;
-    if (!pushdir) {
-      if (fs.lstatSync(arg).isDirectory()) {
-        ret.warning = String(err).replace(/\.( |$)/, ', pushing just this directory.');
+    if (argv.single || !pushdir) {
+      if (!argv.single && fs.lstatSync(arg).isDirectory()) {
+        ret.warning = String(err || 'Warning.').replace(/\.( |$)/, ', pushing just this directory.');
 
         pushdir = fs.realpathSync(arg);
         relpath = fs.lstatSync(path.join(arg, 'index.js')) && 'index.js';
@@ -101,7 +114,7 @@ function bundle (arg)
           excludeHiddenUnix: true
         }))
       } else {
-        ret.warning = String(err).replace(/\.( |$)/, ', pushing just this file.');
+        ret.warning = String(err || 'Warning.').replace(/\.( |$)/, ', pushing just this file.');
 
         pushdir = path.dirname(fs.realpathSync(arg));
         relpath = path.basename(arg);
@@ -166,26 +179,66 @@ function bundle (arg)
   return ret;
 }
 
-function pushCode (file, args, client, options) {
+
+function pushCode (file, args, client, options)
+{
+  // Bundle code based on file path.
   var ret = bundle(file);
   if (ret.warning) {
-    console.error(('WARN').yellow, ret.warning.grey);
+    verbose && console.error(('WARN').yellow, ret.warning.grey);
   }
-  console.error(('Bundling directory ' + ret.pushdir + ' (~' + humanize.filesize(ret.size) + ')').grey);
+  verbose && console.error(('Bundling directory ' + ret.pushdir + ' (~' + humanize.filesize(ret.size) + ')').grey);
 
+  // Create archive and deploy it to tessel.
   tessel.bundleFiles(ret.relpath, args, ret.files, function (err, tarbundle) {
-    console.error(('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...').grey);
+    verbose && console.error(('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...').grey);
     client.deployBundle(tarbundle, options);
   })
 }
 
 
-// Check flags.
-if (!argv.interactive && !argv.script) {
-  usage();
+function pollInteractive (client)
+{
+  // make `process.stdin` begin emitting "keypress" events
+  keypress(process.stdin);
+  // listen for the ctrl+c event, which seems not to be caught in read loop
+  process.stdin.on('keypress', function (ch, key) {
+    if (key && key.ctrl && key.name == 'c') {
+      process.exit(0);
+    }
+  });
+
+  read({prompt: '>>'}, function (err, data) {
+    try {
+      if (err) {
+        throw err;
+      }
+      var script
+        // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
+        = 'local function _run ()\n' + colony.colonize(data, false) + '\nend\nsetfenv(_run, colony.global);\n_run()';
+      client.command('M', new Buffer(JSON.stringify(script)));
+      client.once('message', function (ret) {
+        console.log(ret.ret);
+        setImmediate(pollInteractive);
+      })
+    } catch (e) {
+      console.error(e.stack);
+      setImmediate(pollInteractive);
+    }
+  });
 }
 
-// Listen to remote or local device.
+
+/**
+ * Program entry
+ */
+
+// Check flags.
+if (!argv.interactive && !argv.script) {
+  return usage();
+}
+
+// connect to remote tessel device.
 if (argv.remote) {
   // Use remote IP address.
   setImmediate(function () {
@@ -195,8 +248,10 @@ if (argv.remote) {
     , host = _[0]
     , port = _[1] || 4444;
   onconnect('[' + host + ':' + port + ']', port, host);
-} else {
-  // Poll for devices.
+}
+
+// Connect to local Tessel device.
+else {
   var firstNoDevicesFound = false;
   tessel.selectModem(function notfound () {
     if (!verbose) {
@@ -215,9 +270,9 @@ if (argv.remote) {
   });
 }
 
-
 // Once client is connected, run.
-function onconnect (modem, port, host) {
+function onconnect (modem, port, host)
+{
   var client = tessel.connect(port, host);
   
   client.on('error', function (err) {
@@ -229,7 +284,7 @@ function onconnect (modem, port, host) {
   })
 
   // Forward stdin as messages with "-m" option
-  if (argv.m) {
+  if (argv.messages) {
     process.stdin.resume();
     require('readline').createInterface(process.stdin, {}, null).on('line', function (std) {
       client.send(JSON.stringify(std));
@@ -249,7 +304,7 @@ function onconnect (modem, port, host) {
   var updating = false;
   client.on('command', function (command, data) {
     if (command == 'u') {
-      console.error(data.grey)
+      verbose && console.error(data.grey)
     } else if (command == 'U') {
       if (updating) {
         // Interrupted by other deploy
@@ -265,6 +320,10 @@ function onconnect (modem, port, host) {
       client.once('script-stop', function (code) {
         process.exit(code);
       });
+      setTimeout(function () {
+        // timeout :|
+        process.exit(code);
+      }, 5000);
       client.stop();
     });
     process.on('SIGTERM', function() {
@@ -281,40 +340,14 @@ function onconnect (modem, port, host) {
       process.exit(code);
     });
 
-    // Hack to get repl working.
+    // repl is implemented in repl/index.js. Uploaded to tessel, it sensd a
+    // message telling host it's ready, then receives stdin via
+    // process.on('message')
     if (argv.interactive) {
-      function pollInteractive () {
-        // make `process.stdin` begin emitting "keypress" events
-        keypress(process.stdin);
-        // listen for the ctrl+c event, which seems not to be caught in read loop
-        process.stdin.on('keypress', function (ch, key) {
-          if (key && key.ctrl && key.name == 'c') {
-            process.exit(0);
-          }
-        });
-
-        read({prompt: '>>'}, function (err, data) {
-          try {
-            if (err) {
-              throw err;
-            }
-            var script
-              // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
-              = 'local function _run ()\n' + colony.colonize(data, false) + '\nend\nsetfenv(_run, colony.global);\n_run()';
-            client.command('M', new Buffer(JSON.stringify(script)));
-            client.once('message', function (ret) {
-              console.log(ret.ret);
-              setImmediate(pollInteractive);
-            })
-          } catch (e) {
-            console.error(e.stack);
-            setImmediate(pollInteractive);
-          }
-        });
-      }
-      client.once('message', pollInteractive);
+      client.once('message', pollInteractive.bind(client));
     }
   });
 
+  // Forward path and code to tessel cli handling.
   pushCode(pushpath, ['tessel', pushpath].concat(argv.arguments || []), client, {});
 }
