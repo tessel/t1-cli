@@ -9,8 +9,7 @@ var fs = require('fs')
   , net = require('net')
   , zlib = require('zlib');
 
-var choices = require('choices')
-  , colors = require('colors')
+var colors = require('colors')
   , async = require('async')
   , nomnom = require('nomnom')
   , dgram = require('dgram')
@@ -179,12 +178,12 @@ function bundle (arg)
 function pushCode (file, args, client, options) {
   var ret = bundle(file);
   if (ret.warning) {
-    console.error(('WARN').yellow, ret.warning.grey);
+    verbose && console.error(('WARN').yellow, ret.warning.grey);
   }
-  console.error(('Bundling directory ' + ret.pushdir + ' (~' + humanize.filesize(ret.size) + ')').grey);
+  verbose && console.error(('Bundling directory ' + ret.pushdir + ' (~' + humanize.filesize(ret.size) + ')').grey);
 
   tessel.bundleFiles(ret.relpath, args, ret.files, function (err, tarbundle) {
-    console.error(('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...').grey);
+    verbose && console.error(('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...').grey);
     client.deployBundle(tarbundle, options);
   })
 }
@@ -263,7 +262,7 @@ function onconnect (modem, port, host) {
   var updating = false;
   client.on('command', function (command, data) {
     if (command == 'u') {
-      console.error(data.grey)
+      verbose && console.error(data.grey)
     } else if (command == 'U') {
       if (updating) {
         // Interrupted by other deploy
