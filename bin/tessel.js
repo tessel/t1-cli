@@ -20,7 +20,7 @@ var choices = require('choices')
   , request = require('request')
   , humanize = require('humanize');
 
-var tesselClient = require('tessel-client');
+var tesselClient = require('../');
 
 
 // Automatically track and cleanup files at exit

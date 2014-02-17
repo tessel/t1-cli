@@ -17,7 +17,7 @@ var colors = require('colors')
   , keypress = require('keypress')
   , read = require('read');
 
-var tessel = require('tessel-client');
+var tessel = require('../');
 
 // Command-line arguments
 var argv = require("nomnom")
@@ -278,6 +278,10 @@ function onconnect (modem, port, host) {
       client.once('script-stop', function (code) {
         process.exit(code);
       });
+      setTimeout(function () {
+        // timeout :|
+        process.exit(code);
+      }, 5000);
       client.stop();
     });
     process.on('SIGTERM', function() {
