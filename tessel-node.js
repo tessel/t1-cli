@@ -62,6 +62,12 @@ var argv = require("nomnom")
     flag: true,
     help: '[Tessel] Forward stdin as child process messages.'
   })
+  .option('single', {
+    abbr: 's',
+    flag: true,
+    help: '[Tessel] Push a single script file to Tessel.'
+  })
+
   .parse();
 
 function usage () {
@@ -71,6 +77,10 @@ function usage () {
 
 var verbose = !argv.quiet;
 
+
+/**
+ * Library functions
+ */
 
 // Push code to device.
 function bundle (arg)
@@ -90,8 +100,8 @@ function bundle (arg)
 
   hardwareResolve.root(arg, function (err, pushdir, relpath) {
     var files;
-    if (!pushdir) {
-      if (fs.lstatSync(arg).isDirectory()) {
+    if (argv.single || !pushdir) {
+      if (!argv.single && fs.lstatSync(arg).isDirectory()) {
         ret.warning = String(err).replace(/\.( |$)/, ', pushing just this directory.');
 
         pushdir = fs.realpathSync(arg);
@@ -179,6 +189,10 @@ function pushCode (file, args, client, options) {
   })
 }
 
+
+/**
+ * Program entry
+ */
 
 // Check flags.
 if (!argv.interactive && !argv.script) {
