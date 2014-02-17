@@ -25,7 +25,14 @@ var path = require('path')
 
 var wrench = require('./wrench');
 
+
+/**
+ * tesel module
+ */
+
+
 var tessel = exports;
+
 
 tessel.descriptors = {
   TESSEL_VID: 0x1d50, TESSEL_PID: 0x6097,
@@ -33,7 +40,9 @@ tessel.descriptors = {
   NXP_ROM_VID: 0x1fc9, NXP_ROM_PID: 0x000c
 };
 
-tessel.connect = function (port, host) {
+
+tessel.connect = function (port, host)
+{
   var client = net.connect(port, host);
 
   // Parse messages, crudely.
@@ -69,7 +78,9 @@ tessel.connect = function (port, host) {
   return client;
 }
 
-tessel.connectServer = function (modem, next) {
+
+tessel.connectServer = function (modem, next)
+{
   portscanner.checkPortStatus(6540, 'localhost', function (err, status) {
     if (status != 'open') {
       var child = spawn(process.argv[0], [__dirname + '/server.js', modem], {
@@ -94,7 +105,9 @@ tessel.connectServer = function (modem, next) {
   });
 }
 
-tessel.detectModems = function (next) {
+
+tessel.detectModems = function (next)
+{
   libserialport.list(function (err, ports) {
     next(err, ports && ports.filter(function (port) {
       // Remove the following line once everyone has updated their firmware
@@ -110,7 +123,9 @@ tessel.detectModems = function (next) {
   });
 }
 
-tessel.selectModem = function detectDevice (notfound, next) {
+
+tessel.selectModem = function detectDevice (notfound, next)
+{
   tessel.detectModems(function (err, modems) {
     if (modems.length == 0) {
       notfound();
@@ -127,7 +142,9 @@ tessel.selectModem = function detectDevice (notfound, next) {
   });
 }
 
-tessel.acquire = function (modem, next) {
+
+tessel.acquire = function (modem, next)
+{
   if (!next || !modem) {
     if (!next) {
       next = modem;
@@ -148,7 +165,9 @@ tessel.acquire = function (modem, next) {
   }
 }
 
-tessel.bundleFiles = function (relpath, args, files, next) {
+
+tessel.bundleFiles = function (startpath, args, files, next)
+{
   temp.mkdir('colony', function (err, dirpath) {
     var mkdirp = require('mkdirp');
     Object.keys(files).forEach(function (filename) {
@@ -160,7 +179,7 @@ tessel.bundleFiles = function (relpath, args, files, next) {
       = 'process.env.DEPLOY_IP = ' + JSON.stringify(require('my-local-ip')()) + ';\n'
       + 'process.argv = ' + JSON.stringify(args) + ';\n'
       + 'process.send = function (a) { console.log("#&M" + JSON.stringify(a)); };\n'
-      + 'require(' + JSON.stringify('./app/' + relpath) + ');';
+      + 'require(' + JSON.stringify('./app/' + startpath) + ');';
     fs.writeFileSync(path.join(dirpath, '_start.js'), stub);
 
     var docompile = [];
@@ -217,7 +236,11 @@ tessel.bundleFiles = function (relpath, args, files, next) {
   });
 };
 
-tessel.tarCode = function (dirpath, pushdir, next) {
+
+// TODO should not be public,
+// relied on by debug push code path
+tessel.tarCode = function (dirpath, pushdir, next)
+{
   var fstr = fstream.Reader({path: dirpath, type: "Directory"})
   fstr.basename = '';
 
@@ -256,65 +279,5 @@ tessel.tarCode = function (dirpath, pushdir, next) {
   }).on('error', function (err) {
     console.error('ERR'.red, 'Error in compressing code archive: ' + err);
     process.exit(1);
-  });
-}
-
-tessel.bundleCode = function (pushdir, relpath, args, next) {
-  temp.mkdir('colony', function (err, dirpath) {
-    wrench.copyDirSyncRecursive(pushdir, path.join(dirpath, 'app'), {
-      forceDelete: false,
-      exclude: /^\./,
-      inflateSymlinks: true
-    });
-
-    var stub
-      = 'process.env.DEPLOY_IP = ' + JSON.stringify(require('my-local-ip')()) + ';\n'
-      + 'process.argv = ' + JSON.stringify(args) + ';\n'
-      + 'process.send = function (a) { console.log("#&M" + JSON.stringify(a)); };\n'
-      + 'require(' + JSON.stringify('./app/' + relpath) + ');';
-    fs.writeFileSync(path.join(dirpath, '_start.js'), stub);
-
-    var docompile = [];
-
-    wrench.readdirRecursive(path.join(dirpath), function (err, curFiles) {
-      // console.log(curFiles);
-      if (!curFiles) {
-        afterColonizing();
-        return;
-      }
-      curFiles.forEach(function (f) {
-        // console.log("current file", f);
-        if (f.match(/\.js$/)) {
-          try {
-            var res = colony.colonize(fs.readFileSync(path.join(dirpath, f), 'utf-8'));
-            fs.writeFileSync(path.join(dirpath, f), res);
-            docompile.push([f, path.join(dirpath, f)]);
-          } catch (e) {
-            e.filename = f.substr(4);
-            console.log('Syntax error in', f, ':\n', e);
-            process.exit(1);
-          }
-        }
-      })
-    });
-
-    var compileBytecode = true;
-
-    function afterColonizing () {
-      // compile with compile_lua
-      async.each(docompile, function (f, next) {
-        if (!compileBytecode) {
-          next(null);
-        } else {
-          colony.toBytecode(fs.readFileSync(f[1], 'utf-8'), '/' + f[0], function (err, res) {
-            !err && fs.writeFileSync(f[1], res);
-            next(err);
-          });
-        }
-
-      }, function (err) {
-        tessel.tarCode(dirpath, pushdir, next);
-      });
-    }
   });
 }

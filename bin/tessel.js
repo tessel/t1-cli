@@ -284,7 +284,7 @@ if (argv.v || process.argv[2] == 'version') {
     cwd: __dirname,
   }, function (err, stdout, stderr){
     if (err) {
-      console.log(require('./package.json').version.replace(/^v?/, 'v'))
+      console.log(require('../package.json').version.replace(/^v?/, 'v'))
     } else {
       console.log(stdout);
     }
@@ -341,7 +341,7 @@ if (argv.v || process.argv[2] == 'version') {
   }
 
   function dfuRestoreFunc (body) {
-    require('./dfu/tessel-dfu').write(body)
+    require('../dfu/tessel-dfu').write(body)
   }
 } else if (process.argv[2] == 'list') {
   tesselClient.detectModems(function (err, modems) {

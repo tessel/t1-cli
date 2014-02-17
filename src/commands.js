@@ -68,13 +68,13 @@ exports.apply = function (client) {
     client.command('W', outbuf);
   }
 
-  client.deploy = function (file, args, next) {
-    tessel.detectDirectory(file, function (err, dirpath, relpath) {
-      tessel.bundleCode(dirpath, relpath, args, function (err, tarstream) {
-        client.deployBundle(tarstream, {}, next);
-      });
-    });
-  }
+  // client.deploy = function (file, args, next) {
+  //   tessel.detectDirectory(file, function (err, dirpath, relpath) {
+  //     tessel.bundleCode(dirpath, relpath, args, function (err, tarstream) {
+  //       client.deployBundle(tarstream, {}, next);
+  //     });
+  //   });
+  // }
 
   client.deployBundle = function (bundle, options, next) {
     if (options.save){
