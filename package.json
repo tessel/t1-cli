@@ -35,10 +35,7 @@
     "humanize": "0.0.9",
     "nomnom": "~1.6.2",
     "mkdirp": "~0.3.5",
-    "libserialport": "~0.2.3"
-  },
-
-  "optionalDependencies": {
+    "libserialport": "~0.2.3",
     "usb": "~0.3.0"
   }
 }
