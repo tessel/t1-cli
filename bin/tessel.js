@@ -22,6 +22,8 @@ var choices = require('choices')
 
 var tesselClient = require('../');
 
+// Prevent color output to TTY.
+require('colorsafeconsole')(console);
 
 // Automatically track and cleanup files at exit
 temp.track();

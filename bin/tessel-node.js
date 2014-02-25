@@ -19,6 +19,9 @@ var colors = require('colors')
 
 var tessel = require('../')
 
+// Prevent color output to TTY.
+require('colorsafeconsole')(console);
+
 // Command-line arguments
 var argv = require("nomnom")
   .script('tessel-node')
