@@ -400,7 +400,7 @@ function onconnect (modem, port, host) {
 
       var pushpath = process.argv[3];
     } else if (process.argv[2] == 'repl') {
-      var pushpath = __dirname + '/repl';
+      var pushpath = __dirname + '/../repl';
     }
 
     var args = [];
@@ -491,7 +491,7 @@ function onconnect (modem, port, host) {
               }
               var script
                 // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
-                = 'local function _run ()\n' + colony.colonize(data, false) + '\nend\nsetfenv(_run, colony.global);\n_run()';
+                = 'local function _run ()\n' + colony.colonize(data, { returnLastStatement: true, wrap: false }) + '\nend\nsetfenv(_run, colony.global);\nreturn _run()';
               client.command('M', new Buffer(JSON.stringify(script)));
               client.once('message', function (ret) {
                 console.log(ret.ret);
