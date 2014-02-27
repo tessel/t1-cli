@@ -420,7 +420,7 @@ function onconnect (modem, port, host) {
     header.connected(modem.replace(/\s+$/, ''));
   })
 
-  if (process.argv[2] == 'push' || process.argv[2] == 'repl' || process.argv[2] == 'blink') {
+  if (process.argv[2] == 'push' || process.argv[2] == 'repl' || process.argv[2].match(/^blinky?/)) {
     // Push new code to the device.
     if (process.argv[2] == 'push') {
       if (process.argv.length < 4) {
@@ -431,7 +431,7 @@ function onconnect (modem, port, host) {
       var pushpath = process.argv[3];
     } else if (process.argv[2] == 'repl') {
       var pushpath = __dirname + '/../scripts/repl';
-    } else if (process.argv[2] == 'blink') {
+    } else if (process.argv[2].match(/^blinky?/)) {
       var pushpath = __dirname + '/../scripts/blink';
     }
 
