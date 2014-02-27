@@ -62,9 +62,10 @@ function usage () {
     "   tessel stop\n" +
     "   tessel check <file>\n" + 
     "          dumps the tessel binary code\n" + 
-    "   tessel dfu-restore <firmware.bin> [--latest]\n" +
+    "   tessel dfu-restore [tag]\n" +
     "          upload new firmware when in DFU mode\n" +
-    "          --latest grabs latest binary automatically\n" +
+    "          no arguments lists available tags" +
+    "          relative or absolute path pushes a local binary to tessel\n" +
     "   tessel blink\n" +
     "          uploads test blinky script\n" +
     ""
@@ -327,6 +328,7 @@ if (argv.v || process.argv[2] == 'version') {
     })
   } else if (isLocalPath(process.argv[3])) {
     // Try local file.
+    console.error('Deploying local file', process.argv[3], 'to Tessel.');
     dfuRestoreFunc(fs.readFileSync(process.argv[3]));
   } else {
     // Download tagged version.
