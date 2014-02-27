@@ -37,6 +37,7 @@
     "mkdirp": "~0.3.5",
     "libserialport": "~0.2.3",
     "usb": "~0.3.4",
-    "colorsafeconsole": "0.0.4"
+    "colorsafeconsole": "0.0.4",
+    "xml2js": "~0.4.1"
   }
 }

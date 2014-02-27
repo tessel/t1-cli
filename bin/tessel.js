@@ -21,6 +21,7 @@ var choices = require('choices')
   , humanize = require('humanize');
 
 var tesselClient = require('../');
+var repository = require('../src/repository');
 
 // Prevent color output to TTY.
 require('colorsafeconsole')(console);
@@ -61,9 +62,10 @@ function usage () {
     "   tessel stop\n" +
     "   tessel check <file>\n" + 
     "          dumps the tessel binary code\n" + 
-    "   tessel dfu-restore <firmware.bin> [--latest]\n" +
+    "   tessel dfu-restore [tag]\n" +
     "          upload new firmware when in DFU mode\n" +
-    "          --latest grabs latest binary automatically\n" +
+    "          no arguments lists available tags" +
+    "          relative or absolute path pushes a local binary to tessel\n" +
     "   tessel blink\n" +
     "          uploads test blinky script\n" +
     ""
@@ -295,53 +297,78 @@ if (argv.v || process.argv[2] == 'version') {
     }
   });
 } else if (process.argv[2] == 'dfu-restore') {
-  if (process.argv[3] != '--latest') {
+  function isLocalPath (str) {
+    return str.match(/^[\.\/\\]/);
+  }
+
+  if (process.argv.length == 3) {
+    // Display list of tools.
+    repository.getToolsListing(function (err, entries) {
+      function currentize (key, i) {
+        var date = key.match(/\d{4}-\d{2}-\d{2}/) || 'current   '.yellow;
+        // return i == 0 ? (key + '  (current)').yellow : key;
+        return date // + ('\t\t' + key + '').grey
+      }
+
+      console.log('Available firmware tags:')
+      var tags = entries.filter(function (file) {
+        return file.key.match(/^firmware\/./);
+      }).sort(function (a, b) {
+        if (a.key < b.key) return 1;
+        if (a.key > b.key) return -1;
+        return 0;
+      }).map(function (file, i) {
+        return '  o '.blue + currentize(file.key.replace(/^firmware\//, ''), i);
+      });
+      if (tags.length > 10) {
+        tags = tags.slice(0, 10);
+        tags.push('  ...');
+      }
+      console.log(tags.join('\n'));
+    })
+  } else if (isLocalPath(process.argv[3])) {
+    // Try local file.
+    console.error('Deploying local file', process.argv[3], 'to Tessel.');
     dfuRestoreFunc(fs.readFileSync(process.argv[3]));
   } else {
-    request('https://api.github.com/repos/tessel/firmware/releases', {
+    // Download tagged version.
+    var tag = process.argv[3];
+    if (tag == '--latest') {
+      tag = 'current';
+    }
+    var url = repository.firmwareURL(tag);
+
+    process.stdout.write(String('Downloading ' + url));
+    request(url, {
       headers: {
         'User-Agent': 'tessel',
-        'Authorization': 'Basic ' + new Buffer('tmTestUser:tmTestUser1').toString('base64')
+        'Accept': 'application/octet-stream'
       },
-      json: true
+      encoding: null,
+      followRedirect: false
     }, function (err, res, body) {
-      if (err) {
-        console.error('Cannot download latest binary or connect to Github, aborting.');
-        process.exit(1);
+      if (err || res.statusCode >= 400) {
+        process.stderr.write(' failed!');
+        console.error('Could not download file, aborting.')
+        process.exit(10);
       }
 
-      var file = ((body.shift() || {}).assets || []).filter(function (file) {
-        return file.name.match(/\.bin$/);
-      }).pop();
-      if (!file) {
-        console.error('Cannot find a latest binary, aborting.');
-        process.exit(1); 
-      }
-
-      console.log('Downloading', file.name, '...')
-      request(file.url.replace('//', '//tmTestUser:tmTestUser1@'), {
-        headers: {
-          'User-Agent': 'tessel',
-          'Accept': 'application/octet-stream'
-        },
-        encoding: null,
-        followRedirect: false
-      }, function (err, res, body) {
-        if (res.statusCode == 302) {
-          request(res.headers.location, {
-            headers: {
-              'User-Agent': 'tessel',
-              'Accept': 'application/octet-stream'
-            },
-            encoding: null,
-            followRedirect: true
-          }, function (err, res, body) {
-            dfuRestoreFunc(body);
-          });
-        } else {
+      if (res.statusCode == 302) {
+        request(res.headers.location, {
+          headers: {
+            'User-Agent': 'tessel',
+            'Accept': 'application/octet-stream'
+          },
+          encoding: null,
+          followRedirect: true
+        }, function (err, res, body) {
+          console.error(', done.');
           dfuRestoreFunc(body);
-        }
-      });
+        });
+      } else {
+        console.error(', done.');
+        dfuRestoreFunc(body);
+      }
     });
   }
 
