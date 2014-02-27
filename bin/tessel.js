@@ -63,9 +63,9 @@ function usage () {
     "   tessel check <file>\n" + 
     "          dumps the tessel binary code\n" + 
     "   tessel dfu-restore [tag]\n" +
-    "          upload new firmware when in DFU mode\n" +
-    "          no arguments lists available tags" +
-    "          relative or absolute path pushes a local binary to tessel\n" +
+    "          uploads new firmware when in DFU mode\n" +
+    "          no arguments: list available tags\n" +
+    "          relative or absolute path: pushe a local binary to tessel\n" +
     "   tessel blink\n" +
     "          uploads test blinky script\n" +
     ""
