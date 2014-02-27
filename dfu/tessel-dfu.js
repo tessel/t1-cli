@@ -99,7 +99,7 @@ exports.enterStage2 = function(callback) {
     var device = findDevice();
 
     if (!device) {
-        console.error("No Tessel found");
+        console.error("Could not find a Tessel connected by USB.");
         process.exit(1);
     }
 
