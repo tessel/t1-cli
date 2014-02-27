@@ -400,7 +400,7 @@ function onconnect (modem, port, host) {
 
       var pushpath = process.argv[3];
     } else if (process.argv[2] == 'repl') {
-      var pushpath = __dirname + '/../repl';
+      var pushpath = __dirname + '/../scripts/repl';
     }
 
     var args = [];

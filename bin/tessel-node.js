@@ -296,7 +296,7 @@ function onconnect (modem, port, host)
 
   // Check pushing path.
   if (argv.interactive) {
-    var pushpath = __dirname + '/repl';
+    var pushpath = __dirname + '/../scripts/repl';
   } else if (!argv.script) {
     usage();
   } else {
