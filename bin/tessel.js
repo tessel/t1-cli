@@ -63,7 +63,10 @@ function usage () {
     "          dumps the tessel binary code\n" + 
     "   tessel dfu-restore <firmware.bin> [--latest]\n" +
     "          upload new firmware when in DFU mode\n" +
-    "          --latest grabs latest binary automatically\n"
+    "          --latest grabs latest binary automatically\n" +
+    "   tessel blink\n" +
+    "          uploads test blinky script\n" +
+    ""
     );
 }
 
@@ -390,7 +393,7 @@ function onconnect (modem, port, host) {
     header.connected(modem.replace(/\s+$/, ''));
   })
 
-  if (process.argv[2] == 'push' || process.argv[2] == 'repl') {
+  if (process.argv[2] == 'push' || process.argv[2] == 'repl' || process.argv[2] == 'blink') {
     // Push new code to the device.
     if (process.argv[2] == 'push') {
       if (process.argv.length < 4) {
@@ -401,6 +404,8 @@ function onconnect (modem, port, host) {
       var pushpath = process.argv[3];
     } else if (process.argv[2] == 'repl') {
       var pushpath = __dirname + '/../scripts/repl';
+    } else if (process.argv[2] == 'blink') {
+      var pushpath = __dirname + '/../scripts/blink';
     }
 
     var args = [];
