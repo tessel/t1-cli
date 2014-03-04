@@ -215,7 +215,7 @@ tessel.bundleFiles = function (startpath, args, files, next)
           next(null);
         } else {
           try {
-            colony.toBytecode(fs.readFileSync(f[1], 'utf-8'), '/' + f[0], function (err, res) {
+            colony.toBytecode(fs.readFileSync(f[1], 'utf-8'), '/' + f[0].split(path.sep).join('/'), function (err, res) {
               !err && fs.writeFileSync(f[1], res);
               next(err);
             });
