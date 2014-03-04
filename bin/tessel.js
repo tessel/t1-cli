@@ -312,7 +312,7 @@ if (argv.v || process.argv[2] == 'version') {
 
       console.log('Available firmware tags:')
       var tags = entries.filter(function (file) {
-        return file.key.match(/^firmware\/./);
+        return file.key.match(/^firmware\/./) && file.key.match(/\.bin$/);
       }).sort(function (a, b) {
         if (a.key < b.key) return 1;
         if (a.key > b.key) return -1;
