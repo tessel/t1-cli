@@ -92,11 +92,11 @@ var header = {
   nofound: function () {
     header._msg('TESSEL? No Tessel found, waiting...'.grey);
   },
-  connecting: function (modem) {
-    header._msg('TESSEL? Connecting to '.grey + modem.grey + '...');
+  connecting: function (serialNumber) {
+    header._msg('TESSEL? Connecting to '.grey + serialNumber.grey + '...');
   },
-  connected: function (modem) {
-    header._msg('TESSEL!'.bold.cyan + ' Connected to '.cyan + modem.green + '.          \n'.cyan);
+  connected: function (serialNumber) {
+    header._msg('TESSEL!'.bold.cyan + ' Connected to '.cyan + ("" + serialNumber).green + '.          \n'.cyan);
   }
 }
 
@@ -395,30 +395,19 @@ if (argv.v || process.argv[2] == 'version') {
     port = args[1] || 4444;
     onconnect('[' + host + ':' + port + ']', port, host);
   } else {
-    var firstNoDevicesFound = false;
-    tesselClient.selectModem(function notfound () {
-      if (!firstNoDevicesFound) {
-        header.nofound();
-        firstNoDevicesFound = true;
-      }
-    }, function found (err, modem) {
-      header.connecting(modem);
-      tesselClient.connectServer(modem, function () {
-        onconnect(modem, 6540, 'localhost');
-      });
-    });
+    tesselClient.findTessel(onconnect)
   }
 }
 
-function onconnect (modem, port, host) {
-  var client = tesselClient.connect(port, host);
-  // client.pipe(process.stdout);
-  client.on('error', function (err) {
+function onconnect (client) {
+  if (!client) {
     console.error('Error: Cannot connect to Tessel locally.', err);
-  })
-  client.on('connect', function () {
-    header.connected(modem.replace(/\s+$/, ''));
-  })
+  }
+
+  header.connected(client.serialNumber);
+
+  client.listen();
+  client.receiveMessages();
 
   if (process.argv[2] == 'push' || process.argv[2] == 'repl' || process.argv[2].match(/^blinky?/)) {
     // Push new code to the device.
