@@ -63,7 +63,7 @@ Tessel.prototype.postMessage = function postMessage(tag, buf, cb) {
 	header.writeUInt32LE(tag, 4);
 	var data = Buffer.concat([header, buf]);
 
-	var msg_out_endpoint = intf.endpoints[2];
+	var msg_out_endpoint = intf.endpoints[1];
 	msg_out_endpoint.transfer_with_zlp(data, function(error) {
 		cb && cb(error);
 	});
@@ -79,7 +79,7 @@ Tessel.prototype.receiveMessages = function listenForMessages() {
 	intf.claim();
 
 	var transferSize = 4096;
-	var msg_in_endpoint = intf.endpoints[1];
+	var msg_in_endpoint = intf.endpoints[0];
 	msg_in_endpoint.startStream(2, transferSize);
 
 	var buffers = [];
