@@ -399,9 +399,10 @@ if (argv.v || process.argv[2] == 'version') {
   }
 }
 
-function onconnect (client) {
+function onconnect (err, client) {
   if (!client) {
-    console.error('Error: Cannot connect to Tessel locally.', err);
+    console.error('Error: Cannot connect to Tessel locally.', err || "No devices found.");
+    return;
   }
 
   header.connected(client.serialNumber);

@@ -8,7 +8,7 @@ var tessel = require('./');
 
 exports.apply = function (prototype) {
 
-  prototype.init = function() {
+  prototype.initCommands = function() {
     this.stdout = new stream.Duplex();
     this.stdout._read = function () {
     };
