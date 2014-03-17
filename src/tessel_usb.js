@@ -17,12 +17,23 @@ var RECIPIENT_VENDOR_INTERFACE = usb.LIBUSB_RECIPIENT_INTERFACE|usb.LIBUSB_REQUE
 
 function Tessel(dev) {
 	this.usb = dev;
-	this.usb.open();
-	this.init();
 }
+
 exports.Tessel = Tessel;
 
 util.inherits(Tessel, EventEmitter);
+
+Tessel.prototype.init = function init(next) {
+	var self = this;
+	this.usb.open();
+	this.initCommands();
+
+	this.usb.getStringDescriptor(this.usb.deviceDescriptor.iSerialNumber, function (error, data) {
+		if (error) return next(error);
+		self.serialNumber = data;
+		next(null, self);
+	})
+}
 
 Tessel.prototype.close = function close() {
 	this.usb.close();
@@ -106,8 +117,9 @@ Tessel.prototype.receiveMessages = function listenForMessages() {
 exports.findTessel = function findTessel(next) {
 	var dev = usb.findByIds(TESSEL_VID, TESSEL_PID);
 	if (dev) {
-		setImmediate(function() { next(new Tessel(dev)) })
+		var tessel = new Tessel(dev);
+		tessel.init(next);
 	} else {
-		setImmediate(function() { next(null) })
+		setImmediate(next);
 	}
 }
