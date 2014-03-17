@@ -376,9 +376,9 @@ if (argv.v || process.argv[2] == 'version') {
     require('../dfu/tessel-dfu').write(body)
   }
 } else if (process.argv[2] == 'list') {
-  tesselClient.detectModems(function (err, modems) {
-    modems.map(function (modem) {
-      console.log(modem);
+  tesselClient.listDevices(function (err, devices) {
+    devices.map(function (device) {
+      console.log(device.serialNumber);
     });
   })
 } else if (process.argv[2] == 'check') {
@@ -395,13 +395,13 @@ if (argv.v || process.argv[2] == 'version') {
     port = args[1] || 4444;
     onconnect('[' + host + ':' + port + ']', port, host);
   } else {
-    tesselClient.findTessel(onconnect)
+    tesselClient.findTessel(null, onconnect)
   }
 }
 
 function onconnect (err, client) {
   if (!client) {
-    console.error('Error: Cannot connect to Tessel locally.', err || "No devices found.");
+    console.error('Error: Cannot connect to Tessel locally.', err);
     return;
   }
 

@@ -1,5 +1,6 @@
 var usb = require('usb');
 var util = require('util');
+var async = require('async');
 var EventEmitter = require('events').EventEmitter;
 
 var TESSEL_VID = 0x1d50;
@@ -113,13 +114,26 @@ Tessel.prototype.receiveMessages = function listenForMessages() {
 	});
 };
 
-// TODO: multiple device support (by serial number)
-exports.findTessel = function findTessel(next) {
-	var dev = usb.findByIds(TESSEL_VID, TESSEL_PID);
-	if (dev) {
-		var tessel = new Tessel(dev);
-		tessel.init(next);
-	} else {
-		setImmediate(next);
-	}
+exports.findTessel = function findTessel(desiredSerial, next) {
+	exports.listDevices(function (err, devices) {
+		if (err) return next(err);
+
+		for (var i=0; i<devices.length; i++) {
+			if (!desiredSerial || desiredSerial == devices[i].serialNumber) {
+				return next(null, devices[i]);
+			}
+		}
+
+		return next(desiredSerial?"Device not found.":"No devices found.", null);
+	});
+}
+
+exports.listDevices = function listDevices(next) {
+	var devices = usb.getDeviceList().map(function(dev) {
+		if ((dev.deviceDescriptor.idVendor == TESSEL_VID) && (dev.deviceDescriptor.idProduct == TESSEL_PID)) {
+			return new Tessel(dev);
+		}
+	}).filter(function(x) {return x});
+
+	async.each(devices, function(dev, cb) { dev.init(cb) }, function(err) { next(err, devices)} );
 }
