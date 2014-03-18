@@ -40,7 +40,7 @@ Tessel.prototype.close = function close() {
 	this.usb.close();
 }
 
-Tessel.prototype.listen = function listen(colors, logLevel) {
+Tessel.prototype.listen = function listen(colors, logLevels) {
 	var intf = this.usb.interface(DEBUG_INTF);
 	intf.claim();
 	intf.setAltSetting(1, function(error) {
@@ -50,8 +50,25 @@ Tessel.prototype.listen = function listen(colors, logLevel) {
 		ep_debug.startStream(2, 4096);
 		ep_debug.on('data', function(data) {
 			// Log level is wrapped with ASCII SOH STX. Throw it away for now
-			data = data.toString().replace(/\x01(.)\x02/g, '')
-			process.stdout.write(data);
+
+			var pos = 0;
+			while (pos < data.length) {
+				if (data[pos] !== 1) { throw new Error("Expected STX at"+ pos +' ' + data[pos]) }
+				var level = data[pos+1];
+				
+				for (var next=pos+2; next<data.length; next++) {
+					if (data[next] === 1) {
+						break;
+					}
+				}
+
+				if (!logLevels || logLevels.indexOf(String.fromCharCode(level)) != -1) {
+					var str = data.toString('utf8', pos+2, next);
+					process.stdout.write(str);
+				}
+
+				pos = next;
+			}
 		});
 	});
 }

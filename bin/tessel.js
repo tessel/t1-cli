@@ -407,10 +407,11 @@ function onconnect (err, client) {
 
   header.connected(client.serialNumber);
 
-  client.listen();
   client.receiveMessages();
 
   if (process.argv[2] == 'push' || process.argv[2] == 'repl' || process.argv[2].match(/^blinky?/)) {
+    client.listen(true, ['l', 'i'])
+
     // Push new code to the device.
     if (process.argv[2] == 'push') {
       if (process.argv.length < 4) {
@@ -627,17 +628,9 @@ function onconnect (err, client) {
     }
 
   } else if (process.argv[2] == 'logs' || process.argv[2] == 'listen') {
-    client.on('command', function (command, data, debug) {
-      if (debug) {
-        console.log(command.grey, data);
-      }
-    });
-
+    client.listen(true, ['l', 'i'])
   } else if (process.argv[2] == 'verbose') {
-    client.on('command', function (command, data, debug) {
-      console.log(debug ? command.grey : command.red, data);
-    });
-
+    client.listen(true)
   } else {
     usage();
     process.exit(1);
