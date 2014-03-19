@@ -70,6 +70,10 @@ Tessel.prototype.listen = function listen(colors, logLevels) {
 				pos = next;
 			}
 		});
+
+		ep_debug.on('error', function(err) {
+			console.log(err)
+		})
 	});
 }
 
@@ -99,7 +103,7 @@ Tessel.prototype.postMessage = function postMessage(tag, buf, cb) {
 }
 
 Tessel.prototype.command = function command(cmd, buf) {
-	this.postMessage(0x01000000 | cmd.charCodeAt(0), buf);
+	this.postMessage(cmd.charCodeAt(0), buf);
 }
 
 Tessel.prototype.receiveMessages = function listenForMessages() {
@@ -115,15 +119,16 @@ Tessel.prototype.receiveMessages = function listenForMessages() {
 	msg_in_endpoint.on('data', function(data) {
 		buffers.push(data);
 		if (data.length < transferSize) {
-			var first = buffers.shift();
-			buffers.unshift(first.slice(8)); // Remove header
-			var tag = first.readUint32LE(4);
+			var b = Buffer.concat(buffers);
+			var len = b.readUInt16LE(0);
+			var tag = b.readUInt16LE(4);
+			b = b.slice(8);
 
-			self.emit('rawMessage', tag, Buffer.concat(buffers));
+			self.emit('rawMessage', tag, b);
 
 			// backwards compatibility
-			if (tag >> 24 == 0x01) {
-				self.emit('command', tag&0xff, buf);
+			if (tag >> 24 === 0) {
+				self.emit('command', String.fromCharCode(tag&0xff), b.toString('utf8'));
 			}
 
 			buffers = [];

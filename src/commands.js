@@ -19,7 +19,6 @@ exports.apply = function (prototype) {
     };
 
     this.on('command', function (command, data) {
-      // console.log('command', command, data);
       if (command == 'S') {
         var code = parseInt(data);
         if (code > 0) {
@@ -27,8 +26,6 @@ exports.apply = function (prototype) {
         } else {
           this.emit('script-stop', -code);
         }
-      } else if (command == 's') {
-        this.stdout.write(data);
       } else if (command == 'M') {
         this.emit('message', data);
       }

@@ -410,8 +410,6 @@ function onconnect (err, client) {
   client.receiveMessages();
 
   if (process.argv[2] == 'push' || process.argv[2] == 'repl' || process.argv[2].match(/^blinky?/)) {
-    client.listen(true, ['l', 'i'])
-
     // Push new code to the device.
     if (process.argv[2] == 'push') {
       if (process.argv.length < 4) {
@@ -489,12 +487,8 @@ function onconnect (err, client) {
     });
 
     client.once('script-start', function () {
-      // Pipe output to client
-      while (null !== (chunk = client.stdout.read())) {
-        // Flush
-      }
-      client.stdout.pipe(process.stdout);
-
+      client.listen(true, ['l', 'i'])
+      
       // Repl hack
       if (process.argv[2] == 'repl') {
         function cool () {
