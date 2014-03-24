@@ -14,10 +14,11 @@ var DFU_ABORT     = 6; // OUT        Zero        Interface   Zero        None
 var TYPE_IN = 0xA1;
 var TYPE_OUT = 0x21;
 
-function DFU(device) {
+function DFU(device, altsetting) {
     this.device = device;
     this.device.open();
     this.device.timeout = 10 * 1000;
+    this.altsetting = altsetting || 0;
 
     var found = false;
 
@@ -28,6 +29,7 @@ function DFU(device) {
         if (descriptor.bInterfaceClass == 0xfe && descriptor.bInterfaceSubClass == 0x01) {
             found = true;
             this.bInterface = descriptor.bInterfaceNumber;
+            this.iface = this.device.interfaces[i];
 
             if (descriptor.extra[1] != 0x21) {
                 throw new Error("DFU functional descriptor is invalid");
@@ -45,6 +47,11 @@ function DFU(device) {
     if (!found) {
         throw new Error("No DFU interface found!");
     }
+}
+
+DFU.prototype.claim = function (callback) {
+    this.iface.claim();
+    this.iface.setAltSetting(this.altsetting, callback);
 }
 
 DFU.prototype.getStatus = function(callback) {
@@ -104,7 +111,7 @@ DFU.prototype.dnload = function(data, callback, statuscb) {
 
                         self.getStatus(function(error, status) {
                             if (error) return callback(error);
-                            callback();
+                            setTimeout(callback, 100);
                         })
                     });
                 }

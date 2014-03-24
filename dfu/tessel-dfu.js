@@ -28,7 +28,7 @@ function guessDeviceState(device) {
     } else if (device.configDescriptor.bmAttributes === 0xC0) {
         // The DFU ROM claims it is self-powered.
         return 'rom';
-    } else if (device.deviceDescriptor.bcdDevice === 0x0001) {
+    } else if (device.deviceDescriptor.bcdDevice>>8 === 0) {
         return 'dfu';
     } else {
         return 'app';
@@ -54,13 +54,29 @@ exports.read = function(filename) {
 exports.write = function(image) {
     exports.enterStage2(function(device) {
         var dfu = new DFU(device);
+        dfu.claim(function(e) {
+            if (e) throw e;
+            dfu.dnload(image, function(error) {
+                if (error) {
+                    return console.log(error);
+                }
+                process.stdout.write("\nDone! \n");
+            }, showStatus);
+        });
+    });
+}
 
-        dfu.dnload(image, function(error) {
-            if (error) {
-                return console.log(error);
-            }
-            process.stdout.write("\nDone! \n");
-        }, showStatus);
+exports.runRam = function(image) {
+    exports.enterStage2(function(device) {
+        var dfu = new DFU(device, 1);
+        dfu.claim(function (e) {
+            if (e) throw e;
+            dfu.dnload(image, function(e) {
+                if (e) throw e;
+                process.stdout.write("\nDone! \n");
+            }, showStatus);
+        });
+
     });
 }
 
@@ -72,18 +88,20 @@ exports.romBoot = function(device, image_filename, callback) {
     var dfu = new DFU(device);
 
     var image = fs.readFileSync(image_filename);
-
     var header = new Buffer(16);
     header.fill(0)
     header.writeUInt8(0xda, 0);
     header.writeUInt8(0xff, 1);
     header.writeUInt16LE(Math.floor(image.length / 512)+1, 2);
-    header.writeUInt32LE(0xFFFFFFFF, 12)
+    header.writeUInt32LE(0xFFFFFFFF, 12);
 
-    dfu.dnload(Buffer.concat([header, image]), callback);
+    dfu.claim(function (e) {
+        if (e) throw e;
+        dfu.dnload(Buffer.concat([header, image]), callback);
+    });
 }
 
-exports.runRam = function (image_filename) {
+exports.runNXP = function (image_filename) {
     var device = findDevice();
     if (guessDeviceState(device) !== 'rom') {
         console.log("Not in ROM bootloader");
