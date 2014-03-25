@@ -202,6 +202,7 @@ function bundle (arg)
 }
 
 function pushCode (file, args, client, options) {
+  console.log("push code called");
   setTimeout(function () {
     var ret = bundle(file);
     if (ret.warning) {
@@ -654,6 +655,8 @@ function onconnect (modem, port, host) {
   }
 }
 
+exports.pushCode = pushCode;
+// module.exports.bundle = bundle;
 
 // } else if (process.argv[2] == 'pushall'){
 //   // listen for all possible 

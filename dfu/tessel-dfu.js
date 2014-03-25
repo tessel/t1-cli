@@ -51,7 +51,7 @@ exports.read = function(filename) {
 }
 
 /// Write `filename` to flash
-exports.write = function(image) {
+exports.write = function(image, next) {
     exports.enterStage2(function(device) {
         var dfu = new DFU(device);
         dfu.claim(function(e) {
@@ -61,12 +61,13 @@ exports.write = function(image) {
                     return console.log(error);
                 }
                 process.stdout.write("\nDone! \n");
+                next && next(null);
             }, showStatus);
         });
     });
 }
 
-exports.runRam = function(image) {
+exports.runRam = function(image, next) {
     exports.enterStage2(function(device) {
         var dfu = new DFU(device, 1);
         dfu.claim(function (e) {
@@ -74,9 +75,9 @@ exports.runRam = function(image) {
             dfu.dnload(image, function(e) {
                 if (e) throw e;
                 process.stdout.write("\nDone! \n");
+                next && next(null);
             }, showStatus);
         });
-
     });
 }
 
