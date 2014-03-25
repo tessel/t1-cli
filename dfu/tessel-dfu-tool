@@ -3,7 +3,7 @@
 var fs = require('fs');
 
 function usage () {
-  console.error("Usage: tessel-dfu-tool <read|write|run_bl> <file>");
+  console.error("Usage: tessel-dfu-tool <read|write|run_nxp|run_ram> <file>");
   process.exit(1);
 }
 
@@ -17,11 +17,14 @@ if (!file) {
 }
 
 if (op === "run_bl") {
-	tessel_dfu.runRam(file);
+	tessel_dfu.runNXP(file);
+	tessel_dfu.runNXP(file);
 } else if (op === "read") {
 	tessel_dfu.read(file);
 } else if (op === "write") {
-	tessel_dfu.write(fs.readFileSync(filename));
+	tessel_dfu.write(fs.readFileSync(file));
+} else if (op === "run_ram") {
+	tessel_dfu.runRam(fs.readFileSync(file));
 } else {
 	usage();
 }
