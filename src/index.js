@@ -126,9 +126,7 @@ tessel.detectModems = function (next)
 
 tessel.selectModem = function detectDevice (notfound, next)
 {
-  console.log("select modem");
   tessel.detectModems(function (err, modems) {
-    console.log("detect callback", modems);
     if (modems.length == 0) {
       notfound();
       return setTimeout(detectDevice, 10, notfound, next);
