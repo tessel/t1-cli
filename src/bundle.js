@@ -32,7 +32,6 @@ exports.bundleFiles = function (startpath, args, files, next)
     var stub
       = 'process.env.DEPLOY_IP = ' + JSON.stringify(require('my-local-ip')()) + ';\n'
       + 'process.argv = ' + JSON.stringify(args) + ';\n'
-      + 'process.send = function (a) { console.log("#&M" + JSON.stringify(a)); };\n'
       + 'require(' + JSON.stringify('./app/' + startpath.replace('\\', '/')) + ');';
     fs.writeFileSync(path.join(dirpath, '_start.js'), stub);
 
