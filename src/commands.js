@@ -41,7 +41,7 @@ exports.apply = function (prototype) {
     this.on('command', function oncommand (command, data) {
       if (command == 'V') {
         this.removeListener('command', oncommand);
-        next(null, data);
+        next(null, JSON.parse(data));
       }
     });
   }
