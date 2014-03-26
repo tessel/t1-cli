@@ -565,13 +565,8 @@ function onconnect (err, client) {
     })
 
   } else if (process.argv[2] == 'wifi') {
+    client.listen(true, ['V'])
     if (argv._.length == 1) {
-      // just request status
-      client.on('command', function (command, data) {
-        if (command == 'v') { // verbose wifi logs
-          console.log(data);
-        }
-      })
       client.wifiStatus(function (err, data) {
         Object.keys(data).map(function (key) {
           console.log(key.replace(/^./, function (a) { return a.toUpperCase(); }) + ':', data[key]);
