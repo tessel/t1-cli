@@ -107,8 +107,8 @@ Tessel.prototype.postMessage = function postMessage(tag, buf, cb) {
 	});
 }
 
-Tessel.prototype.command = function command(cmd, buf) {
-	this.postMessage(cmd.charCodeAt(0), buf);
+Tessel.prototype.command = function command(cmd, buf, next) {
+	this.postMessage(cmd.charCodeAt(0), buf, next);
 }
 
 Tessel.prototype.receiveMessages = function listenForMessages() {
