@@ -487,7 +487,7 @@ function onconnect (err, client) {
     });
 
     client.once('script-start', function () {
-      client.listen(true, ['l', 'i'])
+      client.listen(true, [10, 11, 12, 13, 20, 21, 22])
       
       // Repl hack
       if (process.argv[2] == 'repl') {
@@ -565,7 +565,7 @@ function onconnect (err, client) {
     })
 
   } else if (process.argv[2] == 'wifi') {
-    client.listen(true, ['V'])
+    client.listen(true, [86])
     if (argv._.length == 1) {
       client.wifiStatus(function (err, data) {
         Object.keys(data).map(function (key) {
@@ -617,7 +617,7 @@ function onconnect (err, client) {
     }
 
   } else if (process.argv[2] == 'logs' || process.argv[2] == 'listen') {
-    client.listen(true, ['l', 'i'])
+    client.listen(true, [10, 11, 12, 13, 20, 21, 22])
   } else if (process.argv[2] == 'verbose') {
     client.listen(true)
   } else {
