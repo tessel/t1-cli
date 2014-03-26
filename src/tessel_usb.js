@@ -41,6 +41,7 @@ Tessel.prototype.close = function close() {
 }
 
 Tessel.prototype.listen = function listen(colors, logLevels) {
+	var self = this;
 	var intf = this.usb.interface(DEBUG_INTF);
 	intf.claim();
 	intf.setAltSetting(1, function(error) {
@@ -73,7 +74,11 @@ Tessel.prototype.listen = function listen(colors, logLevels) {
 
 		ep_debug.on('error', function(err) {
 			console.log(err)
-		})
+		});
+
+		self.once('end', function () {
+			ep_debug.stopStream();
+		});
 	});
 }
 
@@ -134,6 +139,14 @@ Tessel.prototype.receiveMessages = function listenForMessages() {
 			buffers = [];
 		}
 	});
+
+	this.once('end', function () {
+		msg_in_endpoint.stopStream();
+	});
+};
+
+Tessel.prototype.end = function end() {
+	this.emit('end');
 };
 
 exports.findTessel = function findTessel(desiredSerial, next) {
