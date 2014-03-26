@@ -62,9 +62,9 @@ Tessel.prototype.listen = function listen(colors, logLevels) {
 					}
 				}
 
-				if (!logLevels || logLevels.indexOf(String.fromCharCode(level)) != -1) {
+				if (!logLevels || logLevels.indexOf(level) != -1) {
 					var str = data.toString('utf8', pos+2, next);
-					process.stdout.write(str);
+					process.stdout.write(str + "\n");
 				}
 
 				pos = next;
