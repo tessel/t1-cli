@@ -193,15 +193,7 @@ tessel.bundleFiles = function (startpath, args, files, next)
       curFiles.forEach(function (f) {
         // console.log("current file", f);
         if (f.match(/\.js$/)) {
-          try {
-            var res = colony.colonize(fs.readFileSync(path.join(dirpath, f), 'utf-8'));
-            fs.writeFileSync(path.join(dirpath, f), res);
-            docompile.push([f, path.join(dirpath, f)]);
-          } catch (e) {
-            e.filename = f.substr(4);
-            console.log('Syntax error in', f, ':\n', e);
-            process.exit(1);
-          }
+          docompile.push([f, path.join(dirpath, f)]);
         }
       })
     });
@@ -210,13 +202,24 @@ tessel.bundleFiles = function (startpath, args, files, next)
 
     function afterColonizing () {
       // compile with compile_lua
-      async.each(docompile, function (f, next) {
+      async.each(docompile, function (_f, next) {
+        var f = _f[0], fullpath = _f[1];
+
+        try {
+          var res = colony.colonize(fs.readFileSync(fullpath, 'utf-8'));
+        } catch (e) {
+          e.filename = f.substr(4);
+          console.log('Syntax error in', f, ':\n', e);
+          process.exit(1);
+        }
+
         if (!compileBytecode) {
+          fs.writeFileSync(fullpath, res.source);
           next(null);
         } else {
           try {
-            colony.toBytecode(fs.readFileSync(f[1], 'utf-8'), '/' + f[0].split(path.sep).join('/'), function (err, res) {
-              !err && fs.writeFileSync(f[1], res);
+            colony.toBytecode(res, '/' + f.split(path.sep).join('/'), function (err, bytecode) {
+              !err && fs.writeFileSync(fullpath, bytecode);
               next(err);
             });
           } catch (e) {
