@@ -1,8 +1,10 @@
-var fs = require('fs');
-var path = require('path');
+var fs = require('fs')
+  , path = require('path')
 
-var hardwareResolve = require('hardware-resolve');
-var effess = require('effess');
+var hardwareResolve = require('hardware-resolve')
+  , effess = require('effess')
+  , humanize = require('humanize')
+  , tessel = require('../')
 
 // bundle (string arg, { verbose, single }) -> { pushdir, relpath, files, size }
 // Given a command-line file path, resolve whether we are bundling a file, 
@@ -98,21 +100,75 @@ function bundle (arg, opts)
   return ret;
 }
 
-function pushCode (client, file, args, options)
+function pushCode (client, file, args, options, argv)
 {
   // Bundle code based on file path.
   var ret = bundle(file, argv);
   if (ret.warning) {
-    verbose && console.error(('WARN').yellow, ret.warning.grey);
+    !argv.quiet && console.error(('WARN').yellow, ret.warning.grey);
   }
-  verbose && console.error(('Bundling directory ' + ret.pushdir + ' (~' + humanize.filesize(ret.size) + ')').grey);
+  !argv.quiet && console.error(('Bundling directory ' + ret.pushdir + ' (~' + humanize.filesize(ret.size) + ')').grey);
 
   // Create archive and deploy it to tessel.
   tessel.bundleFiles(ret.relpath, args, ret.files, function (err, tarbundle) {
-    verbose && console.error(('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...').grey);
+    !argv.quiet && console.error(('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...').grey);
     client.deployBundle(tarbundle, options);
   })
 }
 
+
+/**
+ * CLI modes
+ */
+
+function basic ()
+{
+  require('colors');
+  require('colorsafeconsole')(console);
+}
+
+function repeatstr (str, n) {
+  return Array(n + 1).join(str);
+}
+
+var header = {
+  init: function () {
+    header._msg('TESSEL? '.grey);
+  },
+  _unwrite: function (n) {
+    process.stderr.write(repeatstr('\b', n));
+    header.len = 0;
+  },
+  _msg: function (str) {
+    header._unwrite(header.len || 0);
+    header.len = str.stripColors.length;
+    process.stderr.write(str);
+  },
+  nofound: function () {
+    header._msg('TESSEL? No Tessel found, waiting...'.grey);
+  },
+  connected: function (serialNumber) {
+    header._msg('TESSEL!'.bold.cyan + ' Connected to '.cyan + ("" + serialNumber).green + '.          \n'.cyan);
+  }
+}
+
+function controller (next)
+{
+  header.init();
+  tessel.findTessel(null, function (err, client) {
+    if (!client || err) {
+      console.error('ERR'.red, err);
+      return;
+    }
+
+    header.connected(client.serialNumber);
+    client.receiveMessages();
+
+    next(null, client);
+  });
+}
+
 exports.bundle = bundle;
 exports.pushCode = pushCode;
+exports.basic = basic;
+exports.controller = controller;

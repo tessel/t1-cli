@@ -19,7 +19,7 @@ var async = require('async')
 var tessel = require('../')
 
 // Smart color output.
-require('color');
+require('colors');
 require('colorsafeconsole')(console);
 
 // Command-line arguments
@@ -72,12 +72,12 @@ var argv = require("nomnom")
 
   .parse();
 
+argv.verbose = !argv.quiet;
+
 function usage () {
   console.error(require('nomnom').getUsage());
   process.exit(1);
 }
-
-var verbose = !argv.quiet;
 
 
 /**
@@ -239,5 +239,5 @@ function onconnect (modem, port, host)
   });
 
   // Forward path and code to tessel cli handling.
-  pushCode(client, pushpath, ['tessel', pushpath].concat(argv.arguments || []), {});
+  pushCode(client, pushpath, ['tessel', pushpath].concat(argv.arguments || []), {}, argv);
 }

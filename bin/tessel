@@ -18,10 +18,11 @@ var choices = require('choices')
   , keypress = require('keypress')
   , humanize = require('humanize');
 
-var tesselClient = require('../');
+var tesselClient = require('../')
+  , common = require('../src/common')
 
 // Smart color output.
-require('color');
+require('colors');
 require('colorsafeconsole')(console);
 
 // Automatically track and cleanup files at exit
@@ -31,9 +32,15 @@ var argv = optimist
   .boolean('v')
   .boolean('no-retry')
   .boolean('verbose')
+  .boolean('quiet')
   .alias('exclude', 'x')
   .alias('include', 'i')
   .argv;
+
+function usage () {
+  console.error(require('nomnom').getUsage());
+  process.exit(1);
+}
 
 // process.on('uncaughtException', function (err) {
 //   console.error(err.stack);
@@ -70,33 +77,7 @@ function usage () {
     );
 }
 
-function repeatstr (str, n) {
-  return Array(n + 1).join(str);
-}
 
-var header = {
-  init: function () {
-    header._msg('TESSEL? '.grey);
-  },
-  _unwrite: function (n) {
-    process.stderr.write(repeatstr('\b', n));
-    header.len = 0;
-  },
-  _msg: function (str) {
-    header._unwrite(header.len || 0);
-    header.len = str.stripColors.length;
-    process.stderr.write(str);
-  },
-  nofound: function () {
-    header._msg('TESSEL? No Tessel found, waiting...'.grey);
-  },
-  connecting: function (serialNumber) {
-    header._msg('TESSEL? Connecting to '.grey + serialNumber.grey + '...');
-  },
-  connected: function (serialNumber) {
-    header._msg('TESSEL!'.bold.cyan + ' Connected to '.cyan + ("" + serialNumber).green + '.          \n'.cyan);
-  }
-}
 
 function zipCode (dir, client) {
   tesselClient.tarCode(dir, dir, function (err, pushdir, tarstream){
@@ -119,48 +100,13 @@ function pushBinary (file, client) {
   client.deployBinary(file);
 }
 
-function dumpBinary(file){
-
-  var gzBuff = fs.readFileSync(file);
-  var newGzipBuff = new Buffer(gzBuff.length - 4);
-  gzBuff.copy(newGzipBuff, 0, 4, gzBuff.length);
-
-  zlib.inflate(newGzipBuff, function(err, inflated) {
-    console.log("dumping binary");
-
-    if (!err) {
-      // untar it
-      fs.mkdir('dump', function(error) {
-        if (!err) {
-          fs.writeFileSync("dump/"+file+"-tarred", inflated);
-          exec("tar xvf "+file+"-tarred", {
-            cwd: process.cwd()+"/dump"
-          }, function (err, stdout, stderr){
-            if (err) {
-              console.log("error couldn't untar", file, stderr);
-            } else {
-              console.log("dumped ", file);
-            }
-            // remove tarball
-            fs.unlinkSync("dump/"+file+"-tarred");
-            process.exit(1);
-          });
-        } else {
-          console.log("can't make dump dir", error);
-        }
-      });
-    } else {
-      console.error("can't inflate", file, err);
-    }
-  });
-}
-
 if (process.argv.length < 3) {
   usage();
-  process.exit(1);
 }
 
-var builtinCommands = ['dfu-restore', 'version']
+var builtinCommands = ['firmware', 'version', 'list', 'check']
+// temporary alias
+if (process.argv[2] == 'dfu-restore') process.argv[2] = 'firmware';
 
 if (builtinCommands.indexOf(process.argv[2]) > -1) {
   spawn(__dirname + '/tessel-' + process.argv[2], process.argv.slice(2), {
@@ -169,41 +115,12 @@ if (builtinCommands.indexOf(process.argv[2]) > -1) {
   .on('exit', function (code) {
     process.exit(code);
   });
-
-} else if (process.argv[2] == 'list') {
-  tesselClient.listDevices(function (err, devices) {
-    devices.map(function (device) {
-      console.log(device.serialNumber);
-    });
-  })
-} else if (process.argv[2] == 'check') {
-  dumpBinary(process.argv[3]);
 } else {
-  header.init();
-
-  if (argv.r) {
-    setImmediate(function () {
-      console.log('listening...'.grey);
-    })
-    var args = argv.r.split(':');
-    host = args[0];
-    port = args[1] || 4444;
-    onconnect('[' + host + ':' + port + ']', port, host);
-  } else {
-    tesselClient.findTessel(null, onconnect)
-  }
+  common.controller(onconnect);
 }
 
-function onconnect (err, client) {
-  if (!client) {
-    console.error('Error: Cannot connect to Tessel locally.', err);
-    return;
-  }
-
-  header.connected(client.serialNumber);
-
-  client.receiveMessages();
-
+function onconnect (err, client)
+{
   if (process.argv[2] == 'push' || process.argv[2] == 'repl' || process.argv[2].match(/^blinky?/)) {
     // Push new code to the device.
     if (process.argv[2] == 'push') {
@@ -325,7 +242,7 @@ function onconnect (err, client) {
     });
 
     if (!options.binary && !options.compress && !options.tar) {
-      pushCode(pushpath, ['tessel', process.argv[3]].concat(args), client, options);
+      pushCode(client, pushpath, ['tessel', process.argv[3]].concat(args), options, argv);
     }
     
   } else if (process.argv[2] == 'stop') {
