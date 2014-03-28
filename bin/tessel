@@ -104,9 +104,21 @@ if (process.argv.length < 3) {
   usage();
 }
 
-var builtinCommands = ['firmware', 'version', 'list', 'check']
+var builtinCommands = [
+  'check',
+  'debug-stack',
+  'erase',
+  'firmware',
+  'list',
+  'logs',
+  'node',
+  'stop',
+  'verbose',
+  'version',
+]
 // temporary alias
 if (process.argv[2] == 'dfu-restore') process.argv[2] = 'firmware';
+if (process.argv[2] == 'listen') process.argv[2] = 'log';
 
 if (builtinCommands.indexOf(process.argv[2]) > -1) {
   spawn(__dirname + '/tessel-' + process.argv[2], process.argv.slice(2), {
@@ -244,37 +256,6 @@ function onconnect (err, client)
     if (!options.binary && !options.compress && !options.tar) {
       pushCode(client, pushpath, ['tessel', process.argv[3]].concat(args), options, argv);
     }
-    
-  } else if (process.argv[2] == 'stop') {
-    client.stop(function () {
-      client.end();
-    });
-
-  } else if (process.argv[2] == 'erase') {
-    client.erase(function () {
-      // client.end();
-    });
-
-  } else if (process.argv[2] == 'debug-stack') {
-    setTimeout(function () {
-      console.log('Requesting stack trace from Tessel...'.grey);
-    }, 10)
-    client.command('K', new Buffer([0xff, 0xff, 0xff, 0xff]));
-    client.on('command', function (kind, data) {
-      if (kind == 'k') {
-        data = String(data);
-        var out = data.replace(/(---|###)\s*$/, '');
-        if (out) {
-          console.log(out);
-        }
-        if (data.match(/---\s*$/)) {
-          console.error('Not running.');
-          process.exit(1);
-        } else if (data.match(/###\s*$/)) {
-          process.exit(0);
-        }
-      }
-    })
 
   } else if (process.argv[2] == 'wifi') {
     client.listen(true, [86])
@@ -328,10 +309,6 @@ function onconnect (err, client)
       retry();
     }
 
-  } else if (process.argv[2] == 'logs' || process.argv[2] == 'listen') {
-    client.listen(true, [10, 11, 12, 13, 20, 21, 22])
-  } else if (process.argv[2] == 'verbose') {
-    client.listen(true)
   } else {
     usage();
     process.exit(1);
