@@ -62,12 +62,12 @@ var builtinCommands = {
   'wifi': 'wifi',
 }
 
-if (process.argv.length < 3 || !builtinCommands[process.argv[2]] {
+if (process.argv.length < 3 || !builtinCommands[process.argv[2]]) {
   usage();
   process.exit(1);
 }
 
-spawn(__dirname + '/tessel-' + process.argv[2], process.argv.slice(2), {
+spawn(__dirname + '/tessel-' + builtinCommands[process.argv[2]], process.argv.slice(2), {
   stdio: 'inherit'
 })
 .on('exit', function (code) {

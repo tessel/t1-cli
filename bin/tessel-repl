@@ -1,104 +1,13 @@
 #!/usr/bin/env node
 
-var common = require('../src/common')
+// tessel-repl
+// Thin redirect to tessel-node -i
 
-var argv = require('optimist').argv
+var spawn = require('child_process').spawn;
 
-function pollInteractive (client)
-{
-  // make `process.stdin` begin emitting "keypress" events
-  keypress(process.stdin);
-  // listen for the ctrl+c event, which seems not to be caught in read loop
-  process.stdin.on('keypress', function (ch, key) {
-    if (key && key.ctrl && key.name == 'c') {
-      process.exit(0);
-    }
-  });
-
-  read({prompt: '>>'}, function (err, data) {
-    try {
-      if (err) {
-        throw err;
-      }
-      var script
-        // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
-        = 'local function _run ()\n' + colony.colonize(data, false) + '\nend\nsetfenv(_run, colony.global);\n_run()';
-      client.command('M', new Buffer(JSON.stringify(script)));
-      client.once('message', function (ret) {
-        console.log(ret.ret);
-        setImmediate(pollInteractive);
-      })
-    } catch (e) {
-      console.error(e.stack);
-      setImmediate(pollInteractive);
-    }
-  });
-}
-
-common.controller(function (err, client) {
-  client.on('error', function (err) {
-    if (err.code == 'ENOENT') {
-      console.error('Error: Cannot connect to Tessel locally.')
-    } else {
-      console.error(err);
-    }
-  })
-
-  // Forward stdin as messages with "-m" option
-  if (argv.messages) {
-    process.stdin.resume();
-    require('readline').createInterface(process.stdin, {}, null).on('line', function (std) {
-      client.send(JSON.stringify(std));
-    })
-  }
-
-  // Check pushing path.
-  var pushpath = __dirname + '/../scripts/repl';
-
-  // Command command.
-  var updating = false;
-  client.on('command', function (command, data) {
-    if (command == 'u') {
-      verbose && console.error(data.grey)
-    } else if (command == 'U') {
-      if (updating) {
-        // Interrupted by other deploy
-        process.exit(0);
-      }
-      updating = true;
-    }
-  });
-
-  client.once('script-start', function () {
-    // Stop on Ctrl+C.
-    process.on('SIGINT', function() {
-      client.once('script-stop', function (code) {
-        process.exit(code);
-      });
-      setTimeout(function () {
-        // timeout :|
-        process.exit(code);
-      }, 5000);
-      client.stop();
-    });
-
-    // Flush existing output, then pipe output to client
-    while (null !== (chunk = client.stdout.read())) {
-      ;
-    }
-    client.stdout.pipe(process.stdout);
-
-    client.once('script-stop', function (code) {
-      client.end();
-      process.exit(code);
-    });
-
-    // repl is implemented in repl/index.js. Uploaded to tessel, it sends a
-    // message telling host it's ready, then receives stdin via
-    // process.on('message')
-    client.once('message', pollInteractive.bind(client));
-  });
-
-  // Forward path and code to tessel cli handling.
-  common.pushCode(client, pushpath, ['tessel', pushpath].concat(argv.arguments || []), {}, argv);
+spawn(__dirname + '/tessel-node', ['-i'], {
+  stdio: 'inherit'
 })
+.on('exit', function (code) {
+  process.exit(code);
+});
