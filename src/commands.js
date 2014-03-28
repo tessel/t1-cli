@@ -81,9 +81,10 @@ exports.apply = function (prototype) {
       fs.writeFileSync("builtin.tar", bundle);
       console.log("wrote builtin.tar");
     }
-    this.stop();
-    next && this.once('script-start', next);
-    this.command(options.flash?'P':'U', bundle);
+    this.stop(function () {
+      next && this.once('script-start', next);
+      this.command(options.flash?'P':'U', bundle);
+    }.bind(this));
   }
 
   prototype.erase = function (next) {
