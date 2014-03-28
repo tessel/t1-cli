@@ -29,11 +29,11 @@ var argv = require("nomnom")
     flag: true,
     help: 'Enter the REPL.'
   })
-  .option('remote', {
-    abbr: 'r',
-    flag: true,
-    help: '[Tessel] Push code to a Tessel by IP address.'
-  })
+  // .option('remote', {
+  //   abbr: 'r',
+  //   flag: true,
+  //   help: '[Tessel] Push code to a Tessel by IP address.'
+  // })
   .option('quiet', {
     abbr: 'q',
     flag: true,
