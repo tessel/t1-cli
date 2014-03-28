@@ -1,0 +1,7 @@
+#!/usr/bin/env
+
+try {
+  console.log(require('../package.json').version.replace(/^v?/, 'v'))
+} catch (e) {
+  console.error('version unknown');
+}
