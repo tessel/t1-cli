@@ -1,32 +1,8 @@
 #!/usr/bin/env node
 
-var fs = require('fs')
-  , path = require('path')
-  , repl = require('repl')
-  , colony = require('colony')
-  , net = require('net')
-  , spawn = require('child_process').spawn
-  , exec = require('child_process').exec
-  , zlib = require('zlib');
+var spawn = require('child_process').spawn
 
-var choices = require('choices')
-  , async = require('async')
-  , optimist = require('optimist')
-  , dgram = require('dgram')
-  , temp = require('temp')
-  , read = require('read')
-  , keypress = require('keypress')
-  , humanize = require('humanize');
-
-var tesselClient = require('../')
-  , common = require('../src/common')
-
-// Smart color output.
-require('colors');
-require('colorsafeconsole')(console);
-
-// Automatically track and cleanup files at exit
-temp.track();
+var optimist = require('optimist')
 
 var argv = optimist
   .boolean('v')
@@ -36,11 +12,6 @@ var argv = optimist
   .alias('exclude', 'x')
   .alias('include', 'i')
   .argv;
-
-function usage () {
-  console.error(require('nomnom').getUsage());
-  process.exit(1);
-}
 
 function usage () {
   console.error("Tessel CLI\nUsage:\n" +
@@ -74,192 +45,31 @@ function usage () {
 }
 
 
-
-function zipCode (dir, client) {
-  tesselClient.tarCode(dir, dir, function (err, pushdir, tarstream){
-    // deploy that bundle
-    console.error(('Deploying...').grey);
-    client.deployBundle(tarstream, {});
-  });
+var builtinCommands = {
+  'blink': 'blink', 'blinky': 'blink', 'blinkie': 'blink', 'blinkee': 'blink',
+  'check': 'check',
+  'debug-stack': 'debug-stack',
+  'erase': 'erase',
+  'firmware': 'firmware', 'dfu-restore': 'firmware',
+  'list': 'list',
+  'logs': 'logs', 'listen': 'logs',
+  'node': 'node',
+  'push': 'push',
+  'repl': 'repl',
+  'stop': 'stop',
+  'verbose': 'verbose',
+  'version': 'version',
+  'wifi': 'wifi',
 }
 
-var pushCode = require('../src/common').pushCode;
-
-function pushTar (file, client, options) {
-  console.error(('Deploying tar ' + file).grey);
-  var tarbuff = fs.readFileSync(file);
-  client.deployBundle(tarbuff, {});
-}
-
-function pushBinary (file, client) {
-  console.error(('Deploying binary ' + file).grey);
-  client.deployBinary(file);
-}
-
-if (process.argv.length < 3) {
+if (process.argv.length < 3 || !builtinCommands[process.argv[2]] {
   usage();
+  process.exit(1);
 }
 
-var builtinCommands = [
-  'blink',
-  'check',
-  'debug-stack',
-  'erase',
-  'firmware',
-  'list',
-  'logs',
-  'node',
-  'push',
-  'repl',
-  'stop',
-  'verbose',
-  'version',
-  'wifi',
-]
-// temporary alias
-if (process.argv[2] == 'dfu-restore') process.argv[2] = 'firmware';
-if (process.argv[2] == 'listen') process.argv[2] = 'log';
-if (process.argv[2].match(/^blink(|y|[ie]e)/)) process.argv[2] = 'blink';
-
-if (builtinCommands.indexOf(process.argv[2]) > -1) {
-  spawn(__dirname + '/tessel-' + process.argv[2], process.argv.slice(2), {
-    stdio: 'inherit'
-  })
-  .on('exit', function (code) {
-    process.exit(code);
-  });
-} else {
-  common.controller(onconnect);
-}
-
-function onconnect (err, client)
-{
-  if (process.argv[2] == 'push' || process.argv[2] == 'repl' || process.argv[2].match(/^blinky?/)) {
-    // Push new code to the device.
-    if (process.argv[2] == 'push') {
-      if (process.argv.length < 4) {
-        usage();
-        process.exit(1);
-      } 
-
-      var pushpath = process.argv[3];
-    } else if (process.argv[2] == 'repl') {
-      var pushpath = __dirname + '/../scripts/repl';
-    } else if (process.argv[2].match(/^blinky?/)) {
-      var pushpath = __dirname + '/../scripts/blink';
-    }
-
-    var args = [];
-    var options = {
-      save: false,
-      binary: false,
-      compress: false,
-      tar: false,
-      flash: false,
-    };
-
-    // for all the process args
-    for (var i = 2; i<process.argv.length; i++){
-      switch(process.argv[i])
-      {
-      case '-a' :
-      case '--args':
-        // TODO: only supports 1 argument right now
-        args = process.argv.slice(i+1);
-        break;
-      case '-s' :
-      case '--save':
-        options.save = true;
-        break;
-      case '-b' :
-      case '--binary':
-        console.log("\nuploading binary", process.argv.slice(i+1));
-        pushBinary(process.argv.slice(i+1)[0], client);
-        options.binary = true;
-        break;
-      case '-c' :
-      case '--compress':
-        console.log("\ncompressing and uploading dir", process.argv.slice(i+1)[0]);
-        zipCode(process.argv.slice(i+1)[0], client);
-        options.compress = true;
-        break;
-      case '-t' :
-      case '--tar':
-        console.error(("\nuploading tarball", process.argv.slice(i+1)[0]).grey);
-        options.tar = true;
-        pushTar(process.argv.slice(i+1)[0], client, options);
-        break;
-      case '-f' :
-      case '--flash':
-        options.flash = true;
-        break;
-      default:
-        break;
-      }
-    }
-
-    var updating = false;
-    client.on('command', function (command, data) {
-      if (command == 'u') {
-        console.error(data.grey)
-      } else if (command == 'U') {
-        if (updating) {
-          // Interrupted by other deploy
-          process.exit(0);
-        }
-        updating = true;
-      }
-    });
-
-    client.once('script-start', function () {
-      client.listen(true, [10, 11, 12, 13, 20, 21, 22])
-      
-      // Repl hack
-      if (process.argv[2] == 'repl') {
-        function cool () {
-          // make `process.stdin` begin emitting "keypress" events
-          keypress(process.stdin);
-          // listen for the ctrl+c event, which seems not to be caught in read loop
-          process.stdin.on('keypress', function (ch, key) {
-            if (key && key.ctrl && key.name == 'c') {
-              process.exit(0);
-            }
-          });
-
-          read({prompt: '>>'}, function (err, data) {
-            try {
-              if (err) {
-                throw err;
-              }
-              var script
-                // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
-                = 'local function _run ()\n' + colony.colonize(data, { returnLastStatement: true, wrap: false }) + '\nend\nsetfenv(_run, colony.global);\nreturn _run()';
-              client.command('M', new Buffer(JSON.stringify(script)));
-              client.once('message', function (ret) {
-                console.log(ret.ret);
-                setImmediate(cool);
-              })
-            } catch (e) {
-              console.error(e.stack);
-              setImmediate(cool);
-            }
-          });
-        }
-        client.once('message', cool);
-      }
-
-      client.once('script-stop', function (code) {
-        client.end();
-        process.exit(code);
-      });
-    });
-
-    if (!options.binary && !options.compress && !options.tar) {
-      pushCode(client, pushpath, ['tessel', process.argv[3]].concat(args), options, argv);
-    }
-
-  } else {
-    usage();
-    process.exit(1);
-  }
-}
+spawn(__dirname + '/tessel-' + process.argv[2], process.argv.slice(2), {
+  stdio: 'inherit'
+})
+.on('exit', function (code) {
+  process.exit(code);
+});
