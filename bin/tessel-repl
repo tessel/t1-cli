@@ -1,65 +1,8 @@
 #!/usr/bin/env node
 
-
-
 var common = require('../src/common')
 
-// Command-line arguments
-var argv = require("nomnom")
-  .script('tessel-node')
-  .option('script', {
-    position: 1,
-    // required: true,
-    full: 'script.js',
-    help: 'Run this script on Tessel.',
-  })
-  .option('arguments', {
-    position: 2,
-    list: true,
-    help: 'Arguments to pass in as process.argv.'
-  })
-  .option('version', {
-    abbr: 'v',
-    flag: true,
-    help: 'Print tessel-node\'s version.',
-    callback: function() {
-      return require('./package.json').version.replace(/^v?/, 'v');
-    }
-  })
-  .option('interactive', {
-    abbr: 'i',
-    flag: true,
-    help: 'Enter the REPL.'
-  })
-  .option('remote', {
-    abbr: 'r',
-    flag: true,
-    help: '[Tessel] Push code to a Tessel by IP address.'
-  })
-  .option('quiet', {
-    abbr: 'q',
-    flag: true,
-    help: '[Tessel] Hide tessel deployment messages.'
-  })
-  .option('messages', {
-    abbr: 'm',
-    flag: true,
-    help: '[Tessel] Forward stdin as child process messages.'
-  })
-  .option('single', {
-    abbr: 's',
-    flag: true,
-    help: '[Tessel] Push a single script file to Tessel.'
-  })
-
-  .parse();
-
-argv.verbose = !argv.quiet;
-
-function usage () {
-  console.error(require('nomnom').getUsage());
-  process.exit(1);
-}
+var argv = require('optimist').argv
 
 function pollInteractive (client)
 {
@@ -110,13 +53,7 @@ common.controller(function (err, client) {
   }
 
   // Check pushing path.
-  if (argv.interactive) {
-    var pushpath = __dirname + '/../scripts/repl';
-  } else if (!argv.script) {
-    usage();
-  } else {
-    var pushpath = argv.script;
-  }
+  var pushpath = __dirname + '/../scripts/repl';
 
   // Command command.
   var updating = false;
@@ -159,9 +96,7 @@ common.controller(function (err, client) {
     // repl is implemented in repl/index.js. Uploaded to tessel, it sends a
     // message telling host it's ready, then receives stdin via
     // process.on('message')
-    if (argv.interactive) {
-      client.once('message', pollInteractive.bind(client));
-    }
+    client.once('message', pollInteractive.bind(client));
   });
 
   // Forward path and code to tessel cli handling.
