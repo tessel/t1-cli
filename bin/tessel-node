@@ -84,7 +84,7 @@ var verbose = !argv.quiet;
  * Library functions
  */
 
-var pushCode = require('./common').pushCode;
+var pushCode = require('../src/common').pushCode;
 
 
 function pollInteractive (client)

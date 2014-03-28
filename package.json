@@ -1,19 +1,19 @@
 {
   "name": "tessel",
-  "version": "0.1.0",
-  "description": "Connect to your Tessel and upload code!",
+  "version": "0.2.0",
+  "description": "Tessel command line tools and programmatic access library.",
   "main": "src/index.js",
   "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "tessel": "./bin/tessel.js",
-    "tessel-node": "./bin/tessel-node.js"
+    "tessel": "./bin/tessel",
+    "tessel-node": "./bin/tessel-node"
   },
-  "repository": "",
-  "author": "Tim Cameron Ryan <tim@technical.io>",
-  "license": "BSD",
+  "repository": "git://github.com/tessel/cli.git",
+  "author": "Technical Machine <team@technical.io>",
+  "license": "MIT",
   "dependencies": {
     "choices": "0.0.2",
     "colors": "~0.6.0-1",
