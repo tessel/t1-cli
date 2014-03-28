@@ -10,7 +10,6 @@ var fs = require('fs')
   , zlib = require('zlib');
 
 var choices = require('choices')
-  , colors = require('colors')
   , async = require('async')
   , optimist = require('optimist')
   , dgram = require('dgram')
@@ -21,7 +20,8 @@ var choices = require('choices')
 
 var tesselClient = require('../');
 
-// Prevent color output to TTY.
+// Smart color output.
+require('color');
 require('colorsafeconsole')(console);
 
 // Automatically track and cleanup files at exit
@@ -163,7 +163,7 @@ if (process.argv.length < 3) {
 var builtinCommands = ['dfu-restore', 'version']
 
 if (builtinCommands.indexOf(process.argv[2]) > -1) {
-  spawn(__dirname + '/tessel-' + process.argv[2] + '.js', process.argv.slice(2), {
+  spawn(__dirname + '/tessel-' + process.argv[2], process.argv.slice(2), {
     stdio: 'inherit'
   })
   .on('exit', function (code) {
