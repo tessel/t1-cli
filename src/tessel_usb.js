@@ -27,6 +27,7 @@ util.inherits(Tessel, EventEmitter);
 Tessel.prototype.init = function init(next) {
 	var self = this;
 	this.usb.open();
+	this.usb.timeout = 10000;
 	this.initCommands();
 
 	this.usb.getStringDescriptor(this.usb.deviceDescriptor.iSerialNumber, function (error, data) {
@@ -108,6 +109,7 @@ Tessel.prototype.postMessage = function postMessage(tag, buf, cb) {
 }
 
 Tessel.prototype.command = function command(cmd, buf, next) {
+	next = next || function(error) { if(error) console.error(error); }
 	this.postMessage(cmd.charCodeAt(0), buf, next);
 }
 
