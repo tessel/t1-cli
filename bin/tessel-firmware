@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 
-var repository = require('../src/repository')
-  , request = require('request')
+var fs = require('fs');
+
+var request = require('request')
+  , repository = require('../src/repository')
+  , common = require('../src/common')
+
+// Setup cli.
+common.basic();
 
 function isLocalPath (str) {
   return str.match(/^[\.\/\\]/);
