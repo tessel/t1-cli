@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-
-
 var common = require('../src/common')
 
 // Command-line arguments
