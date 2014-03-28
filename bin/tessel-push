@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-
-
 var common = require('../src/common')
 
 // Command-line arguments
@@ -59,37 +57,6 @@ argv.verbose = !argv.quiet;
 function usage () {
   console.error(require('nomnom').getUsage());
   process.exit(1);
-}
-
-function pollInteractive (client)
-{
-  // make `process.stdin` begin emitting "keypress" events
-  keypress(process.stdin);
-  // listen for the ctrl+c event, which seems not to be caught in read loop
-  process.stdin.on('keypress', function (ch, key) {
-    if (key && key.ctrl && key.name == 'c') {
-      process.exit(0);
-    }
-  });
-
-  read({prompt: '>>'}, function (err, data) {
-    try {
-      if (err) {
-        throw err;
-      }
-      var script
-        // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
-        = 'local function _run ()\n' + colony.colonize(data, false) + '\nend\nsetfenv(_run, colony.global);\n_run()';
-      client.command('M', new Buffer(JSON.stringify(script)));
-      client.once('message', function (ret) {
-        console.log(ret.ret);
-        setImmediate(pollInteractive);
-      })
-    } catch (e) {
-      console.error(e.stack);
-      setImmediate(pollInteractive);
-    }
-  });
 }
 
 common.controller(function (err, client) {

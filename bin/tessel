@@ -42,10 +42,6 @@ function usage () {
   process.exit(1);
 }
 
-// process.on('uncaughtException', function (err) {
-//   console.error(err.stack);
-// })
-
 function usage () {
   console.error("Tessel CLI\nUsage:\n" +
     "   tessel <filename>\n" +
@@ -105,6 +101,7 @@ if (process.argv.length < 3) {
 }
 
 var builtinCommands = [
+  'blink',
   'check',
   'debug-stack',
   'erase',
@@ -112,13 +109,17 @@ var builtinCommands = [
   'list',
   'logs',
   'node',
+  'push',
+  'repl',
   'stop',
   'verbose',
   'version',
+  'wifi',
 ]
 // temporary alias
 if (process.argv[2] == 'dfu-restore') process.argv[2] = 'firmware';
 if (process.argv[2] == 'listen') process.argv[2] = 'log';
+if (process.argv[2].match(/^blink(|y|[ie]e)/)) process.argv[2] = 'blink';
 
 if (builtinCommands.indexOf(process.argv[2]) > -1) {
   spawn(__dirname + '/tessel-' + process.argv[2], process.argv.slice(2), {
@@ -255,58 +256,6 @@ function onconnect (err, client)
 
     if (!options.binary && !options.compress && !options.tar) {
       pushCode(client, pushpath, ['tessel', process.argv[3]].concat(args), options, argv);
-    }
-
-  } else if (process.argv[2] == 'wifi') {
-    client.listen(true, [86])
-    if (argv._.length == 1) {
-      client.wifiStatus(function (err, data) {
-        Object.keys(data).map(function (key) {
-          console.log(key.replace(/^./, function (a) { return a.toUpperCase(); }) + ':', data[key]);
-        })
-        process.exit(0);
-      })
-
-    } else {
-      // if (argv._.length < 3) {
-      //   usage();
-      //   process.exit(1);
-      // }
-
-      function retry () {
-        var ssid = argv._[1];
-        var pass = argv._[2] || "";
-        var security = (argv._[3] || (pass ? 'wpa2' : 'unsecure')).toLowerCase();
-
-        // Only defer to make print after thing.
-        client.once('connect', function () {
-          console.log(('Network ' + JSON.stringify(ssid) + 
-            ' (pass ' + JSON.stringify(pass) + ') with ' + security + ' security'));
-        });
-
-        // This is just for fun logs
-        client.on('command', function listener (command, data) {
-          if (command == 'w') {
-            console.log(data);
-          }
-          if (command == 'W' && 'connected' in data) {
-            client.removeListener('command', listener);
-          }
-        });
-
-        client.configureWifi(ssid, pass, security, {
-          timeout: argv.timeout || 8
-        }, function (err) {
-          if (err && !argv['no-retry']) {
-            console.error('Retrying...');
-            setImmediate(retry);
-          } else {
-            process.exit(err ? 1 : 0);
-          }
-        });
-      }
-
-      retry();
     }
 
   } else {
