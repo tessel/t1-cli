@@ -1,4 +1,4 @@
-#!/usr/bin/env
+#!/usr/bin/env node
 
 try {
   console.log(require('../package.json').version.replace(/^v?/, 'v'))

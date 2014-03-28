@@ -8,8 +8,7 @@ var fs = require('fs')
   , net = require('net')
   , zlib = require('zlib')
 
-var colors = require('colors')
-  , async = require('async')
+var async = require('async')
   , nomnom = require('nomnom')
   , dgram = require('dgram')
   , humanize = require('humanize')
@@ -19,7 +18,8 @@ var colors = require('colors')
 
 var tessel = require('../')
 
-// Prevent color output to TTY.
+// Smart color output.
+require('color');
 require('colorsafeconsole')(console);
 
 // Command-line arguments
