@@ -106,7 +106,7 @@ function zipCode (dir, client) {
   });
 }
 
-var pushCode = require('./common').pushCode;
+var pushCode = require('../src/common').pushCode;
 
 function pushTar (file, client, options) {
   console.error(('Deploying tar ' + file).grey);
@@ -160,23 +160,16 @@ if (process.argv.length < 3) {
   process.exit(1);
 }
 
-if (process.argv[2] == 'dfu-restore') {
-  spawn(__dirname + '/tessel-dfu-restore.js', process.argv.slice(2), {
+var builtinCommands = ['dfu-restore', 'version']
+
+if (builtinCommands.indexOf(process.argv[2]) > -1) {
+  spawn(__dirname + '/tessel-' + process.argv[2] + '.js', process.argv.slice(2), {
     stdio: 'inherit'
   })
   .on('exit', function (code) {
     process.exit(code);
   });
-} else if (argv.v || process.argv[2] == 'version') {
-  exec("more VERSION", {
-    cwd: __dirname,
-  }, function (err, stdout, stderr){
-    if (err) {
-      console.log(require('../package.json').version.replace(/^v?/, 'v'))
-    } else {
-      console.log(stdout);
-    }
-  });
+
 } else if (process.argv[2] == 'list') {
   tesselClient.listDevices(function (err, devices) {
     devices.map(function (device) {
