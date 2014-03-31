@@ -8,14 +8,6 @@ var TESSEL_PID = 0x6097;
 
 var REQ_FW_STATUS = 0x01;
 
-var DEBUG_INTF = 0;
-
-var MSG_INTF   = 1;
-var REQ_RESET_MSG_STATE = 0x01;
-var REQ_STOP_APP = 0x11;
-
-var RECIPIENT_VENDOR_INTERFACE = usb.LIBUSB_RECIPIENT_INTERFACE|usb.LIBUSB_REQUEST_TYPE_VENDOR;
-
 function Tessel(dev) {
 	this.usb = dev;
 }
@@ -30,6 +22,9 @@ Tessel.prototype.init = function init(next) {
 	this.usb.timeout = 10000;
 	this.initCommands();
 
+	this.logColors = true;
+	this.logLevels = [];
+
 	this.usb.getStringDescriptor(this.usb.deviceDescriptor.iSerialNumber, function (error, data) {
 		if (error) return next(error);
 		self.serialNumber = data;
@@ -37,49 +32,73 @@ Tessel.prototype.init = function init(next) {
 	})
 }
 
+Tessel.prototype.claim = function claim(next) {
+	// Runs the claiming procedure exactly once, and calls next after it has completed
+	if (this.claimed === 'claimed') {
+		// Already claimed
+		return setImmediate(next);
+	}
+
+	this.once('claimed', next);
+
+	if (!this.claimed) {
+		this.claimed = 'claiming';
+		var self = this;
+		self.intf = self.usb.interface(0);
+		self.intf.claim();
+		// We use an alternate setting so it is automatically released if the program is killed
+		self.intf.setAltSetting(1, function(error) {
+			if (error) return next(error);
+			self.log_ep = self.intf.endpoints[0];
+			self.msg_in_ep = self.intf.endpoints[1];
+			self.msg_out_ep = self.intf.endpoints[2];
+			self.claimed = 'claimed';
+
+			self._receiveLogs();
+			self._receiveMessages();
+
+			self.emit('claimed');
+		});
+	}
+}
+
 Tessel.prototype.close = function close() {
 	this.usb.close();
 }
 
-Tessel.prototype.listen = function listen(colors, logLevels) {
+Tessel.prototype.listen = function listen(colors, levels) {
+	this.logColors = colors;
+	this.logLevels = levels;
+}
+
+Tessel.prototype._receiveLogs = function _receiveLogs() {
 	var self = this;
-	var intf = this.usb.interface(DEBUG_INTF);
-	intf.claim();
-	intf.setAltSetting(1, function(error) {
-		if (error) throw error;
-		var ep_debug = intf.endpoints[0];
-
-		ep_debug.startStream(2, 4096);
-		ep_debug.on('data', function(data) {
-			// Log level is wrapped with ASCII SOH STX. Throw it away for now
-
-			var pos = 0;
-			while (pos < data.length) {
-				if (data[pos] !== 1) { throw new Error("Expected STX at"+ pos +' ' + data[pos]) }
-				var level = data[pos+1];
-				
-				for (var next=pos+2; next<data.length; next++) {
-					if (data[next] === 1) {
-						break;
-					}
+	self.log_ep.startStream(4, 4096);
+	self.log_ep.on('data', function(data) {
+		var pos = 0;
+		while (pos < data.length) {
+			if (data[pos] !== 1) { throw new Error("Expected STX at"+ pos +' ' + data[pos]) }
+			var level = data[pos+1];
+			
+			for (var next=pos+2; next<data.length; next++) {
+				if (data[next] === 1) {
+					break;
 				}
-
-				if (!logLevels || logLevels.indexOf(level) != -1) {
-					var str = data.toString('utf8', pos+2, next);
-					process.stdout.write(str + "\n");
-				}
-
-				pos = next;
 			}
-		});
 
-		ep_debug.on('error', function(err) {
-			console.log(err)
-		});
+			var str = data.toString('utf8', pos+2, next);
 
-		self.once('end', function () {
-			ep_debug.stopStream();
-		});
+			if (self.logLevels === false || self.logLevels.indexOf(level) != -1) {
+				process.stdout.write(str + "\n");
+			}
+
+			self.emit('log', level, str);
+			pos = next;
+		}
+	});
+
+	self.once('end', function () {
+		self.log_ep.stopStream();
 	});
 }
 
@@ -94,16 +113,12 @@ usb.OutEndpoint.prototype.transfer_with_zlp = function (buf, cb) {
 }
 
 Tessel.prototype.postMessage = function postMessage(tag, buf, cb) {
-	var intf = this.usb.interface(MSG_INTF);
-	intf.claim();
-
 	var header = new Buffer(8);
 	header.writeUInt32LE(buf.length, 0);
 	header.writeUInt32LE(tag, 4);
 	var data = Buffer.concat([header, buf]);
 
-	var msg_out_endpoint = intf.endpoints[1];
-	msg_out_endpoint.transfer_with_zlp(data, function(error) {
+	this.msg_out_ep.transfer_with_zlp(data, function(error) {
 		cb && cb(error);
 	});
 }
@@ -113,17 +128,14 @@ Tessel.prototype.command = function command(cmd, buf, next) {
 	this.postMessage(cmd.charCodeAt(0), buf, next);
 }
 
-Tessel.prototype.receiveMessages = function listenForMessages() {
+Tessel.prototype._receiveMessages = function _receiveMessages() {
 	var self = this;
-	var intf = this.usb.interface(MSG_INTF);
-	intf.claim();
 
 	var transferSize = 4096;
-	var msg_in_endpoint = intf.endpoints[0];
-	msg_in_endpoint.startStream(2, transferSize);
+	self.msg_in_ep.startStream(2, transferSize);
 
 	var buffers = [];
-	msg_in_endpoint.on('data', function(data) {
+	self.msg_in_ep.on('data', function(data) {
 		buffers.push(data);
 		if (data.length < transferSize) {
 			var b = Buffer.concat(buffers);
@@ -142,8 +154,8 @@ Tessel.prototype.receiveMessages = function listenForMessages() {
 		}
 	});
 
-	this.once('end', function () {
-		msg_in_endpoint.stopStream();
+	self.once('end', function () {
+		self.msg_in_ep.stopStream();
 	});
 };
 
@@ -157,7 +169,11 @@ exports.findTessel = function findTessel(desiredSerial, next) {
 
 		for (var i=0; i<devices.length; i++) {
 			if (!desiredSerial || desiredSerial == devices[i].serialNumber) {
-				return next(null, devices[i]);
+				devices[i].claim(function(err) {
+					if (err) return next(err);
+					return next(null, devices[i]);
+				});
+				return;
 			}
 		}
 

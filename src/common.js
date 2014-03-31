@@ -162,7 +162,6 @@ function controller (next)
     }
 
     header.connected(client.serialNumber);
-    client.receiveMessages();
 
     next(null, client);
   });
