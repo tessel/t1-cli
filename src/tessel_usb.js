@@ -139,15 +139,16 @@ Tessel.prototype._receiveMessages = function _receiveMessages() {
 		buffers.push(data);
 		if (data.length < transferSize) {
 			var b = Buffer.concat(buffers);
-			var len = b.readUInt16LE(0);
-			var tag = b.readUInt16LE(4);
-			b = b.slice(8);
+			if (b.length > 0) {
+				var len = b.readUInt16LE(0);
+				var tag = b.readUInt16LE(4);
+				b = b.slice(8);
 
-			self.emit('rawMessage', tag, b);
+				self.emit('rawMessage', tag, b);
 
-			// backwards compatibility
-			if (tag >> 24 === 0) {
-				self.emit('command', String.fromCharCode(tag&0xff), b.toString('utf8'));
+				if (tag >> 24 === 0) {
+					self.emit('command', String.fromCharCode(tag&0xff), b.toString('utf8'));
+				}
 			}
 
 			buffers = [];
