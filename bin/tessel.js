@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var spawn = require('child_process').spawn
+var fork = require('child_process').fork
 
 var optimist = require('optimist')
 
@@ -67,9 +67,7 @@ if (process.argv.length < 3 || !builtinCommands[process.argv[2]]) {
   process.exit(1);
 }
 
-spawn(__dirname + '/tessel-' + builtinCommands[process.argv[2]] + '.js', process.argv.slice(2), {
-  stdio: 'inherit'
-})
+fork(__dirname + '/tessel-' + builtinCommands[process.argv[2]] + '.js', process.argv.slice(2))
 .on('exit', function (code) {
   process.exit(code);
 });
