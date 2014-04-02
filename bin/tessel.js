@@ -67,7 +67,7 @@ if (process.argv.length < 3 || !builtinCommands[process.argv[2]]) {
   process.exit(1);
 }
 
-spawn(__dirname + '/tessel-' + builtinCommands[process.argv[2]], process.argv.slice(2), {
+spawn(__dirname + '/tessel-' + builtinCommands[process.argv[2]] + '.js', process.argv.slice(2), {
   stdio: 'inherit'
 })
 .on('exit', function (code) {
