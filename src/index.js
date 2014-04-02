@@ -226,7 +226,7 @@ tessel.bundleFiles = function (startpath, args, files, next)
             });
           } catch (e) {
             console.log('ERR'.red, 'Bytecode compile process failed for the following file:');
-            console.log('ERR'.red, ' ', f[0].replace(/^[^/]+/, '.'))
+            console.log('ERR'.red, ' ', f.replace(/^[^/]+/, '.'))
             console.log('ERR'.red, 'This is a compilation bug! Please file an issue at');
             console.log('ERR'.red, 'https://github.com/tessel/beta/issues with this text');
             console.log('ERR'.red, 'and a copy of the file that failed to compile.')
