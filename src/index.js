@@ -209,7 +209,9 @@ tessel.bundleFiles = function (startpath, args, files, next)
           var res = colony.colonize(fs.readFileSync(fullpath, 'utf-8'));
         } catch (e) {
           e.filename = f.substr(4);
-          console.log('Syntax error in', f, ':\n', e);
+          console.log('ERR'.red, 'The following parsing error was encountered:');
+          console.log('ERR'.red, '[' + f + ']', e.toString());
+          console.log('ERR'.red, 'Location:', e.loc);
           process.exit(1);
         }
 
@@ -223,11 +225,16 @@ tessel.bundleFiles = function (startpath, args, files, next)
               next(err);
             });
           } catch (e) {
-            console.log('ERR'.red, 'Compilation process failed for the following file:');
+            console.log('ERR'.red, 'Bytecode compile process failed for the following file:');
             console.log('ERR'.red, ' ', f[0].replace(/^[^/]+/, '.'))
             console.log('ERR'.red, 'This is a compilation bug! Please file an issue at');
             console.log('ERR'.red, 'https://github.com/tessel/beta/issues with this text');
             console.log('ERR'.red, 'and a copy of the file that failed to compile.')
+            console.log('ERR'.red)
+            console.log('ERR'.red, 'Stack trace:')
+            console.log(e.stack.split(/\r?\n/).map(function (a) {
+              return 'ERR'.red + ' ' + a;
+            }).join('\n'));
             process.exit(1);
           }
         }
