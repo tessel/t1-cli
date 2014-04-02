@@ -87,7 +87,7 @@ exports.bundleFiles = function (startpath, args, files, next)
         }
 
       }, function (err) {
-        tessel.tarCode(dirpath, '', next);
+        exports.tarCode(dirpath, '', next);
       });
     }
   });
