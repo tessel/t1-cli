@@ -8,8 +8,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "tessel": "./bin/tessel",
-    "tessel-node": "./bin/tessel-node"
+    "tessel": "./bin/tessel.js",
+    "tessel-node": "./bin/tessel-node.js"
   },
   "repository": "git://github.com/tessel/cli.git",
   "author": "Technical Machine <team@technical.io>",
