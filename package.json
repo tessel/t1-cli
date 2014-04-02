@@ -29,7 +29,7 @@
     "keypress": "~0.2.1",
     "read": "~1.0.5",
     "request": "~2.33.0",
-    "hardware-resolve": "~0.1.0",
+    "hardware-resolve": "~0.1.2",
     "effess": "~0.0.3",
     "humanize": "0.0.9",
     "nomnom": "~1.6.2",
