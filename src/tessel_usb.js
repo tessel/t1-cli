@@ -24,7 +24,6 @@ util.inherits(Tessel, EventEmitter);
 Tessel.prototype.init = function init(next) {
 	var self = this;
 	this.usb.open();
-	this.usb.timeout = 10000;
 	this.initCommands();
 
 	this.logColors = true;
@@ -33,7 +32,11 @@ Tessel.prototype.init = function init(next) {
 	this.usb.getStringDescriptor(this.usb.deviceDescriptor.iSerialNumber, function (error, data) {
 		if (error) return next(error);
 		self.serialNumber = data;
-		next(null, self);
+		self._info(function(err, info) {
+			if (err) return next(error);
+			this.version = info;
+			next(null, self);
+		})
 	})
 }
 
@@ -58,6 +61,8 @@ Tessel.prototype.claim = function claim(next) {
 			self.msg_in_ep = self.intf.endpoints[1];
 			self.msg_out_ep = self.intf.endpoints[2];
 			self.claimed = 'claimed';
+
+			self.usb.timeout = 10000;
 
 			self._receiveLogs();
 			self._receiveMessages();
@@ -169,10 +174,10 @@ Tessel.prototype.end = function end() {
 	this.emit('end');
 };
 
-Tessel.prototype.info = function info(next) {
-	this.usb.controlTransfer(VENDOR_REQ_IN, REQ_INFO, 0, 0, 64, function(error, data) {
-		if (error) next(error);
-		next(data.toString);
+Tessel.prototype._info = function info(next) {
+	this.usb.controlTransfer(VENDOR_REQ_IN, REQ_INFO, 0, 0, 512, function(error, data) {
+		if (error) return next(error);
+		next(null, JSON.parse(data.toString()));
 	});
 }
 
