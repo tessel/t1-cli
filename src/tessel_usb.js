@@ -9,6 +9,9 @@ var TESSEL_PID = 0x6097;
 var REQ_INFO = 0x00;
 var REQ_KILL = 0x10;
 var REQ_STACK_TRACE = 0x11;
+var REQ_WIFI = 0x20;
+var REQ_CC = 0x21;
+
 
 var VENDOR_REQ_OUT = usb.LIBUSB_REQUEST_TYPE_VENDOR | usb.LIBUSB_RECIPIENT_DEVICE | usb.LIBUSB_ENDPOINT_OUT;
 var VENDOR_REQ_IN  = usb.LIBUSB_REQUEST_TYPE_VENDOR | usb.LIBUSB_RECIPIENT_DEVICE | usb.LIBUSB_ENDPOINT_IN;
@@ -178,6 +181,24 @@ Tessel.prototype._info = function info(next) {
 	this.usb.controlTransfer(VENDOR_REQ_IN, REQ_INFO, 0, 0, 512, function(error, data) {
 		if (error) return next(error);
 		next(null, JSON.parse(data.toString()));
+	});
+}
+
+Tessel.prototype.wifiIP = function (next) {
+	this.usb.controlTransfer(VENDOR_REQ_IN, REQ_WIFI, 0, 0, 4, function(error, data) {
+		// console.log("ctrl transfer wifi", );
+		var ip = data[0]+"."+data[1]+"."+data[2]+"."+data[3];
+		if (error) return next(error);
+		next(null, ip);
+	});
+}
+
+Tessel.prototype.wifiVer = function (next) {
+	this.usb.controlTransfer(VENDOR_REQ_IN, REQ_CC, 0, 0, 2, function(error, data) {
+		// console.log("ctrl transfer wifi", );
+		var version = data[0]+"."+data[1];
+		if (error) return next(error);
+		next(null, version);
 	});
 }
 
