@@ -185,6 +185,24 @@ Tessel.prototype.stop = function stop(next) {
 	this.usb.controlTransfer(VENDOR_REQ_OUT, REQ_KILL, 0, 0, new Buffer(0), next);
 }
 
+Tessel.prototype.debugstack = function stop(next) {
+	this.usb.controlTransfer(VENDOR_REQ_OUT, REQ_STACK_TRACE, 0, 0, new Buffer(0), function(err) {
+		if (err) {
+			this.removeListener('command', oncommand);
+			next(err);
+		}
+	});
+
+	function oncommand(command, msg) {
+		if (command == 'k') {
+			this.removeListener('command', oncommand);
+			next(null, msg.toString());
+		}
+	}
+
+	this.on('command', oncommand)
+}
+
 exports.findTessel = function findTessel(desiredSerial, next) {
 	exports.listDevices(function (err, devices) {
 		if (err) return next(err);
