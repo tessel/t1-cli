@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 var common = require('../src/common')
+common.basic();
 
 var argv = require('optimist').argv;
 
