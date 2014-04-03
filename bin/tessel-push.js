@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 var common = require('../src/common')
+common.basic();
 
 // Command-line arguments
 var argv = require("nomnom")
