@@ -6,7 +6,12 @@ var EventEmitter = require('events').EventEmitter;
 var TESSEL_VID = 0x1d50;
 var TESSEL_PID = 0x6097;
 
-var REQ_FW_STATUS = 0x01;
+var REQ_INFO = 0x00;
+var REQ_KILL = 0x10;
+var REQ_STACK_TRACE = 0x11;
+
+var VENDOR_REQ_OUT = usb.LIBUSB_REQUEST_TYPE_VENDOR | usb.LIBUSB_RECIPIENT_DEVICE | usb.LIBUSB_ENDPOINT_OUT;
+var VENDOR_REQ_IN  = usb.LIBUSB_REQUEST_TYPE_VENDOR | usb.LIBUSB_RECIPIENT_DEVICE | usb.LIBUSB_ENDPOINT_IN;
 
 function Tessel(dev) {
 	this.usb = dev;
@@ -163,6 +168,13 @@ Tessel.prototype._receiveMessages = function _receiveMessages() {
 Tessel.prototype.end = function end() {
 	this.emit('end');
 };
+
+Tessel.prototype.info = function info(next) {
+	this.usb.controlTransfer(VENDOR_REQ_IN, REQ_INFO, 0, 0, 64, function(error, data) {
+		if (error) next(error);
+		next(data.toString);
+	});
+}
 
 exports.findTessel = function findTessel(desiredSerial, next) {
 	exports.listDevices(function (err, devices) {
