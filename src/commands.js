@@ -91,10 +91,6 @@ exports.apply = function (prototype) {
     this.command('P', new Buffer([0xff, 0xff, 0xff, 0xff]), next);
   }
 
-  prototype.stop = function (next) {
-    this.command('X', new Buffer([0xff, 0xff, 0xff, 0xff]), next);
-  }
-
   prototype.deployBinary = function (file, next) {
     // open up the file
     var buffer = fs.readFileSync(file);

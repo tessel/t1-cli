@@ -181,6 +181,10 @@ Tessel.prototype._info = function info(next) {
 	});
 }
 
+Tessel.prototype.stop = function stop(next) {
+	this.usb.controlTransfer(VENDOR_REQ_OUT, REQ_KILL, 0, 0, new Buffer(0), next);
+}
+
 exports.findTessel = function findTessel(desiredSerial, next) {
 	exports.listDevices(function (err, devices) {
 		if (err) return next(err);
