@@ -51,9 +51,10 @@ exports.apply = function (prototype) {
     next == null && (opts = {});
 
     this.on('command', function oncommand (command, data) {
-      if (command == 'W' && 'ip' in data) {
+      data = JSON.parse(data)
+      if (command == 'W' && data.hasOwnProperty('ip')) {
         this.removeListener('command', oncommand);
-        next(!data.connected, data);
+        next(data);
       }
     });
 

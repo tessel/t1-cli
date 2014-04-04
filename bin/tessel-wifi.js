@@ -6,7 +6,7 @@ common.basic();
 var argv = require('optimist').argv;
 
 common.controller(function (err, client) {
-  client.listen(true, [86])
+  client.listen(true, null); // TODO: should use [20, 21, 22, 86] once firmware logs at the right level
   if (argv._.length == 1) {
     client.wifiStatus(function (err, data) {
       Object.keys(data).map(function (key) {
@@ -32,24 +32,14 @@ common.controller(function (err, client) {
           ' (pass ' + JSON.stringify(pass) + ') with ' + security + ' security'));
       });
 
-      // This is just for fun logs
-      client.on('command', function listener (command, data) {
-        if (command == 'w') {
-          console.log(data);
-        }
-        if (command == 'W' && 'connected' in data) {
-          client.removeListener('command', listener);
-        }
-      });
-
       client.configureWifi(ssid, pass, security, {
         timeout: argv.timeout || 8
-      }, function (err) {
-        if (err && !argv['no-retry']) {
+      }, function (data) {
+        if (!data.connected && !argv['no-retry']) {
           console.error('Retrying...');
           setImmediate(retry);
         } else {
-          process.exit(err ? 1 : 0);
+          client.end();
         }
       });
     }
