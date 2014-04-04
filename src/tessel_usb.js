@@ -98,7 +98,7 @@ Tessel.prototype._receiveLogs = function _receiveLogs() {
 
 			var str = data.toString('utf8', pos+2, next);
 
-			if (self.logLevels === false || self.logLevels.indexOf(level) != -1) {
+			if ((!self.logLevels && typeof self.logLevels != 'array') || self.logLevels.indexOf(level) != -1) {
 				process.stdout.write(str + "\n");
 			}
 
