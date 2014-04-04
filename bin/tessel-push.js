@@ -1,43 +1,22 @@
 #!/usr/bin/env node
 
 var common = require('../src/common')
-var keypress = require('keypress')
-var read = require('read')
-var colony = require('colony')
 common.basic();
 
 // Command-line arguments
 var argv = require("nomnom")
-  .script('tessel-node')
+  .script('tessel-push')
   .option('script', {
     position: 1,
     // required: true,
     full: 'script.js',
     help: 'Run this script on Tessel.',
   })
-  .option('arguments', {
-    position: 2,
+  .option('args', {
+    abbr: 'a',
     list: true,
     help: 'Arguments to pass in as process.argv.'
   })
-  .option('version', {
-    abbr: 'v',
-    flag: true,
-    help: 'Print tessel-node\'s version.',
-    callback: function() {
-      return require('./package.json').version.replace(/^v?/, 'v');
-    }
-  })
-  .option('interactive', {
-    abbr: 'i',
-    flag: true,
-    help: 'Enter the REPL.'
-  })
-  // .option('remote', {
-  //   abbr: 'r',
-  //   flag: true,
-  //   help: '[Tessel] Push code to a Tessel by IP address.'
-  // })
   .option('quiet', {
     abbr: 'q',
     flag: true,
@@ -53,6 +32,11 @@ var argv = require("nomnom")
     flag: true,
     help: '[Tessel] Push a single script file to Tessel.'
   })
+  .option('flash', {
+    abbr: 'f',
+    flag: true,
+    help: 'Write program to flash'
+  })
 
   .parse();
 
@@ -61,37 +45,6 @@ argv.verbose = !argv.quiet;
 function usage () {
   console.error(require('nomnom').getUsage());
   process.exit(1);
-}
-
-function repl (client)
-{
-  // make `process.stdin` begin emitting "keypress" events
-  keypress(process.stdin);
-  // listen for the ctrl+c event, which seems not to be caught in read loop
-  process.stdin.on('keypress', function (ch, key) {
-    if (key && key.ctrl && key.name == 'c') {
-      process.exit(0);
-    }
-  });
-
-  client.on('message', prompt);
-
-  function prompt() {
-    read({prompt: '>>'}, function (err, data) {
-      try {
-        if (err) {
-          throw err;
-        }
-        var script
-          // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
-          = 'local function _run ()\n' + colony.colonize(data, {returnLastStatement: true, wrap: false}) + '\nend\nsetfenv(_run, colony.global);\nreturn _run()';
-        client.command('M', new Buffer(JSON.stringify(script)));
-      } catch (e) {
-        console.error(e.stack);
-        setImmediate(prompt);
-      }
-    });
-  }
 }
 
 common.controller(function (err, client) {
@@ -113,9 +66,7 @@ common.controller(function (err, client) {
   }
 
   // Check pushing path.
-  if (argv.interactive) {
-    var pushpath = __dirname + '/../scripts/repl';
-  } else if (!argv.script) {
+  if (!argv.script) {
     usage();
   } else {
     var pushpath = argv.script;
@@ -158,15 +109,8 @@ common.controller(function (err, client) {
       client.end();
       process.exit(code);
     });
-
-    // repl is implemented in repl/index.js. Uploaded to tessel, it sends a
-    // message telling host it's ready, then receives stdin via
-    // process.on('message')
-    if (argv.interactive) {
-      repl(client);
-    }
   });
 
   // Forward path and code to tessel cli handling.
-  common.pushCode(client, pushpath, ['tessel', pushpath].concat(argv.arguments || []), {}, argv);
+  common.pushCode(client, pushpath, ['tessel', pushpath].concat(argv.arguments || []), {flash: argv.flash}, argv);
 })
