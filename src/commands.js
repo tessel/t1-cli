@@ -88,7 +88,9 @@ exports.apply = function (prototype) {
   }
 
   prototype.erase = function (next) {
-    this.command('P', new Buffer([0xff, 0xff, 0xff, 0xff]), next);
+    this.stop(function () {
+      this.command('P', new Buffer([0xff, 0xff, 0xff, 0xff]), next);
+    }.bind(this));
   }
 
   prototype.deployBinary = function (file, next) {

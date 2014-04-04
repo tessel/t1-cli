@@ -5,7 +5,7 @@ common.basic();
 
 common.controller(function (err, client) {
   client.erase(function () {
-    console.log('tessel filesystem erased.');
+    console.log('Tessel filesystem erased.');
       client.end();
     });
 })
