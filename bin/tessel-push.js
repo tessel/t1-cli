@@ -32,6 +32,11 @@ var argv = require("nomnom")
     flag: true,
     help: '[Tessel] Push a single script file to Tessel.'
   })
+  .option('flash', {
+    abbr: 'f',
+    flag: true,
+    help: 'Write program to flash'
+  })
 
   .parse();
 
@@ -107,5 +112,5 @@ common.controller(function (err, client) {
   });
 
   // Forward path and code to tessel cli handling.
-  common.pushCode(client, pushpath, ['tessel', pushpath].concat(argv.arguments || []), {}, argv);
+  common.pushCode(client, pushpath, ['tessel', pushpath].concat(argv.arguments || []), {flash: argv.flash}, argv);
 })
