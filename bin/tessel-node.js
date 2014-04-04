@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
 var common = require('../src/common')
+var keypress = require('keypress')
+var read = require('read')
+var colony = require('colony')
 common.basic();
 
 // Command-line arguments
@@ -60,7 +63,7 @@ function usage () {
   process.exit(1);
 }
 
-function pollInteractive (client)
+function repl (client)
 {
   // make `process.stdin` begin emitting "keypress" events
   keypress(process.stdin);
@@ -71,27 +74,28 @@ function pollInteractive (client)
     }
   });
 
-  read({prompt: '>>'}, function (err, data) {
-    try {
-      if (err) {
-        throw err;
+  client.on('message', prompt);
+
+  function prompt() {
+    read({prompt: '>>'}, function (err, data) {
+      try {
+        if (err) {
+          throw err;
+        }
+        var script
+          // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
+          = 'local function _run ()\n' + colony.colonize(data, {returnLastStatement: true, wrap: false}) + '\nend\nsetfenv(_run, colony.global);\nreturn _run()';
+        client.command('M', new Buffer(JSON.stringify(script)));
+      } catch (e) {
+        console.error(e.stack);
+        setImmediate(prompt);
       }
-      var script
-        // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
-        = 'local function _run ()\n' + colony.colonize(data, false) + '\nend\nsetfenv(_run, colony.global);\n_run()';
-      client.command('M', new Buffer(JSON.stringify(script)));
-      client.once('message', function (ret) {
-        console.log(ret.ret);
-        setImmediate(pollInteractive);
-      })
-    } catch (e) {
-      console.error(e.stack);
-      setImmediate(pollInteractive);
-    }
-  });
+    });
+  }
 }
 
 common.controller(function (err, client) {
+  client.listen(true, [10, 11, 12, 13, 20, 21, 22])
   client.on('error', function (err) {
     if (err.code == 'ENOENT') {
       console.error('Error: Cannot connect to Tessel locally.')
@@ -159,7 +163,7 @@ common.controller(function (err, client) {
     // message telling host it's ready, then receives stdin via
     // process.on('message')
     if (argv.interactive) {
-      client.once('message', pollInteractive.bind(client));
+      repl(client);
     }
   });
 

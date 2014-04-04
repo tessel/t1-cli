@@ -5,7 +5,7 @@
 
 var spawn = require('child_process').spawn;
 
-spawn(__dirname + '/tessel-node', ['-i'], {
+spawn(__dirname + '/tessel-node.js', ['-i'], {
   stdio: 'inherit'
 })
 .on('exit', function (code) {
