@@ -2,16 +2,7 @@
 
 var fork = require('child_process').fork
 
-var optimist = require('optimist')
-
-var argv = optimist
-  .boolean('v')
-  .boolean('no-retry')
-  .boolean('verbose')
-  .boolean('quiet')
-  .alias('exclude', 'x')
-  .alias('include', 'i')
-  .argv;
+var argv = require('nomnom')().parse();
 
 function usage () {
   console.error("Tessel CLI\nUsage:\n" +

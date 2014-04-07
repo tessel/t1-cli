@@ -3,7 +3,7 @@
 var common = require('../src/common')
 common.basic();
 
-var argv = require('optimist').argv;
+var argv = require('nomnom')().parse();
 
 common.controller(function (err, client) {
   client.listen(true, null); // TODO: should use [20, 21, 22, 86] once firmware logs at the right level
