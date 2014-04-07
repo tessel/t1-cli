@@ -100,7 +100,7 @@ function bundle (arg, opts)
   return ret;
 }
 
-function pushCode (client, file, args, options, argv)
+function pushCode (client, file, args, options, argv, next)
 {
   // Bundle code based on file path.
   var ret = bundle(file, argv);
@@ -111,8 +111,22 @@ function pushCode (client, file, args, options, argv)
 
   // Create archive and deploy it to tessel.
   tessel.bundleFiles(ret.relpath, args, ret.files, function (err, tarbundle) {
+    if (argv.save) {
+      if (argv.savePath) {
+        // save the bundle to the path
+        fs.writeFile(argv.savePath, tarbundle, function(err){
+          if (err) throw err;
+        });
+      } else {
+        // save to any rando location 
+        fs.writeFile('tarbundle.tar', tarbundle, function(err){
+          if (err) throw err;
+        });
+      }
+    }
+
     !argv.quiet && console.error(('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...').grey);
-    client.deployBundle(tarbundle, options);
+    client.deployBundle(tarbundle, options, next);
   })
 }
 

@@ -40,6 +40,9 @@ function usage () {
     "          relative or absolute path: pushe a local binary to tessel\n" +
     "   tessel blink\n" +
     "          uploads test blinky script\n" +
+    "   tessel blink\n" +
+    "   tessel debug [script]\n" +
+    "          runs through debug script and uploads logs\n" +
     ""
     );
 }
@@ -47,6 +50,7 @@ function usage () {
 
 var builtinCommands = {
   'blink': 'blink', 'blinky': 'blink', 'blinkie': 'blink', 'blinkee': 'blink',
+  'debug': 'debug',
   'check': 'check',
   'debug-stack': 'debug-stack',
   'erase': 'erase',

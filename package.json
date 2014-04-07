@@ -36,6 +36,7 @@
     "mkdirp": "~0.3.5",
     "usb": "~0.3.4",
     "colorsafeconsole": "0.0.4",
-    "xml2js": "~0.4.1"
+    "xml2js": "~0.4.1",
+    "aws-sdk": "~2.0.0-rc13"
   }
 }
