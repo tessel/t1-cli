@@ -34,7 +34,7 @@
     "humanize": "0.0.9",
     "nomnom": "~1.6.2",
     "mkdirp": "~0.3.5",
-    "usb": "~0.3.4",
+    "usb": "~0.3.7",
     "colorsafeconsole": "0.0.4",
     "xml2js": "~0.4.1"
   },

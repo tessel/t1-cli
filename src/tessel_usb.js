@@ -112,23 +112,13 @@ Tessel.prototype._receiveLogs = function _receiveLogs() {
 	});
 }
 
-// TODO: move this to usb module
-usb.OutEndpoint.prototype.transfer_with_zlp = function (buf, cb) {
-	if (buf.length % this.descriptor.wMaxPacketSize == 0) {
-		this.transfer(buf);
-		this.transfer(new Buffer(0), cb);
-	} else {
-		this.transfer(buf, cb);
-	}
-}
-
 Tessel.prototype.postMessage = function postMessage(tag, buf, cb) {
 	var header = new Buffer(8);
 	header.writeUInt32LE(buf.length, 0);
 	header.writeUInt32LE(tag, 4);
 	var data = Buffer.concat([header, buf]);
 
-	this.msg_out_ep.transfer_with_zlp(data, function(error) {
+	this.msg_out_ep.transferWithZLP(data, function(error) {
 		cb && cb(error);
 	});
 }
