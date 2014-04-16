@@ -4,19 +4,21 @@ var common = require('../src/common')
 var keypress = require('keypress')
 var read = require('read')
 var colony = require('colony')
+
+// Setup cli.
 common.basic();
 
 // Command-line arguments
 var argv = require("nomnom")
   .script('tessel-node')
   .option('script', {
-    position: 1,
+    position: 0,
     // required: true,
     full: 'script.js',
     help: 'Run this script on Tessel.',
   })
   .option('arguments', {
-    position: 2,
+    position: 1,
     list: true,
     help: 'Arguments to pass in as process.argv.'
   })

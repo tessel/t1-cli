@@ -1,14 +1,18 @@
 #!/usr/bin/env node
 
+// tessel check
+// Dumps a binary package.
+
 var fs = require('fs')
   , path = require('path')
 
 var common = require('../src/common')
 
+// Setup cli.
 common.basic();
 
-function dumpBinary (file) {
-
+function dumpBinary (file)
+{
   var gzBuff = fs.readFileSync(file);
   var newGzipBuff = new Buffer(gzBuff.length - 4);
   gzBuff.copy(newGzipBuff, 0, 4, gzBuff.length);

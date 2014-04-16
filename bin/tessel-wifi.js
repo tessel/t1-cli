@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 var common = require('../src/common')
+
+// Setup cli.
 common.basic();
 
 var argv = require('optimist').argv;
