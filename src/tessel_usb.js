@@ -1,4 +1,4 @@
-var usb = require('usb');
+var usb = 'MOCK_USB' in process.env ? require('./mock-usb') : require('usb');
 var util = require('util');
 var async = require('async');
 var EventEmitter = require('events').EventEmitter;
