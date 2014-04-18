@@ -18,7 +18,6 @@ if (!file) {
 
 if (op === "run_bl") {
 	tessel_dfu.runNXP(file);
-	tessel_dfu.runNXP(file);
 } else if (op === "read") {
 	tessel_dfu.read(file);
 } else if (op === "write") {
