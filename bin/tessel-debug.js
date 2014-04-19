@@ -5,17 +5,14 @@ var os = require("os"),
   temp = require('temp'),
   mkdirp = require('mkdirp'),
   path = require('path'),
-  AWS = require('aws-sdk'),
-  http = require('http'),
+  request = require('request'),
   fs = require('fs'),
   colors = require('colors')
   ;
 
 temp.track();
 
-// var hostname = 'tessel-debug.herokuapp.com';
-var hostname = 'localhost';
-var id = "";
+var hostname = 'http://tessel-debug.herokuapp.com';
 common.basic();
 
 // Command-line arguments
@@ -45,47 +42,26 @@ function usage () {
 
 function stop(client, logId){
   console.log(colors.green("Done."));
-  console.log(colors.cyan("Debug logs can be viewed at"), colors.red("https://"+hostname+"/logs/"+logId));
+  console.log(colors.cyan("Debug logs can be viewed at"), colors.red(hostname+"/logs/"+logId));
   console.log(colors.cyan("Please submit this link with your support request"))
-  // client.once('script-stop', function (code) {
-    // process.exit(code);
-  // });
 
   client.stop();
   process.exit();
 }
 
 function postToWeb(path, data, next){
-  var options = {
-    host: hostname,
-    path: path,
-    port: 5000,
-    method: 'POST',
-    headers: {'Content-Type': 'application/json', 
-      'Content-Length': Buffer.byteLength(JSON.stringify(data))}
-  };
-
-  var req = http.request(options, function(response) {
-    var str = ''
-    response.on('data', function (chunk) {
-      str += chunk;
-    });
-
-    response.on('end', function () {
-      // check status code
-      if (response.statusCode != 200){
-        console.error("ERROR: There was an issue uploading the debug files.")
-        console.error("Trying with path", path, "with data", data);
-        console.log(str);
-        process.exit();
-      }
-      // console.log(str);
-      next && next(str);
-    });
+  request({uri: hostname+path, method: 'post', json: true, headers:{
+    'Content-Type': 'application/json', 
+      'Content-Length': Buffer.byteLength(JSON.stringify(data))
+    }, body: data}
+  , function(error, res, body){
+    if (error) {
+      console.error("ERROR: There was an issue uploading the debug files.", body);
+      console.error("Trying with path", path, "with data", data);
+      process.exit();
+    } 
+    next && next(body);
   });
-
-  req.write(JSON.stringify(data));
-  req.end();
 }
 
 function initDebug(serial, wifi, info, next){
@@ -104,43 +80,38 @@ function initDebug(serial, wifi, info, next){
     node: process.version,
     cli: pjson.version }, 
     function(res){
-      if (!res) throw err("Could not communicate with host debug server");
-      res = JSON.parse(res);
+      if (!res || res == false) return console.log("Could not communicate with host debug server", res);
+      // res = JSON.parse(res);
       next && next(res);
     }
   );
 }
 
-function Logger(id, credentials, name, client) {
+function Logger(id, urls, name, client) {
   this.id = id;
   this.client = client;
   this.files = [];
   this.path = temp.mkdirSync(name); 
-  console.log("logger path", this.path, name);
+  this.urls = urls;
   
-  var credentialsObj = {credentials: ""};
-  credentialsObj.credentials = {accessKeyId: credentials.Credentials.AccessKeyId, 
-    secretAccessKey: credentials.Credentials.SecretAccessKey, sessionToken: credentials.Credentials.SessionToken}
-  this.s3 = new AWS.S3(credentialsObj.credentials);
-
   this.logPaths = {};
   this.logPaths[name] = path.join(this.path, name);
 
-  var that = this;
+  var self = this;
   this.client.on('rawMessage', function(message){
-    fs.appendFile(that.logPaths[name], "[RAW]: "+message+"\n", function(err){
+    fs.appendFile(self.logPaths[name], "[RAW]: "+message+"\n", function(err){
       if (err) throw err;
     });
   });
 
   this.client.on('log', function(level, str){
-    fs.appendFile(that.logPaths[name], "[LOG]["+level+"]: "+str+"\n", function(err){
+    fs.appendFile(self.logPaths[name], "[LOG]["+level+"]: "+str+"\n", function(err){
       if (err) throw err;
     });
   });
 
   this.client.on('command', function(command, str){
-    fs.appendFile(that.logPaths[name], "[CMD]["+command+"]: "+str+"\n", function(err){
+    fs.appendFile(self.logPaths[name], "[CMD]["+command+"]: "+str+"\n", function(err){
       if (err) throw err;
     });
   });
@@ -155,23 +126,17 @@ Logger.prototype.detach = function(){
 Logger.prototype.uploadFiles = function(next){
   var count = 0;
   var self = this;
-  var keys = Object.keys(self.logPaths);
-
-  keys.forEach(function(logKey){
-    var file = fs.readFileSync(self.logPaths[logKey]);
-    var date = new Date().toISOString();
-
-    var key = self.id+'-'+date+'-'+logKey;
-    var params = {Bucket: 'tessel-debug', Key: key, Body: file};
-
-    self.s3.putObject(params, function(err, data) {
-      if (err) throw err;     
-
-      postToWeb('/logs/'+self.id, {key: logKey, keyPath: key}, function(){
-        count++;
-        if (count >= keys.length){
-          next && next();
-        }
+  var pathKeys = Object.keys(self.logPaths);
+  pathKeys.forEach(function(file){
+    // upload the file
+    var s3File = fs.readFile(self.logPaths[file], function(err, data){
+      request({method: 'PUT', uri: self.urls[file], body: data}, function(err, res, body){
+        postToWeb('/logs/'+self.id, {key: file}, function(){
+          count++;
+          if (count >= pathKeys.length){
+            next && next();
+          }
+        });
       });
     });
   });
@@ -181,11 +146,10 @@ Logger.prototype.addFile = function(key, filepath){
   this.logPaths[key] = filepath;
 }
 
-function userScript(id, client, credentials){
-  var userLogger = new Logger(id, credentials, 'user.log', client);
-  argv.savePath = path.join(userLogger.path, "usercode.tgz");
-  console.log("arvg savepath", argv.savePath);
-  userLogger.addFile('usercode.tgz', argv.savePath);
+function userScript(id, client, urls){
+  var userLogger = new Logger(id, urls, 'user_log', client);
+  argv.savePath = path.join(userLogger.path, "user_tar");
+  userLogger.addFile('user_tar', argv.savePath);
 
   // reconnect
   client.init(function(){
@@ -207,45 +171,40 @@ function userScript(id, client, credentials){
 
 common.controller(function (err, client) {
   client.listen(true);
-  client._info(function(err, info){
-    client.wifiVer(function(err, wifiVer){
-      initDebug(client.serialNumber, wifiVer, info, function(init){
-        console.log(colors.cyan("Starting debug logs... saving to"), colors.green(hostname+"/log/"+init.id));
-        
-        var blinkyLogger = new Logger(init.id, init.credentials, 'blinky.log', client);
-        argv.save = true;
-        argv.savePath = path.join(blinkyLogger.path, "blinky.tgz");
-        console.log("arvg savepath", argv.savePath);
-        blinkyLogger.addFile('blinky.tgz', argv.savePath);
+  client.wifiVer(function(err, wifiVer){
+    initDebug(client.serialNumber, wifiVer, client.version, function(init){
+      console.log(colors.cyan("Starting debug logs... saving to"), colors.green(hostname+"/log/"+init.id));
+      var blinkyLogger = new Logger(init.id, init.urls, 'blinky_log', client);
+      argv.save = true;
+      argv.savePath = path.join(blinkyLogger.path, "blinky_tar");
+      blinkyLogger.addFile('blinky_tar', argv.savePath);
 
-        var blinkyPath = __dirname+'/../scripts/blink';
-        console.log(colors.cyan("Running Blinky test... please wait..."));
+      var blinkyPath = __dirname+'/../scripts/blink';
+      console.log(colors.cyan("Running Blinky test... please wait..."));
 
-        common.pushCode(client, blinkyPath, ['tessel', blinkyPath].concat(argv.arguments || []), 
-          {flash: false}, argv, function(){
+      common.pushCode(client, blinkyPath, ['tessel', blinkyPath].concat(argv.arguments || []), 
+        {flash: false}, argv, function(){
 
-          setTimeout(function(){
-            blinkyLogger.uploadFiles(function (){
+        setTimeout(function(){
+          blinkyLogger.uploadFiles(function (){
 
-              if (argv.script){
-                // stop that client
-                client.stop();
+            if (argv.script){
+              // stop that client
+              client.stop();
 
-                setTimeout(function(){
-                  console.log("user script hit");
-                  userScript(init.id, client, init.credentials);
-                }, 1000);
-                
-              } else {
-                console.log(colors.grey("No userscript detected. In order to run a userscript, specify `tessel debug <script.js>`"));
-                stop(client, init.id);
-              }
-            });
-            // run blinky for 5 seconds
-          }, 5000);
+              setTimeout(function(){
+                userScript(init.id, client, init.urls);
+              }, 1000);
+              
+            } else {
+              console.log(colors.grey("No userscript detected. In order to run a userscript, specify `tessel debug <script.js>`"));
+              stop(client, init.id);
+            }
+          });
+          // run blinky for 5 seconds
+        }, 5000);
 
-        });
       });
     });
-  })
+  });
 });

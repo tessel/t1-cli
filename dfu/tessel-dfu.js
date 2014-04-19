@@ -58,6 +58,7 @@ exports.write = function(image, next) {
             if (e) throw e;
             dfu.dnload(image, function(error) {
                 if (error) {
+                    next && next(error);
                     return console.log(error);
                 }
                 process.stdout.write("\nDone! \n");

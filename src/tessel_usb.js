@@ -36,7 +36,7 @@ Tessel.prototype.init = function init(next) {
 		self.serialNumber = data;
 		self._info(function(err, info) {
 			if (err) return next(error);
-			this.version = info;
+			self.version = info;
 			next(null, self);
 		})
 	})
@@ -207,7 +207,6 @@ Tessel.prototype.debugstack = function stop(next) {
 
 Tessel.prototype.wifiIP = function (next) {
 	this.usb.controlTransfer(VENDOR_REQ_IN, REQ_WIFI, 0, 0, 4, function(error, data) {
-		// console.log("ctrl transfer wifi", );
 		var ip = data[0]+"."+data[1]+"."+data[2]+"."+data[3];
 		if (error) return next(error);
 		next(null, ip);
@@ -216,7 +215,6 @@ Tessel.prototype.wifiIP = function (next) {
 
 Tessel.prototype.wifiVer = function (next) {
 	this.usb.controlTransfer(VENDOR_REQ_IN, REQ_CC, 0, 0, 2, function(error, data) {
-		// console.log("ctrl transfer wifi", );
 		var version = data[0]+"."+data[1];
 		if (error) return next(error);
 		next(null, version);
