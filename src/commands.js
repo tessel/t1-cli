@@ -3,6 +3,7 @@ var zlib = require('zlib');
 var path = require('path');
 var fs = require('fs');
 var stream = require('stream');
+var clone = require('structured-clone');
 
 var tessel = require('./');
 
@@ -26,8 +27,11 @@ exports.apply = function (prototype) {
         } else {
           this.emit('script-stop', -code);
         }
-      } else if (command == 'M') {
-        this.emit('message', data);
+      }
+    });
+    this.on('rawMessage', function (command, data) {
+      if (String.fromCharCode(command&0xff) == 'M') {
+        this.emit('message', clone.deserialize(data));
       }
     })
   }
@@ -102,6 +106,6 @@ exports.apply = function (prototype) {
   }
 
   prototype.send = function (data) {
-    this.command('M', new Buffer(JSON.stringify(data)));
+    this.command('M', clone.serialize(data));
   };
 }
