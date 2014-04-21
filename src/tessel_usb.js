@@ -142,8 +142,8 @@ Tessel.prototype._receiveMessages = function _receiveMessages() {
 		if (data.length < transferSize) {
 			var b = Buffer.concat(buffers);
 			if (b.length > 0) {
-				var len = b.readUInt16LE(0);
-				var tag = b.readUInt16LE(4);
+				var len = b.readUInt32LE(0);
+				var tag = b.readUInt32LE(4);
 				b = b.slice(8);
 
 				self.emit('rawMessage', tag, b);
