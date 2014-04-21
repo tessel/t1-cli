@@ -58,5 +58,5 @@ common.controller(function (err, client) {
   });
 
   // Forward path and code to tessel cli handling.
-  common.pushCode(client, __dirname + '/../scripts/blink', ['tessel', 'blink.js'], {});
+  common.pushCode(client, __dirname + '/../scripts/blink', ['tessel', 'blink.js'], {}, {});
 })
