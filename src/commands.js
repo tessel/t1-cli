@@ -10,13 +10,17 @@ var tessel = require('./');
 exports.apply = function (prototype) {
 
   prototype.initCommands = function() {
-    this.stdout = new stream.Duplex();
+    this.stdout = new stream.Readable();
     this.stdout._read = function () {
     };
-    this.stdout._write = function (data, encoding, next) {
-      this.push(data);
-      this.push('\n');
-      next(null);
+
+    this.stderr = new stream.Readable();
+    this.stderr._read = function () {
+    };
+
+    this.stdin = new stream.Writable();
+    this.stdin._write = function (chunk, encoding, callback) {
+      throw new Error('stdin not yet supported');
     };
 
     this.on('command', function (command, data) {
