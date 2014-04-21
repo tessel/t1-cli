@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 
 var common = require('../src/common')
+
+// Setup cli.
 common.basic();
 
 // Command-line arguments
 var argv = require("nomnom")
   .script('tessel-push')
   .option('script', {
-    position: 1,
+    position: 0,
     // required: true,
     full: 'script.js',
     help: 'Run this script on Tessel.',

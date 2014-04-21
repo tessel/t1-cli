@@ -13,7 +13,7 @@ function isLocalPath (str) {
   return str.match(/^[\.\/\\]/);
 }
 
-if (process.argv.length == 3) {
+if (process.argv.length == 2) {
   // Display list of tools.
   repository.getToolsListing(function (err, entries) {
     function currentize (key, i) {
@@ -38,10 +38,10 @@ if (process.argv.length == 3) {
     }
     console.log(tags.join('\n'));
   })
-} else if (isLocalPath(process.argv[3])) {
+} else if (isLocalPath(process.argv[2])) {
   // Try local file.
-  console.error('Deploying local file', process.argv[3], 'to Tessel.');
-  dfuRestoreFunc(fs.readFileSync(process.argv[3]));
+  console.error('Deploying local file', process.argv[2], 'to Tessel.');
+  dfuRestoreFunc(fs.readFileSync(process.argv[2]));
 } else {
   // Download tagged version.
   var tag = process.argv[3];

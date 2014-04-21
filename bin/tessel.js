@@ -19,7 +19,7 @@ function usage () {
     "   tessel list\n" +
     "   tessel logs\n" +
     "   tessel push <filename> [-r <ip[:port>]] [-s] [-b <file>] [-c] [-a [options]]\n" +
-    "          -r wireless pushing of code (inactive at the moment)\n" + 
+    // "          -r wireless pushing of code (inactive at the moment)\n" + 
     "          -s saves the file that is getting passed to Tessel as builtin.tar.gz\n" + 
     "          -b pushes a binary\n" + 
     "          -c compresses and pushes a dump dir\n" + 
@@ -71,7 +71,7 @@ if (process.argv.length < 3 || !builtinCommands[process.argv[2]]) {
   process.exit(1);
 }
 
-fork(__dirname + '/tessel-' + builtinCommands[process.argv[2]] + '.js', process.argv.slice(2))
-.on('exit', function (code) {
-  process.exit(code);
-});
+// Launch subprocess as though it were ourself
+var subprocess = './tessel-' + builtinCommands[process.argv[2]] + '.js';
+process.argv.splice(1, 2, subprocess)
+require(subprocess);
