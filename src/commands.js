@@ -112,4 +112,8 @@ exports.apply = function (prototype) {
   prototype.send = function (data) {
     this.command('M', clone.serialize(data));
   };
+
+  prototype.pushCode = function () {
+    return require('./common').pushCode.apply(this, [].concat([this], [].slice.apply(arguments)));
+  }
 }
