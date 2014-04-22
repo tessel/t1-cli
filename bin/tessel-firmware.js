@@ -44,7 +44,7 @@ if (process.argv.length == 2) {
   dfuRestoreFunc(fs.readFileSync(process.argv[2]));
 } else {
   // Download tagged version.
-  var tag = process.argv[3];
+  var tag = process.argv[2];
   if (tag == '--latest') {
     tag = 'current';
   }
