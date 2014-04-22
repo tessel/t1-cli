@@ -50,7 +50,7 @@ function usage () {
 }
 
 common.controller(function (err, client) {
-  client.listen(true, [/*10, 11, 12, 13,*/ 20, 21, 22])
+  client.listen(true, [10, 11, 12, 13, 20, 21, 22])
   client.on('error', function (err) {
     if (err.code == 'ENOENT') {
       console.error('Error: Cannot connect to Tessel locally.')
@@ -100,12 +100,6 @@ common.controller(function (err, client) {
       }, 5000);
       client.stop();
     });
-
-    // Flush existing output, then pipe output to client
-    while (null !== (chunk = client.stdout.read())) {
-      ;
-    }
-    client.stdout.pipe(process.stdout);
 
     client.once('script-stop', function (code) {
       client.end();

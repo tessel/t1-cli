@@ -150,12 +150,6 @@ common.controller(function (err, client) {
       client.stop();
     });
 
-    // Flush existing output, then pipe output to client
-    while (null !== (chunk = client.stdout.read())) {
-      ;
-    }
-    client.stdout.pipe(process.stdout);
-
     client.once('script-stop', function (code) {
       client.end();
       process.exit(code);
