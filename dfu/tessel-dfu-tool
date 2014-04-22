@@ -3,7 +3,7 @@
 var fs = require('fs');
 
 function usage () {
-  console.error("Usage: tessel-dfu-tool <read|write|run_nxp|run_ram> <file>");
+  console.error("Usage: tessel-dfu-tool <read|write|run_bl|run_ram> <file>");
   process.exit(1);
 }
 
