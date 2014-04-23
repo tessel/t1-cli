@@ -52,7 +52,7 @@ common.controller(function (err, client) {
     client.stdout.pipe(process.stdout);
 
     client.once('script-stop', function (code) {
-      client.end();
+      client.close();
       process.exit(code);
     });
   });

@@ -11,6 +11,6 @@ common.controller(function (err, client) {
   client.debugstack(function(err, stack) {
     if (err) throw err;
     console.log(stack || "Not running");
-    client.end();
+    client.close();
   })
 })

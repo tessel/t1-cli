@@ -8,6 +8,6 @@ common.basic();
 common.controller(function (err, client) {
   client.stop(function () {
     console.log('tessel runtime stopped.');
-      client.end();
+      client.close();
     });
 })
