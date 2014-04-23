@@ -1,6 +1,7 @@
 var fs  = require('fs');
 var usb = require('usb');
 var DFU = require('./dfu');
+var Tessel = require('../src/tessel_usb').Tessel;
 
 var TESSEL_VID = 0x1d50;
 var TESSEL_PID = 0x6097;
@@ -25,8 +26,7 @@ function findDevice() {
 function guessDeviceState(device) {
     if (!device) {
         return undefined;
-    } else if (device.configDescriptor.bmAttributes === 0xC0) {
-        // The DFU ROM claims it is self-powered.
+    } else if (device.deviceDescriptor.idProduct === NXP_ROM_PID) {
         return 'rom';
     } else if (device.deviceDescriptor.bcdDevice>>8 === 0) {
         return 'dfu';
@@ -114,6 +114,25 @@ exports.runNXP = function (image_filename) {
     });
 }
 
+function waitForBootloader(callback) {
+    process.stdout.write("Waiting for bootloader....\n");
+
+    var retrycount = 5;
+    setTimeout(function retry (error) {
+        device = findDevice();
+        state = guessDeviceState(device);
+        if (state !== 'dfu') {
+            if (--retrycount > 0) {
+                return setTimeout(retry, 1000)
+            } else {
+                console.error("Failed to load bootloader: found state", state);
+                process.exit(2);
+            }
+        }
+        callback(device);
+    }, 1000);
+}
+
 /// Boot into stage2 and call `callback` with the resulting device
 exports.enterStage2 = function(callback) {
     var device = findDevice();
@@ -126,28 +145,19 @@ exports.enterStage2 = function(callback) {
     var state = guessDeviceState(device);
 
     if (state === 'app'){
-        console.error("Tessel is not in DFU mode.");
-        console.error("Connect the pins above the TESSEL logo together and press the reset button");
-        process.exit(1);
+        var t = new Tessel(device);
+        t.rx = false;
+        t.init(function() {
+            t.claim(function(e) {
+                if (e) throw e;
+                t.enterBootloader();
+                waitForBootloader(callback);
+            })
+        })
     } else if (state === 'rom') {
         process.stdout.write("Loading flash bootloader...\n");
         exports.romBoot(device, stage2_image, function() {
-            process.stdout.write("Waiting for bootloader....\n");
-
-            var retrycount = 5;
-            setTimeout(function retry (error) {
-                device = findDevice();
-                state = guessDeviceState(device);
-                if (state !== 'dfu') {
-                    if (--retrycount > 0) {
-                        return setTimeout(retry, 1000)
-                    } else {
-                        console.error("Failed to load bootloader: found state", state);
-                        process.exit(2);
-                    }
-                }
-                callback(device);
-            }, 1000);
+            waitForBootloader(callback);
         });
     } else if (state === 'dfu') {
         callback(device);
