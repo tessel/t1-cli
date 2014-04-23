@@ -75,7 +75,10 @@ Tessel.prototype.claim = function claim(next) {
 }
 
 Tessel.prototype.close = function close() {
-	this.usb.close();
+	this.intf.release(true, function () {
+		this.usb.close();
+		this.emit('close');
+	}.bind(this));
 }
 
 Tessel.prototype.listen = function listen(colors, levels) {
@@ -114,10 +117,6 @@ Tessel.prototype._receiveLogs = function _receiveLogs() {
 			self.emit('log', level, str);
 			pos = next;
 		}
-	});
-
-	self.once('end', function () {
-		self.log_ep.stopStream();
 	});
 }
 
@@ -163,14 +162,6 @@ Tessel.prototype._receiveMessages = function _receiveMessages() {
 			buffers = [];
 		}
 	});
-
-	self.once('end', function () {
-		self.msg_in_ep.stopStream();
-	});
-};
-
-Tessel.prototype.end = function end() {
-	this.emit('end');
 };
 
 Tessel.prototype._info = function info(next) {

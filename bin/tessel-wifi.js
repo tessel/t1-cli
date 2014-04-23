@@ -41,7 +41,7 @@ common.controller(function (err, client) {
           console.error('Retrying...');
           setImmediate(retry);
         } else {
-          client.end();
+          client.close();
         }
       });
     }

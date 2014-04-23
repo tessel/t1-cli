@@ -102,7 +102,7 @@ common.controller(function (err, client) {
     });
 
     client.once('script-stop', function (code) {
-      client.end();
+      client.close();
       process.exit(code);
     });
   });

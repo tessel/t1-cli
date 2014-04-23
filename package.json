@@ -34,7 +34,7 @@
     "humanize": "0.0.9",
     "nomnom": "~1.6.2",
     "mkdirp": "~0.3.5",
-    "usb": "~0.3.7",
+    "usb": "~0.3.9",
     "colorsafeconsole": "0.0.4",
     "xml2js": "~0.4.1",
     "structured-clone": "~0.2.2"
