@@ -83,12 +83,11 @@ exports.apply = function (prototype) {
     });
 
     // Package Wifi arguments
-    var outbuf = new Buffer(129);
+    var outbuf = new Buffer(128);
     outbuf.fill(0);
     new Buffer(String(ssid)).copy(outbuf, 0, 0, ssid.length);
     new Buffer(String(pass)).copy(outbuf, 32, 0, pass.length);
     new Buffer(String(security)).copy(outbuf, 96, 0, security.length);
-    new Buffer([opts.timeout || 8]).copy(outbuf, 128, 0, 1);
     this.command('W', outbuf);
     
   }
