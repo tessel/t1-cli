@@ -57,12 +57,28 @@ exports.apply = function (prototype) {
   prototype.configureWifi = function (ssid, pass, security, opts, next) {
     typeof opts == 'function' && (next = opts);
     next == null && (opts = {});
-
+    var checkInterval;
     this.on('command', function oncommand (command, data) {
       data = JSON.parse(data)
       if (command == 'W' && data.hasOwnProperty('ip')) {
         this.removeListener('command', oncommand);
+        clearInterval(checkInterval);
         next(data);
+      } else if (command == 'W' && data.hasOwnProperty('acquiring')){
+        // now do some periodic checks
+        var count = 0;
+        var maxCount = 4;
+        var self = this;
+        checkInterval = setInterval(function(){
+          console.log("checking now");
+          count++;
+          if (count >= maxCount){
+            self._checkWifi(true);
+            clearInterval(checkInterval);
+          } else {
+            self._checkWifi(false);
+          }
+        }, opts.timeout/8 * 1000);
       }
     });
 
@@ -73,8 +89,15 @@ exports.apply = function (prototype) {
     new Buffer(String(pass)).copy(outbuf, 32, 0, pass.length);
     new Buffer(String(security)).copy(outbuf, 96, 0, security.length);
     new Buffer([opts.timeout || 8]).copy(outbuf, 128, 0, 1);
-
     this.command('W', outbuf);
+    
+  }
+
+  prototype._checkWifi = function(lastCheck){
+    var outbuf = new Buffer(1);
+    if (lastCheck) outbuf.fill(1);
+    else outbuf.fill(0);
+    this.command('C', outbuf);
   }
 
   // prototype.deploy = function (file, args, next) {

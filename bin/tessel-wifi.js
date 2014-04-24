@@ -12,6 +12,10 @@ common.controller(function (err, client) {
   if (argv._.length == 1) {
     client.wifiStatus(function (err, data) {
       Object.keys(data).map(function (key) {
+        if (key.toUpperCase() == "IP"){
+          // reverse key.data
+          data[key] = data[key].split(".").reverse().join(".");
+        }
         console.log(key.replace(/^./, function (a) { return a.toUpperCase(); }) + ':', data[key]);
       })
       process.exit(0);
@@ -24,6 +28,7 @@ common.controller(function (err, client) {
     // }
 
     function retry () {
+      console.log("trying to connect");
       var ssid = argv._[1];
       var pass = argv._[2] || "";
       var security = (argv._[3] || (pass ? 'wpa2' : 'unsecure')).toLowerCase();
@@ -37,6 +42,7 @@ common.controller(function (err, client) {
       client.configureWifi(ssid, pass, security, {
         timeout: argv.timeout || 8
       }, function (data) {
+        console.log("got data", data);
         if (!data.connected && !argv['no-retry']) {
           console.error('Retrying...');
           setImmediate(retry);

@@ -179,7 +179,7 @@ common.controller(function (err, client) {
       argv.savePath = path.join(blinkyLogger.path, "blinky_tar");
       blinkyLogger.addFile('blinky_tar', argv.savePath);
 
-      var blinkyPath = __dirname+'/../scripts/blink';
+      var blinkyPath = path.join(__dirname, '/../', 'scripts/blink');
       console.log(colors.cyan("Running Blinky test... please wait..."));
 
       common.pushCode(client, blinkyPath, ['tessel', blinkyPath].concat(argv.arguments || []), 
