@@ -17,6 +17,7 @@ var VENDOR_REQ_IN  = usb.LIBUSB_REQUEST_TYPE_VENDOR | usb.LIBUSB_RECIPIENT_DEVIC
 
 function Tessel(dev) {
 	this.usb = dev;
+	this.rx = true;
 }
 
 exports.Tessel = Tessel;
@@ -66,8 +67,10 @@ Tessel.prototype.claim = function claim(next) {
 
 			self.usb.timeout = 10000;
 
-			self._receiveLogs();
-			self._receiveMessages();
+			if (self.rx) {
+				self._receiveLogs();
+				self._receiveMessages();
+			}
 
 			self.emit('claimed');
 		});
@@ -122,6 +125,7 @@ Tessel.prototype._receiveLogs = function _receiveLogs() {
 
 Tessel.prototype.postMessage = function postMessage(tag, buf, cb) {
 	var header = new Buffer(8);
+	buf = buf || new Buffer(0);
 	header.writeUInt32LE(buf.length, 0);
 	header.writeUInt32LE(tag, 4);
 	var data = Buffer.concat([header, buf]);
@@ -162,6 +166,10 @@ Tessel.prototype._receiveMessages = function _receiveMessages() {
 			buffers = [];
 		}
 	});
+};
+
+Tessel.prototype.enterBootloader = function enterBootloader(next) {
+	this.command('B');
 };
 
 Tessel.prototype._info = function info(next) {
@@ -237,7 +245,9 @@ exports.findTessel = function findTessel(desiredSerial, next) {
 exports.listDevices = function listDevices(next) {
 	var devices = usb.getDeviceList().map(function(dev) {
 		if ((dev.deviceDescriptor.idVendor == TESSEL_VID) && (dev.deviceDescriptor.idProduct == TESSEL_PID)) {
-			return new Tessel(dev);
+			if (dev.deviceDescriptor.bcdDevice >> 8 != 0) { // Exclude devices in bootloader mode
+				return new Tessel(dev);
+			}
 		}
 	}).filter(function(x) {return x});
 
