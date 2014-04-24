@@ -93,9 +93,7 @@ exports.apply = function (prototype) {
   }
 
   prototype.checkWifi = function(lastCheck){
-    var outbuf = new Buffer(1);
-    if (lastCheck) outbuf.fill(1);
-    else outbuf.fill(0);
+    var outbuf = new Buffer([lastCheck ? 0x1 : 0x0]);
     this.command('C', outbuf);
   }
 
