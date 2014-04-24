@@ -148,8 +148,8 @@ Tessel.prototype._receiveMessages = function _receiveMessages() {
 		if (data.length < transferSize) {
 			var b = Buffer.concat(buffers);
 			if (b.length > 0) {
-				var len = b.readUInt16LE(0);
-				var tag = b.readUInt16LE(4);
+				var len = b.readUInt32LE(0);
+				var tag = b.readUInt32LE(4);
 				b = b.slice(8);
 
 				self.emit('rawMessage', tag, b);
@@ -176,21 +176,28 @@ Tessel.prototype.stop = function stop(next) {
 }
 
 Tessel.prototype.debugstack = function stop(next) {
-	this.usb.controlTransfer(VENDOR_REQ_OUT, REQ_STACK_TRACE, 0, 0, new Buffer(0), function(err) {
-		if (err) {
-			this.removeListener('command', oncommand);
-			next(err);
-		}
+	this.usb.controlTransfer(VENDOR_REQ_IN, REQ_STACK_TRACE, 0, 0, 16, function(err, buf) {
+		if (err) return callNext(err);
+
+		var r = buf.readInt8(0);
+		if (r != 0) return callNext(null, false);
+		// otherwise, wait for the message
 	});
+
 
 	function oncommand(command, msg) {
 		if (command == 'k') {
-			this.removeListener('command', oncommand);
-			next(null, msg.toString());
+			callNext(null, msg.toString());
 		}
 	}
 
 	this.on('command', oncommand)
+
+	var self = this;
+	function callNext(err, data) {
+		self.removeListener('command', oncommand);
+		next(err, data);
+	}
 }
 
 Tessel.prototype.wifiIP = function (next) {
