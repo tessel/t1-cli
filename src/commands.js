@@ -67,16 +67,16 @@ exports.apply = function (prototype) {
       } else if (command == 'W' && data.hasOwnProperty('acquiring')){
         // now do some periodic checks
         var count = 0;
-        var maxCount = 4;
+        var maxCount = 8;
         var self = this;
         checkInterval = setInterval(function(){
-          console.log("checking now");
+          console.log("...");
           count++;
           if (count >= maxCount){
-            self._checkWifi(true);
+            self.checkWifi(true);
             clearInterval(checkInterval);
           } else {
-            self._checkWifi(false);
+            self.checkWifi(false);
           }
         }, opts.timeout/8 * 1000);
       }
@@ -93,7 +93,7 @@ exports.apply = function (prototype) {
     
   }
 
-  prototype._checkWifi = function(lastCheck){
+  prototype.checkWifi = function(lastCheck){
     var outbuf = new Buffer(1);
     if (lastCheck) outbuf.fill(1);
     else outbuf.fill(0);
