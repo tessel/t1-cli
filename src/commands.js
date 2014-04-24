@@ -57,24 +57,44 @@ exports.apply = function (prototype) {
   prototype.configureWifi = function (ssid, pass, security, opts, next) {
     typeof opts == 'function' && (next = opts);
     next == null && (opts = {});
-
+    var checkInterval;
     this.on('command', function oncommand (command, data) {
       data = JSON.parse(data)
       if (command == 'W' && data.hasOwnProperty('ip')) {
         this.removeListener('command', oncommand);
+        clearInterval(checkInterval);
         next(data);
+      } else if (command == 'W' && data.hasOwnProperty('acquiring')){
+        // now do some periodic checks
+        var count = 0;
+        var maxCount = 8;
+        var self = this;
+        checkInterval = setInterval(function(){
+          console.log("...");
+          count++;
+          if (count >= maxCount){
+            self.checkWifi(true);
+            clearInterval(checkInterval);
+          } else {
+            self.checkWifi(false);
+          }
+        }, opts.timeout/8 * 1000);
       }
     });
 
     // Package Wifi arguments
-    var outbuf = new Buffer(129);
+    var outbuf = new Buffer(128);
     outbuf.fill(0);
     new Buffer(String(ssid)).copy(outbuf, 0, 0, ssid.length);
     new Buffer(String(pass)).copy(outbuf, 32, 0, pass.length);
     new Buffer(String(security)).copy(outbuf, 96, 0, security.length);
-    new Buffer([opts.timeout || 8]).copy(outbuf, 128, 0, 1);
-
     this.command('W', outbuf);
+    
+  }
+
+  prototype.checkWifi = function(lastCheck){
+    var outbuf = new Buffer([lastCheck ? 0x1 : 0x0]);
+    this.command('C', outbuf);
   }
 
   // prototype.deploy = function (file, args, next) {

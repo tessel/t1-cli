@@ -12,6 +12,10 @@ common.controller(function (err, client) {
   if (argv._.length == 1) {
     client.wifiStatus(function (err, data) {
       Object.keys(data).map(function (key) {
+        if (key.toUpperCase() == "IP"){
+          // reverse key.data
+          data[key] = data[key].split(".").reverse().join(".");
+        }
         console.log(key.replace(/^./, function (a) { return a.toUpperCase(); }) + ':', data[key]);
       })
       process.exit(0);
