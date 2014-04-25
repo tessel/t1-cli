@@ -32,7 +32,7 @@ common.controller(function (err, client) {
     }
   });
 
-  client.once('script-start', function () {
+  client.run(__dirname + '/../scripts/blink', ['tessel', 'blink.js'], function (err) {
     // Stop on Ctrl+C.
     process.on('SIGINT', function() {
       client.once('script-stop', function (code) {
@@ -50,7 +50,4 @@ common.controller(function (err, client) {
       process.exit(code);
     });
   });
-
-  // Forward path and code to tessel cli handling.
-  common.pushCode(client, __dirname + '/../scripts/blink', ['tessel', 'blink.js'], {}, {});
 })

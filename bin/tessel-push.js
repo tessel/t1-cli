@@ -88,7 +88,9 @@ common.controller(function (err, client) {
     }
   });
 
-  client.once('script-start', function () {
+  client.run(client, pushpath, ['tessel', pushpath].concat(argv.arguments || []), {
+    flash: argv.flash
+  }, function (err) {
     // Stop on Ctrl+C.
     process.on('SIGINT', function() {
       client.once('script-stop', function (code) {
@@ -97,16 +99,14 @@ common.controller(function (err, client) {
       setTimeout(function () {
         // timeout :|
         process.exit(code);
-      }, 5000);
+      }, 2000);
       client.stop();
     });
 
     client.once('script-stop', function (code) {
-      client.close();
-      process.exit(code);
+      client.close(function () {
+        process.exit(code);
+      });
     });
   });
-
-  // Forward path and code to tessel cli handling.
-  common.pushCode(client, pushpath, ['tessel', pushpath].concat(argv.arguments || []), {flash: argv.flash}, argv);
 })

@@ -100,36 +100,6 @@ function bundle (arg, opts)
   return ret;
 }
 
-function pushCode (client, file, args, options, argv, next)
-{
-  // Bundle code based on file path.
-  var ret = bundle(file, argv);
-  if (ret.warning) {
-    !argv.quiet && console.error(('WARN').yellow, ret.warning.grey);
-  }
-  !argv.quiet && console.error(('Bundling directory ' + ret.pushdir + ' (~' + humanize.filesize(ret.size) + ')').grey);
-
-  // Create archive and deploy it to tessel.
-  tessel.bundleFiles(ret.relpath, args, ret.files, function (err, tarbundle) {
-    if (argv.save) {
-      if (argv.savePath) {
-        // save the bundle to the path
-        fs.writeFile(argv.savePath, tarbundle, function(err){
-          if (err) throw err;
-        });
-      } else {
-        // save to any rando location 
-        fs.writeFile('tarbundle.tar', tarbundle, function(err){
-          if (err) throw err;
-        });
-      }
-    }
-
-    !argv.quiet && console.error(('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...').grey);
-    client.deployBundle(tarbundle, options, next);
-  })
-}
-
 
 /**
  * CLI modes
@@ -182,6 +152,5 @@ function controller (next)
 }
 
 exports.bundle = bundle;
-exports.pushCode = pushCode;
 exports.basic = basic;
 exports.controller = controller;

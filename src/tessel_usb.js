@@ -77,10 +77,11 @@ Tessel.prototype.claim = function claim(next) {
 	}
 }
 
-Tessel.prototype.close = function close() {
+Tessel.prototype.close = function close (next) {
 	this.intf.release(true, function () {
 		this.usb.close();
 		this.emit('close');
+		next && next();
 	}.bind(this));
 }
 

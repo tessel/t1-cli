@@ -137,7 +137,7 @@ common.controller(function (err, client) {
     }
   });
 
-  client.once('script-start', function () {
+  client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), function () {
     // Stop on Ctrl+C.
     process.on('SIGINT', function() {
       client.once('script-stop', function (code) {
@@ -151,8 +151,9 @@ common.controller(function (err, client) {
     });
 
     client.once('script-stop', function (code) {
-      client.close();
-      process.exit(code);
+      client.close(function () {
+        process.exit(code);
+      });
     });
 
     // repl is implemented in repl/index.js. Uploaded to tessel, it sends a
@@ -162,7 +163,4 @@ common.controller(function (err, client) {
       repl(client);
     }
   });
-
-  // Forward path and code to tessel cli handling.
-  common.pushCode(client, pushpath, ['tessel', pushpath].concat(argv.arguments || []), {}, argv);
 })
