@@ -37,7 +37,8 @@
     "usb": "~0.3.9",
     "colorsafeconsole": "0.0.4",
     "xml2js": "~0.4.1",
-    "structured-clone": "~0.2.2"
+    "structured-clone": "~0.2.2",
+    "prompt": "~0.2.12"
   },
   "devDependencies": {
     "tap": "~0.4.8",

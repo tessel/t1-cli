@@ -181,6 +181,12 @@ function controller (next)
   });
 }
 
+var utils = {
+  "buildsPath": "http://builds.tessel.io/",
+  "debugPath": "http://debug.tessel.io/"
+}
+
+exports.utils = utils;
 exports.bundle = bundle;
 exports.pushCode = pushCode;
 exports.basic = basic;
