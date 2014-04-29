@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+var path = require('path')
+
 var common = require('../src/cli')
 var keypress = require('keypress')
 var read = require('read')
@@ -116,7 +118,7 @@ common.controller(function (err, client) {
 
   // Check pushing path.
   if (argv.interactive) {
-    var pushpath = __dirname + '/../scripts/repl';
+    var pushpath = path.resolve(__dirname, '../scripts/repl');
   } else if (!argv.script) {
     usage();
   } else {

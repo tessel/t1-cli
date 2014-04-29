@@ -3,6 +3,8 @@
 // tessel blink
 // Whoever blinks first loses.
 
+var path = require('path')
+
 var common = require('../src/cli')
 
 // Setup cli.
@@ -32,7 +34,7 @@ common.controller(function (err, client) {
     }
   });
 
-  client.run(__dirname + '/../scripts/blink', ['tessel', 'blink.js'], function (err) {
+  client.run(path.resolve(__dirname, '../scripts/blink'), ['tessel', 'blink.js'], function (err) {
     // Stop on Ctrl+C.
     process.on('SIGINT', function() {
       client.once('script-stop', function (code) {
