@@ -4,24 +4,19 @@ var path = require('path');
 var fs = require('fs');
 var stream = require('stream');
 var clone = require('structured-clone');
-
 var tessel = require('./');
 var prototype = tessel.Tessel.prototype;
-
-prototype.initCommands = function() {
+prototype.initCommands = function () {
   this.stdout = new stream.Readable();
   this.stdout._read = function () {
   };
-
   this.stderr = new stream.Readable();
   this.stderr._read = function () {
   };
-
   this.stdin = new stream.Writable();
   this.stdin._write = function (chunk, encoding, callback) {
     throw new Error('stdin not yet supported');
   };
-
   this.on('command', function (command, data) {
     if (command == 'S') {
       var code = parseInt(data);
@@ -33,54 +28,54 @@ prototype.initCommands = function() {
     }
   });
   this.on('rawMessage', function (command, data) {
-    if (String.fromCharCode(command&0xff) == 'M') {
+    if (String.fromCharCode(command & 255) == 'M') {
       this.emit('message', clone.deserialize(data));
     }
-  })
-}
-
-
+  });
+};
 prototype.wifiStatus = function (next) {
-  this.command('V', new Buffer([0xde, 0xad, 0xbe, 0xef]), function () {
+  this.command('V', new Buffer([
+    222,
+    173,
+    190,
+    239
+  ]), function () {
     console.error('Requesting wifi status...'.grey);
   });
-
-  this.on('command', function oncommand (command, data) {
+  this.on('command', function oncommand(command, data) {
     if (command == 'V') {
       this.removeListener('command', oncommand);
       next(null, JSON.parse(data));
     }
   });
-}
-
+};
 prototype.configureWifi = function (ssid, pass, security, opts, next) {
   typeof opts == 'function' && (next = opts);
   next == null && (opts = {});
   var checkInterval;
-  this.on('command', function oncommand (command, data) {
-    data = JSON.parse(data)
+  this.on('command', function oncommand(command, data) {
+    data = JSON.parse(data);
     if (command == 'W' && data.hasOwnProperty('ip')) {
       this.removeListener('command', oncommand);
       clearInterval(checkInterval);
       next(data);
-    } else if (command == 'W' && data.hasOwnProperty('acquiring')){
+    } else if (command == 'W' && data.hasOwnProperty('acquiring')) {
       // now do some periodic checks
       var count = 0;
       var maxCount = 8;
       var self = this;
-      checkInterval = setInterval(function(){
-        console.log("...");
+      checkInterval = setInterval(function () {
+        console.log('...');
         count++;
-        if (count >= maxCount){
+        if (count >= maxCount) {
           self.checkWifi(true);
           clearInterval(checkInterval);
         } else {
           self.checkWifi(false);
         }
-      }, opts.timeout/8 * 1000);
+      }, opts.timeout / 8 * 1000);
     }
   });
-
   // Package Wifi arguments
   var outbuf = new Buffer(128);
   outbuf.fill(0);
@@ -88,14 +83,11 @@ prototype.configureWifi = function (ssid, pass, security, opts, next) {
   new Buffer(String(pass)).copy(outbuf, 32, 0, pass.length);
   new Buffer(String(security)).copy(outbuf, 96, 0, security.length);
   this.command('W', outbuf);
-  
-}
-
-prototype.checkWifi = function(lastCheck){
-  var outbuf = new Buffer([lastCheck ? 0x1 : 0x0]);
+};
+prototype.checkWifi = function (lastCheck) {
+  var outbuf = new Buffer([lastCheck ? 1 : 0]);
   this.command('C', outbuf);
-}
-
+};
 // prototype.deploy = function (file, args, next) {
 //   tessel.detectDirectory(file, function (err, dirpath, relpath) {
 //     tessel.bundleCode(dirpath, relpath, args, function (err, tarstream) {
@@ -103,31 +95,32 @@ prototype.checkWifi = function(lastCheck){
 //     });
 //   });
 // }
-
 prototype.deployBundle = function (bundle, options, next) {
-  if (options.save){
-    fs.writeFileSync("builtin.tar", bundle);
-    console.log("wrote builtin.tar");
+  if (options.save) {
+    fs.writeFileSync('builtin.tar', bundle);
+    console.log('wrote builtin.tar');
   }
   this.stop(function () {
     next && this.once('script-start', next);
-    this.command(options.flash?'P':'U', bundle);
+    this.command(options.flash ? 'P' : 'U', bundle);
   }.bind(this));
-}
-
+};
 prototype.erase = function (next) {
   this.stop(function () {
-    this.command('P', new Buffer([0xff, 0xff, 0xff, 0xff]), next);
+    this.command('P', new Buffer([
+      255,
+      255,
+      255,
+      255
+    ]), next);
   }.bind(this));
-}
-
+};
 prototype.deployBinary = function (file, next) {
   // open up the file
   var buffer = fs.readFileSync(file);
   next && this.once('script-start', next);
   this.command('U', buffer);
-}
-
+};
 prototype.send = function (data) {
   this.command('M', clone.serialize(data));
 };

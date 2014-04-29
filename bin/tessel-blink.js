@@ -1,28 +1,31 @@
 #!/usr/bin/env node
-
 // tessel blink
 // Whoever blinks first loses.
-
-var common = require('../src/cli')
-
+var common = require('../src/cli');
 // Setup cli.
 common.basic();
-
 common.controller(function (err, client) {
-  client.listen(true, [10, 11, 12, 13, 20, 21, 22])
+  client.listen(true, [
+    10,
+    11,
+    12,
+    13,
+    20,
+    21,
+    22
+  ]);
   client.on('error', function (err) {
     if (err.code == 'ENOENT') {
-      console.error('Error: Cannot connect to Tessel locally.')
+      console.error('Error: Cannot connect to Tessel locally.');
     } else {
       console.error(err);
     }
-  })
-
+  });
   // Command command.
   var updating = false;
   client.on('command', function (command, data) {
     if (command == 'u') {
-      verbose && console.error(data.grey)
+      verbose && console.error(data.grey);
     } else if (command == 'U') {
       if (updating) {
         // Interrupted by other deploy
@@ -31,10 +34,12 @@ common.controller(function (err, client) {
       updating = true;
     }
   });
-
-  client.run(__dirname + '/../scripts/blink', ['tessel', 'blink.js'], function (err) {
+  client.run(__dirname + '/../scripts/blink', [
+    'tessel',
+    'blink.js'
+  ], function (err) {
     // Stop on Ctrl+C.
-    process.on('SIGINT', function() {
+    process.on('SIGINT', function () {
       client.once('script-stop', function (code) {
         process.exit(code);
       });
@@ -44,10 +49,9 @@ common.controller(function (err, client) {
       }, 5000);
       client.stop();
     });
-
     client.once('script-stop', function (code) {
       client.close();
       process.exit(code);
     });
   });
-})
+});

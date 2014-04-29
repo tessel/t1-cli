@@ -1,46 +1,38 @@
 #!/usr/bin/env node
-
-var common = require('../src/cli')
-
+var common = require('../src/cli');
 // Setup cli.
 common.basic();
-
 var argv = require('optimist').argv;
-
 common.controller(function (err, client) {
-  client.listen(true, null); // TODO: should use [20, 21, 22, 86] once firmware logs at the right level
+  client.listen(true, null);
+  // TODO: should use [20, 21, 22, 86] once firmware logs at the right level
   if (argv._.length == 1) {
     client.wifiStatus(function (err, data) {
       Object.keys(data).map(function (key) {
-        if (key.toUpperCase() == "IP"){
+        if (key.toUpperCase() == 'IP') {
           // reverse key.data
-          data[key] = data[key].split(".").reverse().join(".");
+          data[key] = data[key].split('.').reverse().join('.');
         }
-        console.log(key.replace(/^./, function (a) { return a.toUpperCase(); }) + ':', data[key]);
-      })
+        console.log(key.replace(/^./, function (a) {
+          return a.toUpperCase();
+        }) + ':', data[key]);
+      });
       process.exit(0);
-    })
-
+    });
   } else {
     // if (argv._.length < 3) {
     //   usage();
     //   process.exit(1);
     // }
-
-    function retry () {
+    function retry() {
       var ssid = argv._[1];
-      var pass = argv._[2] || "";
+      var pass = argv._[2] || '';
       var security = (argv._[3] || (pass ? 'wpa2' : 'unsecure')).toLowerCase();
-
       // Only defer to make print after thing.
       client.once('connect', function () {
-        console.log(('Network ' + JSON.stringify(ssid) + 
-          ' (pass ' + JSON.stringify(pass) + ') with ' + security + ' security'));
+        console.log('Network ' + JSON.stringify(ssid) + ' (pass ' + JSON.stringify(pass) + ') with ' + security + ' security');
       });
-
-      client.configureWifi(ssid, pass, security, {
-        timeout: argv.timeout || 8
-      }, function (data) {
+      client.configureWifi(ssid, pass, security, { timeout: argv.timeout || 8 }, function (data) {
         if (!data.connected && !argv['no-retry']) {
           console.error('Retrying...');
           setImmediate(retry);
@@ -49,7 +41,6 @@ common.controller(function (err, client) {
         }
       });
     }
-
     retry();
   }
-})
+});
