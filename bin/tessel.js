@@ -5,6 +5,7 @@ var fork = require('child_process').fork
 var optimist = require('optimist')
 
 var argv = optimist
+  .boolean('version')
   .boolean('v')
   .boolean('no-retry')
   .boolean('verbose')
@@ -12,6 +13,12 @@ var argv = optimist
   .alias('exclude', 'x')
   .alias('include', 'i')
   .argv;
+
+// tessel --version
+if (argv.version) {
+  console.log(require('../package.json').version.replace(/^v?/, 'v'));
+  return;
+}
 
 function usage () {
   console.error("Tessel CLI\nUsage:\n" +
