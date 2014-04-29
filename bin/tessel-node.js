@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var common = require('../src/common')
+var common = require('../src/cli')
 var keypress = require('keypress')
 var read = require('read')
 var colony = require('colony')

@@ -3,7 +3,7 @@
 // tessel blink
 // Whoever blinks first loses.
 
-var common = require('../src/common')
+var common = require('../src/cli')
 
 // Setup cli.
 common.basic();
