@@ -1,0 +1,18 @@
+{
+"node": true,
+"camelcase": true,
+"curly": true,
+"esnext": false,
+"globals": {},
+"globalstrict": false,
+"indent": 2,
+"quotmark": true,
+"smarttabs": false,
+"trailing": true,
+"undef": true,
+"unused": true,
+"white": true,
+"maxerr": 1000,
+"laxcomma": true,
+"multistr": true
+}
