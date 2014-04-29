@@ -88,7 +88,7 @@ common.controller(function (err, client) {
     }
   });
 
-  client.run(client, pushpath, ['tessel', pushpath].concat(argv.arguments || []), {
+  client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), {
     flash: argv.flash
   }, function (err) {
     // Stop on Ctrl+C.

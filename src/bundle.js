@@ -8,8 +8,9 @@ var path = require('path')
   , tar = require('tar')
   , osenv = require('osenv');
 
+// We want to force node-tar to not use extended headers.
+// We patch the module here.
 (function () {
-  // We want to force node-tar to not use extended headers.
   var fn = require('tar/lib/header').encode;
   require('tar/lib/header').encode = function (obj) {
     var ret = fn(obj);
