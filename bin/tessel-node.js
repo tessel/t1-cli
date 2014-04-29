@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
-var common = require('../src/common')
+var path = require('path')
+
+var common = require('../src/cli')
 var keypress = require('keypress')
 var read = require('read')
 var colony = require('colony')
@@ -116,7 +118,7 @@ common.controller(function (err, client) {
 
   // Check pushing path.
   if (argv.interactive) {
-    var pushpath = __dirname + '/../scripts/repl';
+    var pushpath = path.resolve(__dirname, '../scripts/repl');
   } else if (!argv.script) {
     usage();
   } else {
@@ -137,7 +139,7 @@ common.controller(function (err, client) {
     }
   });
 
-  client.once('script-start', function () {
+  client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), function () {
     // Stop on Ctrl+C.
     process.on('SIGINT', function() {
       client.once('script-stop', function (code) {
@@ -151,8 +153,9 @@ common.controller(function (err, client) {
     });
 
     client.once('script-stop', function (code) {
-      client.close();
-      process.exit(code);
+      client.close(function () {
+        process.exit(code);
+      });
     });
 
     // repl is implemented in repl/index.js. Uploaded to tessel, it sends a
@@ -162,7 +165,4 @@ common.controller(function (err, client) {
       repl(client);
     }
   });
-
-  // Forward path and code to tessel cli handling.
-  common.pushCode(client, pushpath, ['tessel', pushpath].concat(argv.arguments || []), {}, argv);
 })

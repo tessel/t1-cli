@@ -6,11 +6,11 @@ var hardwareResolve = require('hardware-resolve')
   , humanize = require('humanize')
   , tessel = require('../')
 
-// bundle (string arg, { verbose, single }) -> { pushdir, relpath, files, size }
+// analyzeScript (string arg, { verbose, single }) -> { pushdir, relpath, files, size }
 // Given a command-line file path, resolve whether we are bundling a file, 
 // its directory, or its ancestral node module.
 
-function bundle (arg, opts)
+function analyzeScript (arg, opts)
 {
   function duparg (arr) {
     var obj = {};
@@ -100,21 +100,32 @@ function bundle (arg, opts)
   return ret;
 }
 
-function pushCode (client, file, args, options, argv, next)
+// client#run(pushpath, args, next(err))
+// Run and deploy a script to this Tessel.
+// Meant to be a simplification of the bundling process.
+
+tessel.Tessel.prototype.run = function (pushpath, argv, bundleopts, next)
 {
-  // Bundle code based on file path.
-  var ret = bundle(file, argv);
-  if (ret.warning) {
-    !argv.quiet && console.error(('WARN').yellow, ret.warning.grey);
+  var self = this;
+  var verbose = bundleopts;
+  if (typeof bundleopts == 'function') {
+    next = bundleopts;
+    bundleopts = {};
   }
-  !argv.quiet && console.error(('Bundling directory ' + ret.pushdir + ' (~' + humanize.filesize(ret.size) + ')').grey);
+
+  // Bundle code based on file path.
+  var ret = analyzeScript(pushpath, bundleopts);
+  if (ret.warning) {
+    console.error(('WARN').yellow, ret.warning.grey);
+  }
+  verbose && console.error(('Bundling directory ' + ret.pushdir + ' (~' + humanize.filesize(ret.size) + ')').grey);
 
   // Create archive and deploy it to tessel.
-  tessel.bundleFiles(ret.relpath, args, ret.files, function (err, tarbundle) {
-    if (argv.save) {
-      if (argv.savePath) {
+  tessel.bundleFiles(ret.relpath, argv, ret.files, function (err, tarbundle) {
+    if (bundleopts.save) {
+      if (bundleopts.savePath) {
         // save the bundle to the path
-        fs.writeFile(argv.savePath, tarbundle, function(err){
+        fs.writeFile(bundleopts.savePath, tarbundle, function(err){
           if (err) throw err;
         });
       } else {
@@ -125,63 +136,44 @@ function pushCode (client, file, args, options, argv, next)
       }
     }
 
-    !argv.quiet && console.error(('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...').grey);
-    client.deployBundle(tarbundle, options, next);
+    verbose && console.error(('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...').grey);
+    self.deployBundle(tarbundle, bundleopts, next);
   })
 }
 
 
-/**
- * CLI modes
- */
+// tessel.script(pushpath, args, next(err))
+// Dead-simple mechanism for pushing code to Tessel.
 
-function basic ()
+function script (pushpath, args, next)
 {
-  require('colors');
-  require('colorsafeconsole')(console);
-}
-
-function repeatstr (str, n) {
-  return Array(n + 1).join(str);
-}
-
-var header = {
-  init: function () {
-    header._msg('TESSEL? '.grey);
-  },
-  _unwrite: function (n) {
-    process.stderr.write(repeatstr('\b', n));
-    header.len = 0;
-  },
-  _msg: function (str) {
-    header._unwrite(header.len || 0);
-    header.len = str.stripColors.length;
-    process.stderr.write(str);
-  },
-  nofound: function () {
-    header._msg('TESSEL? No Tessel found, waiting...'.grey);
-  },
-  connected: function (serialNumber) {
-    header._msg('TESSEL!'.bold.cyan + ' Connected to '.cyan + ("" + serialNumber).green + '.          \n'.cyan);
-  }
-}
-
-function controller (next)
-{
-  header.init();
   tessel.findTessel(null, function (err, client) {
-    if (!client || err) {
-      console.error('ERR'.red, err);
-      return;
+    // client.listen(true, [10, 11, 12, 13, 20, 21, 22])
+
+    if (err) {
+      throw new Error('No tessel connected, aborting: ' + err);
     }
 
-    header.connected(client.serialNumber);
+    client.run(pushpath, args, function (err) {
+      // Log errors.
+      client.on('error', function (err) {
+        console.error('Error: Cannot connect to Tessel locally.', err);
+      })
 
-    next(null, client);
+      // Bundle and upload code.
+      console.error('uploading tessel code...'.grey);
+
+      // When this script ends, stop the client.
+      client.once('script-stop', function (code) {
+        // console.log('stopped.'.grey);
+        client.close();
+      });
+
+      // Handle running script.
+      next(err, client);
+    })
   });
 }
 
-exports.bundle = bundle;
-exports.pushCode = pushCode;
-exports.basic = basic;
-exports.controller = controller;
+tessel.analyzeScript = analyzeScript;
+tessel.script = script;

@@ -6,7 +6,7 @@
 var fs = require('fs')
   , path = require('path')
 
-var common = require('../src/common')
+var common = require('../src/cli')
 
 // Setup cli.
 common.basic();
