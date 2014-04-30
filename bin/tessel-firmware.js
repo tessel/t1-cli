@@ -4,7 +4,7 @@ var fs = require('fs');
 
 var request = require('request')
   , repository = require('../src/repository')
-  , common = require('../src/common')
+  , common = require('../src/cli')
 
 // Setup cli.
 common.basic();
