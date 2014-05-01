@@ -20,7 +20,6 @@ function usage () {
     "   tessel logs\n" +
     "   tessel push <filename> [-r <ip[:port>]] [-s] [-b <file>] [-c] [-a [options]]\n" +
     // "          -r wireless pushing of code (inactive at the moment)\n" + 
-    "          -s saves the file that is getting passed to Tessel as builtin.tar.gz\n" + 
     "          -b pushes a binary\n" + 
     "          -c compresses and pushes a dump dir\n" + 
     "          -a passes arguments to tessel scripts\n" + 
@@ -40,7 +39,8 @@ function usage () {
     "          relative or absolute path: pushe a local binary to tessel\n" +
     "   tessel blink\n" +
     "          uploads test blinky script\n" +
-    "   tessel blink\n" +
+    "   tessel update [-u <url>]\n" +
+    "          updates tessel to the newest released firmware. Optionally can specify any url to download firmware from\n" +
     "   tessel debug [script]\n" +
     "          runs through debug script and uploads logs\n" +
     ""
