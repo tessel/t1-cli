@@ -147,6 +147,7 @@ Logger.prototype.addFile = function(key, filepath){
 function userScript(id, client, urls){
   var userLogger = new Logger(id, urls, 'user_log', client);
   argv.savePath = path.join(userLogger.path, "user_tar");
+  argv.flash = false;
   userLogger.addFile('user_tar', argv.savePath);
 
   // reconnect
@@ -154,8 +155,7 @@ function userScript(id, client, urls){
     client.listen(true);
 
     console.log(colors.green("Running user script... stopping with Ctrl+C or when we hit an error"));
-    common.pushCode(client, argv.script, ['tessel', argv.script].concat(argv.arguments || []), 
-    {flash: false}, argv, function(){
+    client.run(argv.script, ['tessel', argv.script].concat(argv.arguments || []), argv, function(){
       // stop on script exit
       process.on('SIGINT', function() {
         userLogger.uploadFiles(function(){
@@ -177,11 +177,10 @@ common.controller(function (err, client) {
       argv.savePath = path.join(blinkyLogger.path, "blinky_tar");
       blinkyLogger.addFile('blinky_tar', argv.savePath);
 
-      var blinkyPath = __dirname+'/../scripts/blink';
+      var blinkyPath = path.join(__dirname, '/../', 'scripts/blink');
       console.log(colors.cyan("Running Blinky test... please wait..."));
 
-      common.pushCode(client, blinkyPath, ['tessel', blinkyPath].concat(argv.arguments || []), 
-        {flash: false}, argv, function(){
+      client.run(blinkyPath, ['tessel', blinkyPath].concat(argv.arguments || []), argv, function () {
 
         setTimeout(function(){
           blinkyLogger.uploadFiles(function (){

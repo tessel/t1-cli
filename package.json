@@ -43,5 +43,8 @@
   "devDependencies": {
     "tap": "~0.4.8",
     "tape": "~2.12.3"
+  },
+  "engines": {
+    "node": ">=0.10"
   }
 }

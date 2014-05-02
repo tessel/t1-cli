@@ -5,7 +5,7 @@ var request = require('request'),
   colors = require('colors')
   ;
 
-var common = require('../src/common');
+var common = require('../src/cli');
 
 // Setup cli.
 common.basic();
@@ -93,25 +93,6 @@ common.controller(function (err, client) {
     }
   });
 
-  client.once('script-start', function () {
-    // Stop on Ctrl+C.
-    process.on('SIGINT', function() {
-      client.once('script-stop', function (code) {
-        process.exit(code);
-      });
-      setTimeout(function () {
-        // timeout :|
-        process.exit(code);
-      }, 5000);
-      client.stop();
-    });
-
-    client.once('script-stop', function (code) {
-      client.close();
-      process.exit(code);
-    });
-  });
-
   // Forward path and code to tessel cli handling.
   common.checkBuildList(client.version, function (builds, needUpdate){
     if (!builds) return pushCode();
@@ -125,6 +106,26 @@ common.controller(function (err, client) {
   });
 
   function pushCode(){
-    common.pushCode(client, pushpath, ['tessel', pushpath].concat(argv.arguments || []), {flash: argv.flash}, argv);
+    client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), {
+      flash: argv.flash
+    }, function (err) {
+      // Stop on Ctrl+C.
+      process.on('SIGINT', function() {
+        client.once('script-stop', function (code) {
+          process.exit(code);
+        });
+        setTimeout(function () {
+          // timeout :|
+          process.exit(code);
+        }, 2000);
+        client.stop();
+      });
+
+      client.once('script-stop', function (code) {
+        client.close(function () {
+          process.exit(code);
+        });
+      });
+    });
   }
 });

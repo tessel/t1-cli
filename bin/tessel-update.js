@@ -8,7 +8,7 @@ var os = require("os"),
   tessel_dfu = require('../dfu/tessel-dfu')
   ;
 
-var common = require('../src/common');
+var common = require('../src/cli');
 common.basic();
 
 // Command-line arguments

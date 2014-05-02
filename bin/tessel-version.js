@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var common = require('../src/common')
+var common = require('../src/cli')
 
 // Setup cli.
 common.basic();
