@@ -18,7 +18,7 @@ function usage () {
     "   tessel <filename>\n" +
     "   tessel list\n" +
     "   tessel logs\n" +
-    "   tessel push <filename> [-r <ip[:port>]] [-s] [-b <file>] [-c] [-a [options]]\n" +
+    "   tessel push <filename> [-r <ip[:port>]] [-b <file>] [-c] [-a [options]]\n" +
     // "          -r wireless pushing of code (inactive at the moment)\n" + 
     "          -b pushes a binary\n" + 
     "          -c compresses and pushes a dump dir\n" + 
@@ -61,6 +61,7 @@ var builtinCommands = {
   'push': 'push',
   'repl': 'repl',
   'stop': 'stop',
+  'update': 'update',
   'verbose': 'verbose',
   'version': 'version',
   'wifi': 'wifi',

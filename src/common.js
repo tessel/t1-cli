@@ -1,6 +1,7 @@
 var fs = require('fs')
   , path = require('path')
   , temp = require('temp')
+  , request = require('request')
   ;
 
 var hardwareResolve = require('hardware-resolve')
@@ -189,8 +190,8 @@ var utils = {
 }
 
 // check the builds list
-function checkBuildList (next){
-  request.get(common.utils.buildsPath+'builds.json', function(err, data){
+function checkBuildList (version, next){
+  request.get(utils.buildsPath+'builds.json', function(err, data){
     if (err) next && next(null);
     try {
       var builds = JSON.parse(data.body);
@@ -209,10 +210,10 @@ function checkBuildList (next){
         return 0;
       });
 
-      var firmwareDate = new Date(client.version.date+" "+client.version.time);
+      var firmwareDate = new Date(version.date+" "+version.time);
       var newFirmwareDate = new Date(builds[0].modified);
       // in case the builds.version has the full git commithash instead of the first 10 char
-      if (newFirmwareDate.valueOf() > firmwareDate.valueOf() && builds[0].version.search(client.version.firmware_git) == -1){
+      if (newFirmwareDate.valueOf() > firmwareDate.valueOf() && builds[0].version.search(version.firmware_git) == -1){
         // out of date
         return next && next(builds, true);
       } else {
@@ -226,11 +227,9 @@ function checkBuildList (next){
 
 function saveBuild(url, next) {
   var d = new Date().toISOString();
-  // console.log("build path", common.utils.buildsPath+url);
   temp.open('firmware-'+d, function (err, info){
     var file = fs.createWriteStream(info.path);
-    request.get(common.utils.buildsPath+url).pipe(file).on('close', function(){
-      // console.log("fs", file);
+    request.get(utils.buildsPath+url).pipe(file).on('close', function(){
       next && next(info.path);
     });
   });

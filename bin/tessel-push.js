@@ -2,7 +2,7 @@
 var request = require('request'),
   prompt = require('prompt'),
   fs = require('fs'),
-  tessel_dfu = require('../dfu/tessel-dfu')
+  colors = require('colors')
   ;
 
 var common = require('../src/common');
@@ -118,7 +118,7 @@ common.controller(function (err, client) {
 
     if (needUpdate){
       // show warning
-      console.log(colors.red("There is a newer version of firmware available. Use \"tessel update\" to update to the newest version"));
+      console.log(colors.red("WARNING: There is a newer version of firmware available. Use \"tessel update\" to update to the newest version"));
     }
     
     pushCode();
