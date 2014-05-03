@@ -21,7 +21,6 @@ var argv = require("nomnom")
   })
   .option('url', {
     abbr: 'u',
-    flag: true,
     help: 'Optional url of firmware version'
   })
   .parse();
@@ -51,7 +50,7 @@ common.controller(function (err, client) {
 
   // check if we have a url
   if (argv.url) {
-    applyBuild(url, client);
+    applyBuild(argv.url, client);
   } else {
     console.log(colors.grey("Checking for latest firmware... "));
     common.checkBuildList(client.version, function (builds, needUpdate){
