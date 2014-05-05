@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 var os = require("os"), 
   pjson = require("../package.json"),
-  common = require('../src/common'),
+  common = require('../src/cli'),
   temp = require('temp'),
   mkdirp = require('mkdirp'),
   path = require('path'),
