@@ -2,7 +2,7 @@ var net = require('net');
 var fs = require('fs');
 var path = require('path')
   , temp = require('temp')
-  , colony = require('colony')
+  , colonyCompiler = require('colony-compiler')
   , async = require('async')
   , fstream = require('fstream')
   , tar = require('tar')
@@ -51,7 +51,7 @@ exports.bundleFiles = function (startpath, args, files, next)
       var f = _f[0], fullpath = _f[1];
 
       try {
-        var res = colony.colonize(fs.readFileSync(fullpath, 'utf-8'));
+        var res = colonyCompiler.colonize(fs.readFileSync(fullpath, 'utf-8'));
       } catch (e) {
         e.filename = f.substr(4);
         console.log('Syntax error in', f, ':\n', e);
@@ -63,7 +63,7 @@ exports.bundleFiles = function (startpath, args, files, next)
         next(null);
       } else {
         try {
-          colony.toBytecode(res, '/' + f.split(path.sep).join('/'), function (err, bytecode) {
+          colonyCompiler.toBytecode(res, '/' + f.split(path.sep).join('/'), function (err, bytecode) {
             !err && fs.writeFileSync(fullpath, bytecode);
             next(err);
           });

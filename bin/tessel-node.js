@@ -5,7 +5,7 @@ var path = require('path')
 var common = require('../src/cli')
 var keypress = require('keypress')
 var read = require('read')
-var colony = require('colony')
+var colonyCompiler = require('colony-compiler')
 
 // Setup cli.
 common.basic();
@@ -88,7 +88,7 @@ function repl (client)
         }
         var script
           // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
-          = 'local function _run ()\n' + colony.colonize(data, {returnLastStatement: true, wrap: false}) + '\nend\nsetfenv(_run, colony.global);\nreturn _run()';
+          = 'local function _run ()\n' + colonyCompiler.colonize(data, {returnLastStatement: true, wrap: false}) + '\nend\nsetfenv(_run, colony.global);\nreturn _run()';
         client.command('M', new Buffer(JSON.stringify(script)));
       } catch (e) {
         console.error(e.stack);
