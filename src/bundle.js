@@ -51,11 +51,24 @@ exports.bundleFiles = function (startpath, args, files, next)
       var f = _f[0], fullpath = _f[1];
 
       try {
-        var res = colonyCompiler.colonize(fs.readFileSync(fullpath, 'utf-8'));
+        var source = fs.readFileSync(fullpath, 'utf-8');
+        var res = colonyCompiler.colonize(source);
       } catch (e) {
-        e.filename = f.substr(4);
-        console.log('Syntax error in', f, ':\n', e);
-        process.exit(1);
+        if (!(e instanceof SyntaxError)) {
+          throw e;
+        }
+
+        // Create a readable SyntaxError message.
+        var message = [
+          e.message,
+          '',
+          fs.realpathSync(f.substr(4)) + ':' + e.loc.line,
+          source.split(/\n/)[e.loc.line-2] || '',
+          Array(e.loc.column || 0).join(' ') + '^'
+        ].join('\n');
+        // Files with syntax errors can't be compiled.
+        // We can pretend they were thrown by our parser though, at runtime.
+        var res = colonyCompiler.colonize('throw new SyntaxError(' + JSON.stringify(message) + ')')
       }
 
       if (!compileBytecode) {
