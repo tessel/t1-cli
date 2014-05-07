@@ -43,11 +43,15 @@ Tessel.prototype.init = function init(next) {
 	})
 }
 
-Tessel.prototype.claim = function claim(next) {
+Tessel.prototype.claim = function claim(stop, next) {
 	// Runs the claiming procedure exactly once, and calls next after it has completed
 	if (this.claimed === 'claimed') {
 		// Already claimed
-		return setImmediate(next);
+		if (stop) {
+			this.stop(next);
+		} else {
+			return setImmediate(next);
+		}
 	}
 
 	this.once('claimed', next);
@@ -57,6 +61,11 @@ Tessel.prototype.claim = function claim(next) {
 		var self = this;
 		self.intf = self.usb.interface(0);
 		self.intf.claim();
+
+		if (stop) {
+			this.stop();
+		}
+
 		// We use an alternate setting so it is automatically released if the program is killed
 		self.intf.setAltSetting(1, function(error) {
 			if (error) return next(error);
@@ -230,13 +239,18 @@ Tessel.prototype.wifiVer = function (next) {
 	});
 }
 
-exports.findTessel = function findTessel(desiredSerial, next) {
+exports.findTessel = function findTessel(desiredSerial, stop, next) {
+	if (typeof stop === 'function' && typeof next === 'undefined') {
+		next = stop;
+		stop = false;
+	}
+
 	exports.listDevices(function (err, devices) {
 		if (err) return next(err);
 
 		for (var i=0; i<devices.length; i++) {
 			if (!desiredSerial || desiredSerial == devices[i].serialNumber) {
-				devices[i].claim(function(err) {
+				devices[i].claim(stop, function(err) {
 					if (err) return next(err);
 					return next(null, devices[i]);
 				});
