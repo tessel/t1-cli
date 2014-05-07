@@ -64,7 +64,7 @@ var builtinCommands = {
   'firmware': 'firmware', 'dfu-restore': 'firmware',
   'list': 'list',
   'logs': 'logs', 'listen': 'logs',
-  'node': 'node',
+  'node': 'node', 'run': 'node',
   'push': 'push',
   'repl': 'repl',
   'stop': 'stop',
