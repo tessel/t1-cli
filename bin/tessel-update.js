@@ -45,9 +45,7 @@ function applyBuild(url, client){
 // // check if we want to list
 if (argv.list){
   // list possible builds
-
   common.checkBuildList("", function(builds){
-    // console.log("builds", builds);
     var tags = builds.filter(function (file) {
       return file.url.match(/^firmware\/./) && file.url.match(/\.bin$/);
     }).sort(function (a, b) {
@@ -55,7 +53,6 @@ if (argv.list){
       if (a.url > b.url) return -1;
       return 0;
     }).map(function (file, i) {
-      // console.log(file.url.replace(/^firmware\//, ''));
       return '  o '.blue + file.url.replace(/^firmware\//, '').match(/\d{4}-\d{2}-\d{1,2}/);
     });
 
@@ -84,7 +81,7 @@ if (argv.list){
       applyBuild(argv.url, client);
     }  else if (argv.build){ 
       // rebuild url and download by build number
-      applyBuild(common.utils.buildsPath+"tessel-firmware-"-argv.build+".bin");
+      applyBuild(common.utils.buildsPath+"firmware/tessel-firmware-"+argv.build[0]+".bin", client);
     } else {
       console.log(colors.grey("Checking for latest firmware... "));
       common.checkBuildList(client.version, function (builds, needUpdate){

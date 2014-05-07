@@ -153,7 +153,7 @@ function checkBuildList (version, next){
 }
 
 function getBuild(url, next) {
-  request.get({url: utils.buildsPath+url, encoding:null}, function(err, res, body){
+  request.get({url: url, encoding:null}, function(err, res, body){
     next(err, body);
   });
 }
