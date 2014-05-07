@@ -46,8 +46,8 @@ function usage () {
     "          relative or absolute path: pushe a local binary to tessel\n" +
     "   tessel blink\n" +
     "          uploads test blinky script\n" +
-    "   tessel update [-u <url>]\n" +
-    "          updates tessel to the newest released firmware. Optionally can specify any url to download firmware from\n" +
+    "   tessel update [list] [-b build] [-u <url>]\n" +
+    "          updates tessel to the newest released firmware. Optionally can list all builds. Can specify by build or url to download firmware from\n" +
     "   tessel debug [script]\n" +
     "          runs through debug script and uploads logs\n" +
     ""
