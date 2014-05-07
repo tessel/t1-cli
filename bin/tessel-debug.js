@@ -18,7 +18,7 @@ common.basic();
 var argv = require("nomnom")
   .script('tessel-debug')
   .option('script', {
-    position: 1,
+    position: 0,
     full: 'script.js',
     help: 'Run this script on Tessel after default scripts.',
   })
@@ -41,7 +41,7 @@ function usage () {
 
 function stop(client, logId){
   console.log(colors.green("Done."));
-  console.log(colors.cyan("Debug logs can be viewed at"), colors.red(common.utils.debugPath+"/logs/"+logId));
+  console.log(colors.cyan("Debug logs can be viewed at"), colors.red(common.utils.debugPath+"logs/"+logId));
   console.log(colors.cyan("Please submit this link with your support request"))
 
   client.stop();
@@ -171,7 +171,7 @@ common.controller(function (err, client) {
   client.listen(true);
   client.wifiVer(function(err, wifiVer){
     initDebug(client.serialNumber, wifiVer, client.version, function(init){
-      console.log(colors.cyan("Starting debug logs... saving to"), colors.green(common.utils.debugPath+"/log/"+init.id));
+      console.log(colors.cyan("Starting debug logs... saving to"), colors.green(common.utils.debugPath+"logs/"+init.id));
       var blinkyLogger = new Logger(init.id, init.urls, 'blinky_log', client);
       argv.save = true;
       argv.savePath = path.join(blinkyLogger.path, "blinky_tar");
@@ -184,7 +184,6 @@ common.controller(function (err, client) {
 
         setTimeout(function(){
           blinkyLogger.uploadFiles(function (){
-
             if (argv.script){
               // stop that client
               client.stop();
