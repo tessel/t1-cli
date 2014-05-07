@@ -29,17 +29,16 @@ var argv = require("nomnom")
     flag: true,
     help: '[Tessel] Forward stdin as child process messages.'
   })
+  .option('logs', {
+    abbr: 'l',
+    flag: true,
+    help: '[Tessel] Stay connected and print logs.'
+  })
   .option('single', {
     abbr: 's',
     flag: true,
     help: '[Tessel] Push a single script file to Tessel.'
   })
-  .option('flash', {
-    abbr: 'f',
-    flag: true,
-    help: 'Write program to flash'
-  })
-
   .parse();
 
 argv.verbose = !argv.quiet;
@@ -89,24 +88,21 @@ common.controller(function (err, client) {
   });
 
   client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), {
-    flash: argv.flash
+    flash: true,
   }, function (err) {
-    // Stop on Ctrl+C.
-    process.on('SIGINT', function() {
-      client.once('script-stop', function (code) {
-        process.exit(code);
-      });
-      setTimeout(function () {
-        // timeout :|
-        process.exit(code);
-      }, 2000);
-      client.stop();
-    });
 
-    client.once('script-stop', function (code) {
+    function exit(code) {
       client.close(function () {
-        process.exit(code);
+        process.exit(code || 0);
       });
-    });
+    }
+
+    if (argv.logs) {
+      process.on('SIGINT', exit);
+      client.once('script-stop', exit);
+    } else {
+      exit();
+    }
+
   });
 })
