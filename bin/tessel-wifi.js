@@ -7,7 +7,7 @@ common.basic();
 
 var argv = require('optimist').argv;
 
-common.controller(function (err, client) {
+common.controller(false, function (err, client) {
   client.listen(true, null); // TODO: should use [20, 21, 22, 86] once firmware logs at the right level
   if (argv._.length == 1) {
     client.wifiStatus(function (err, data) {

@@ -5,9 +5,7 @@ var common = require('../src/cli')
 // Setup cli.
 common.basic();
 
-common.controller(function (err, client) {
-  client.stop(function () {
+common.controller(true, function (err, client) {
     console.log('tessel runtime stopped.');
-      client.close();
-    });
+    client.close();
 })

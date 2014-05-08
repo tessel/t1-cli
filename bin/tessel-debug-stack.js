@@ -5,7 +5,7 @@ var common = require('../src/cli')
 // Setup cli.
 common.basic();
 
-common.controller(function (err, client) {
+common.controller(false, function (err, client) {
   console.log('Requesting stack trace from Tessel...'.grey);
 
   client.debugstack(function(err, stack) {

@@ -169,7 +169,7 @@ function userScript(id, client, urls){
   });
 }
 
-common.controller(function (err, client) {
+common.controller(true, function (err, client) {
   client.listen(true);
   client.wifiVer(function(err, wifiVer){
     initDebug(client.serialNumber, wifiVer, client.version, function(init){
