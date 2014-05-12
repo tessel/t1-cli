@@ -25,14 +25,15 @@ function usage () {
     "   tessel <filename>\n" +
     "   tessel list\n" +
     "   tessel logs\n" +
-    "   tessel push <filename> [-r <ip[:port>]] [-s] [-b <file>] [-c] [-a [options]]\n" +
-    // "          -r wireless pushing of code (inactive at the moment)\n" + 
-    "          -s saves the file that is getting passed to Tessel as builtin.tar.gz\n" + 
-    "          -b pushes a binary\n" + 
-    "          -c compresses and pushes a dump dir\n" + 
-    "          -a passes arguments to tessel scripts\n" + 
-    "          -f writes the script to flash so it is run automatically on boot\n" + 
-    // "       tessel pushall <filename>\n"+
+    "   tessel push <filename> [-s] [-l]\n" +
+    "          push a script to flash memory on Tessel and run it\n" +
+    "          -s push the specified file only (rather than associated files and modules)\n" + 
+    "          -l stay connected and display logs\n" + 
+    "   tessel run <filename> [args...]\n" +
+    "          run a script temporarily without writing it to flash\n" +
+    "          -s push the specified file only (rather than associated files and modules)\n" + 
+    "   tessel repl\n" +
+    "          interative JavaScript shell\n" +
     "   tessel wifi <ssid> <pass> <security (wep/wpa/wpa2, wpa2 by default)>\n"+
     "   tessel wifi <ssid>\n" +
     "          connects to a wifi network without a password\n" + 
