@@ -142,12 +142,9 @@ common.controller(function (err, client) {
   client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), function () {
     // Stop on Ctrl+C.
     process.on('SIGINT', function() {
-      client.once('script-stop', function (code) {
-        process.exit(code);
-      });
       setTimeout(function () {
         // timeout :|
-        process.exit(code);
+        process.exit(131);
       }, 5000);
       client.stop();
     });
