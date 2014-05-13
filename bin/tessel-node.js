@@ -57,7 +57,11 @@ var argv = require("nomnom")
     flag: true,
     help: '[Tessel] Push a single script file to Tessel.'
   })
-
+  .option('help', {
+    abbr: 'h',
+    flag: true,
+    help: 'Show usage for tessel node'
+  })
   .parse();
 
 argv.verbose = !argv.quiet;
@@ -144,8 +148,9 @@ common.controller(true, function (err, client) {
     process.on('SIGINT', function() {
       setTimeout(function () {
         // timeout :|
+        console.log(colors.grey('Script aborted'));
         process.exit(131);
-      }, 5000);
+      }, 200);
       client.stop();
     });
 

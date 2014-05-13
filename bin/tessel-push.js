@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 var common = require('../src/cli')
+  , colors = require('colors')
+  ;
 
 // Setup cli.
 common.basic();
@@ -38,6 +40,11 @@ var argv = require("nomnom")
     abbr: 's',
     flag: true,
     help: '[Tessel] Push a single script file to Tessel.'
+  })
+  .option('help', {
+    abbr: 'h',
+    flag: true,
+    help: 'Show usage for tessel push'
   })
   .parse();
 
@@ -91,7 +98,10 @@ common.controller(true, function (err, client) {
     flash: true,
   }, function (err) {
 
+    console.log(colors.green("Finished deployment"));
+
     function exit(code) {
+      console.log(colors.green("Run"), colors.red("tessel listen"), colors.green("or"), colors.red("tessel push <script.js> -l"), colors.green("to see logged output"));
       client.close(function () {
         process.exit(code || 0);
       });

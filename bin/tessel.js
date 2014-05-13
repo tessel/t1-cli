@@ -25,19 +25,17 @@ function usage () {
     "   tessel <filename>\n" +
     "   tessel list\n" +
     "   tessel logs\n" +
-    "   tessel push <filename> [-s] [-l]\n" +
-    "          push a script to flash memory on Tessel and run it\n" +
-    "          -s push the specified file only (rather than associated files and modules)\n" + 
-    "          -l stay connected and display logs\n" + 
+    "   tessel push <filename> [options]\n" +
+    "          see 'tessel push --help' for options list\n" +
     "   tessel run <filename> [args...]\n" +
     "          run a script temporarily without writing it to flash\n" +
     "          -s push the specified file only (rather than associated files and modules)\n" + 
     "   tessel repl\n" +
     "          interative JavaScript shell\n" +
-    "   tessel wifi <ssid> <pass> <security (wep/wpa/wpa2, wpa2 by default)>\n"+
-    "   tessel wifi <ssid>\n" +
+    "   tessel wifi -n <ssid> -p <pass> -s <security (wep/wpa/wpa2, wpa2 by default)>\n"+
+    "   tessel wifi -n <ssid>\n" +
     "          connects to a wifi network without a password\n" + 
-    "   tessel wifi\n" +
+    "   tessel wifi -l\n" +
     "          see current wifi status\n" + 
     "   tessel stop\n" +
     "   tessel check <file>\n" + 
@@ -51,6 +49,10 @@ function usage () {
     "   tessel blink\n" +
     "   tessel debug [script]\n" +
     "          runs through debug script and uploads logs\n" +
+    "   tessel version\n" +
+    "          show version\n" +
+    "   tessel version --board\n" +
+    "          show version of the connected Tessel\n" +
     ""
     );
 }
