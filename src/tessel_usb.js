@@ -87,16 +87,16 @@ Tessel.prototype.claim = function claim(stop, next) {
 }
 
 Tessel.prototype.close = function close (next) {
-	try {
-		this.intf.release(true, function () {
-			this.usb.close();
-			this.emit('close');
-			next && next();
-		}.bind(this));
-	} catch (e) {
+	if (this.closed) {
+		return next && next();
+	}
+	this.closed = true;
+
+	this.intf.release(true, function (err) {
 		this.usb.close();
 		this.emit('close');
-	}
+		next && next();
+	}.bind(this));
 }
 
 Tessel.prototype.listen = function listen(colors, levels) {
