@@ -51,7 +51,7 @@ function controller (stop, next)
   tessel.findTessel(null, stop, function (err, client) {
     if (!client || err) {
       console.error('ERR'.red, err);
-      return;
+      process.exit(1);
     }
 
     header.connected(client.serialNumber);
