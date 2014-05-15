@@ -33,6 +33,11 @@ var argv = require("nomnom")
     flag: true,
     help: '[Tessel] Push a single script file to Tessel.'
   })
+  .option('help',{
+    abbr: 'h',
+    flag: true,
+    help: 'Show usage for Tessel debug'
+  })
   .parse();
 
 function usage () {
