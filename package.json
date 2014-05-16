@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "test": "MOCK_USB=1 tap test/*.js",
-    "postinstall": "not-linux || install-udev-rules 1d50 6097 install/tessel.rules"
+    "postinstall": "not-linux || install-udev-rules 1d50 6097 install/tessel.rules 85-tessel.rules"
   },
   "bin": {
     "tessel": "./bin/tessel.js",
@@ -39,7 +39,7 @@
     "colorsafeconsole": "0.0.4",
     "xml2js": "~0.4.1",
     "structured-clone": "~0.2.2",
-    "install-udev-rules": "~0.0.4"
+    "install-udev-rules": "~0.1.0"
   },
   "devDependencies": {
     "tap": "~0.4.8",
