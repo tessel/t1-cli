@@ -107,11 +107,11 @@ function analyzeScript (arg, opts)
 tessel.Tessel.prototype.run = function (pushpath, argv, bundleopts, next)
 {
   var self = this;
-  var verbose = bundleopts;
   if (typeof bundleopts == 'function') {
     next = bundleopts;
     bundleopts = {};
   }
+  var verbose = !bundleopts.quiet;
 
   // Bundle code based on file path.
   var ret = analyzeScript(pushpath, bundleopts);
