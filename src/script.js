@@ -137,20 +137,6 @@ tessel.Tessel.prototype.run = function (pushpath, argv, bundleopts, next)
 
   // Bundle code based on file path.
   tessel.bundleScript(pushpath, argv, bundleopts, function (err, tarbundle) {
-    if (bundleopts.save) {
-      if (bundleopts.savePath) {
-        // save the bundle to the path
-        fs.writeFile(bundleopts.savePath, tarbundle, function(err){
-          if (err) throw err;
-        });
-      } else {
-        // save to any rando location 
-        fs.writeFile('tarbundle.tar', tarbundle, function(err){
-          if (err) throw err;
-        });
-      }
-    }
-
     verbose && console.error(('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...').grey);
     self.deployBundle(tarbundle, bundleopts, next);
   })
