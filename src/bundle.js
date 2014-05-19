@@ -8,6 +8,8 @@ var path = require('path')
   , tar = require('tar')
   , osenv = require('osenv')
   , effess = require('effess')
+  , debug = require('debug')('tessel')
+  ;
 
 // We want to force node-tar to not use extended headers.
 // We patch the module here.
@@ -50,6 +52,8 @@ exports.bundleFiles = function (startpath, args, files, next)
     async.each(docompile, function (_f, next) {
       var f = _f[0], fullpath = _f[1];
 
+      debug('compiling', f);
+
       try {
         var source = fs.readFileSync(fullpath, 'utf-8');
         var res = colonyCompiler.colonize(source);
@@ -77,6 +81,7 @@ exports.bundleFiles = function (startpath, args, files, next)
       } else {
         try {
           colonyCompiler.toBytecode(res, '/' + f.split(path.sep).join('/'), function (err, bytecode) {
+            debug('writing', f);
             !err && fs.writeFileSync(fullpath, bytecode);
             next(err);
           });
