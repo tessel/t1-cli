@@ -100,6 +100,28 @@ function analyzeScript (arg, opts)
   return ret;
 }
 
+// tessel.bundleScript(pushpath, args, opts, next(err, tarbundle))
+// Bundles a script path and arguments into a packed bundle.
+
+tessel.bundleScript = function (pushpath, argv, bundleopts, next)
+{
+  var self = this;
+  if (typeof bundleopts == 'function') {
+    next = bundleopts;
+    bundleopts = {};
+  }
+  var verbose = !bundleopts.quiet;
+
+  var ret = analyzeScript(pushpath, bundleopts);
+  if (ret.warning) {
+    verbose && console.error(('WARN').yellow, ret.warning.grey);
+  }
+  verbose && console.error(('Bundling directory ' + ret.pushdir + ' (~' + humanize.filesize(ret.size) + ')').grey);
+
+  // Create archive and deploy it to tessel.
+  tessel.bundleFiles(ret.relpath, argv, ret.files, next);
+}
+
 // client#run(pushpath, args, next(err))
 // Run and deploy a script to this Tessel.
 // Meant to be a simplification of the bundling process.
@@ -114,28 +136,7 @@ tessel.Tessel.prototype.run = function (pushpath, argv, bundleopts, next)
   var verbose = !bundleopts.quiet;
 
   // Bundle code based on file path.
-  var ret = analyzeScript(pushpath, bundleopts);
-  if (ret.warning) {
-    console.error(('WARN').yellow, ret.warning.grey);
-  }
-  verbose && console.error(('Bundling directory ' + ret.pushdir + ' (~' + humanize.filesize(ret.size) + ')').grey);
-
-  // Create archive and deploy it to tessel.
-  tessel.bundleFiles(ret.relpath, argv, ret.files, function (err, tarbundle) {
-    if (bundleopts.save) {
-      if (bundleopts.savePath) {
-        // save the bundle to the path
-        fs.writeFile(bundleopts.savePath, tarbundle, function(err){
-          if (err) throw err;
-        });
-      } else {
-        // save to any rando location 
-        fs.writeFile('tarbundle.tar', tarbundle, function(err){
-          if (err) throw err;
-        });
-      }
-    }
-
+  tessel.bundleScript(pushpath, argv, bundleopts, function (err, tarbundle) {
     verbose && console.error(('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...').grey);
     self.deployBundle(tarbundle, bundleopts, next);
   })
