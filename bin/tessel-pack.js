@@ -4,6 +4,7 @@ var common = require('../src/cli')
   , colors = require('colors')
   , tessel = require('../')
   , path = require('path')
+  , fs = require('fs')
   , util = require('util')
   , humanize = require('humanize')
   ;
