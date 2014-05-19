@@ -68,6 +68,7 @@ var builtinCommands = {
   'list': 'list',
   'logs': 'logs', 'listen': 'logs',
   'node': 'node', 'run': 'node',
+  'pack': 'pack',
   'push': 'push',
   'repl': 'repl',
   'stop': 'stop',
