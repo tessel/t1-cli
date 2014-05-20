@@ -60,21 +60,21 @@ function usage () {
 
 var builtinCommands = {
   'blink': 'blink', 'blinky': 'blink', 'blinkie': 'blink', 'blinkee': 'blink',
-  'debug': 'debug',
   'check': 'check',
+  'debug': 'debug',
   'debug-stack': 'debug-stack',
   'erase': 'erase',
   'firmware': 'firmware', 'dfu-restore': 'firmware',
-  'list': 'list',
+  'list': 'list', 'ls': 'list',
   'logs': 'logs', 'listen': 'logs',
-  'node': 'node', 'run': 'node',
+  'node': 'node', 'run': 'node', 'r': 'node',
   'pack': 'pack',
-  'push': 'push',
+  'push': 'push', 'p': 'push',
   'repl': 'repl',
   'stop': 'stop',
   'verbose': 'verbose',
   'version': 'version',
-  'wifi': 'wifi',
+  'wifi': 'wifi', 'w': 'wifi',
 }
 
 if (process.argv.length < 3 || !builtinCommands[process.argv[2]]) {
