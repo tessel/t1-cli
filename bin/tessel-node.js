@@ -6,6 +6,7 @@ var common = require('../src/cli')
   , keypress = require('keypress')
   , read = require('read')
   , colors = require('colors')
+  , builds = require('../src/builds')
 
 var colonyCompiler = require('colony-compiler')
 
@@ -145,8 +146,8 @@ common.controller(true, function (err, client) {
     }
   });
 
-  common.checkBuildList(client.version, function (builds, needUpdate){
-    if (!builds) return pushCode();
+  builds.checkBuildList(client.version, function (allBuilds, needUpdate){
+    if (!allBuilds) return pushCode();
 
     if (needUpdate){
       // show warning

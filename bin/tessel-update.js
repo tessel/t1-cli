@@ -6,7 +6,7 @@ var os = require("os"),
   fs = require('fs'),
   colors = require('colors'),
   tessel_dfu = require('../dfu/tessel-dfu'),
-  urls = require('../src/urls')
+  builds = require('../src/builds')
   ;
 
 var common = require('../src/cli');
@@ -34,7 +34,7 @@ var argv = require("nomnom")
 
 function applyBuild(url, client){
   console.log(colors.grey("Downloading firmware from "+url));
-  common.getBuild(urls.utils.buildsPath+url, function(err, buff){
+  builds.getBuild(builds.utils.buildsPath+url, function(err, buff){
     if (!err){
       console.log(colors.grey("Updating firmware... please wait. Tessel will reset itself after the update"));
       client.close();
@@ -50,14 +50,14 @@ function applyBuild(url, client){
 // // check if we want to list
 if (argv.list){
   // list possible builds
-  common.checkBuildList("", function(builds){
+  builds.checkBuildList("", function(allBuilds){
     function currentize (key, i) {
       var date = key.match(/\d{4}-\d{2}-\d{2}/) || 'current   '.yellow;
       return date
     }
 
     console.log("Switch to any of these builds with `tessel update -b <build name>`");
-    var tags = builds.filter(function (file) {
+    var tags = allBuilds.filter(function (file) {
       return file.url.match(/^firmware\/./) && file.url.match(/\.bin$/);
     }).sort(function (a, b) {
       if (a.url < b.url) return 1;
@@ -95,14 +95,14 @@ if (argv.list){
       applyBuild("firmware/tessel-firmware-"+argv.build[0]+".bin", client);
     } else {
       console.log(colors.grey("Checking for latest firmware... "));
-      common.checkBuildList(client.version, function (builds, needUpdate){
-        if (!builds) {
+      builds.checkBuildList(client.version, function (allBuilds, needUpdate){
+        if (!allBuilds) {
           // no builds?
           console.log(colors.red("No builds were found"));
           return client.close();
         }
         if (needUpdate) {
-          applyBuild(builds[0].url, client);
+          applyBuild(allBuilds[0].url, client);
         } else {
           // already at latest build
           console.log(colors.green("Tessel is already on the latest firmware build"));

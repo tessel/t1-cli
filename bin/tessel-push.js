@@ -2,7 +2,8 @@
 var request = require('request'),
   prompt = require('prompt'),
   fs = require('fs'),
-  colors = require('colors')
+  colors = require('colors'),
+  builds = require('../src/builds')
   ;
 
 var common = require('../src/cli');
@@ -98,8 +99,8 @@ common.controller(true, function (err, client) {
   });
 
   // Forward path and code to tessel cli handling.
-  common.checkBuildList(client.version, function (builds, needUpdate){
-    if (!builds) return pushCode();
+  builds.checkBuildList(client.version, function (allBuilds, needUpdate){
+    if (!allBuilds) return pushCode();
 
     if (needUpdate){
       // show warning
