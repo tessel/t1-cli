@@ -7,6 +7,8 @@ var common = require('../src/cli')
   , read = require('read')
   , colors = require('colors')
   , builds = require('../src/builds')
+  , util = require('util')
+  ;
 
 var colonyCompiler = require('colony-compiler')
 var fs = require('fs')
@@ -181,19 +183,22 @@ common.controller(true, function (err, client) {
         });
       });
 
-      if (argv.receive) {
-        client.on('rawMessage', function (tag, data) {
-          if (tag == 0x4113) {
-            try {
-              var packet = require('structured-clone').deserialize(data);
-              fs.writeFileSync(path.resolve(argv.receive, path.basename(packet.filename)), packet.buffer);
-              console.log(packet.filename, 'written');
-            } catch (e) {
-              console.error('ERR: invalid sendfile packet received.');
-            }
+      client.on('rawMessage', function (tag, data) {
+        if (tag == 0x4113) {
+          if (!argv['upload-dir']) {
+            console.error(colors.red('ERR:'), colors.grey('ignoring uploaded file. call tessel with --upload-dir to save files from a running script.'));
+            return;
           }
-        })
-      }
+
+          try {
+            var packet = require('structured-clone').deserialize(data);
+            fs.writeFileSync(path.resolve(argv['upload-dir'], path.basename(packet.filename)), packet.buffer);
+            console.log(colors.grey(util.format(packet.filename, 'saved to', argv['upload-dir'])));
+          } catch (e) {
+            console.error(colors.red('ERR:'), colors.grey('invalid sendfile packet received.'));
+          }
+        }
+      });
       
       // repl is implemented in repl/index.js. Uploaded to tessel, it sends a
       // message telling host it's ready, then receives stdin via
