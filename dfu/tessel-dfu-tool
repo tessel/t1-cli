@@ -8,6 +8,7 @@ function usage () {
 }
 
 var tessel_dfu = require('./tessel-dfu');
+require('../src/commands');
 
 var op = process.argv[2];
 var file = process.argv[3];

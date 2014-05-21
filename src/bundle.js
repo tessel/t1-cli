@@ -2,12 +2,14 @@ var net = require('net');
 var fs = require('fs');
 var path = require('path')
   , temp = require('temp')
-  , colony = require('colony')
+  , colonyCompiler = require('colony-compiler')
   , async = require('async')
   , fstream = require('fstream')
   , tar = require('tar')
   , osenv = require('osenv')
   , effess = require('effess')
+  , debug = require('debug')('tessel')
+  ;
 
 // We want to force node-tar to not use extended headers.
 // We patch the module here.
@@ -50,12 +52,27 @@ exports.bundleFiles = function (startpath, args, files, next)
     async.each(docompile, function (_f, next) {
       var f = _f[0], fullpath = _f[1];
 
+      debug('compiling', f);
+
       try {
-        var res = colony.colonize(fs.readFileSync(fullpath, 'utf-8'));
+        var source = fs.readFileSync(fullpath, 'utf-8');
+        var res = colonyCompiler.colonize(source);
       } catch (e) {
-        e.filename = f.substr(4);
-        console.log('Syntax error in', f, ':\n', e);
-        process.exit(1);
+        if (!(e instanceof SyntaxError)) {
+          throw e;
+        }
+
+        // Create a readable SyntaxError message.
+        var message = [
+          e.message,
+          '',
+          fs.realpathSync(f.substr(4)) + ':' + e.loc.line,
+          source.split(/\n/)[e.loc.line-2] || '',
+          Array(e.loc.column || 0).join(' ') + '^'
+        ].join('\n');
+        // Files with syntax errors can't be compiled.
+        // We can pretend they were thrown by our parser though, at runtime.
+        var res = colonyCompiler.colonize('throw new SyntaxError(' + JSON.stringify(message) + ')')
       }
 
       if (!compileBytecode) {
@@ -63,13 +80,14 @@ exports.bundleFiles = function (startpath, args, files, next)
         next(null);
       } else {
         try {
-          colony.toBytecode(res, '/' + f.split(path.sep).join('/'), function (err, bytecode) {
+          colonyCompiler.toBytecode(res, '/' + f.split(path.sep).join('/'), function (err, bytecode) {
+            debug('writing', f);
             !err && fs.writeFileSync(fullpath, bytecode);
             next(err);
           });
         } catch (e) {
           console.log('ERR'.red, 'Compilation process failed for the following file:');
-          console.log('ERR'.red, ' ', f[0].replace(/^[^/]+/, '.'))
+          console.log('ERR'.red, ' ', f.replace(/^[^/]+/, '.'))
           console.log('ERR'.red, 'This is a compilation bug! Please file an issue at');
           console.log('ERR'.red, 'https://github.com/tessel/beta/issues with this text');
           console.log('ERR'.red, 'and a copy of the file that failed to compile.')

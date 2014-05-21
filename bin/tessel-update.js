@@ -33,12 +33,16 @@ var argv = require("nomnom")
 
 function applyBuild(url, client){
   console.log(colors.grey("Downloading firmware from "+url));
-  common.getBuild(url, function(err, buff){
-    console.log(colors.grey("Updating firmware... please wait. Tessel will reset itself after the update"));
-    client.close();
-    setTimeout(function(){
-      tessel_dfu.write(buff);
-    }, 500);
+  common.getBuild(common.utils.buildsPath+url, function(err, buff){
+    if (!err){
+      console.log(colors.grey("Updating firmware... please wait. Tessel will reset itself after the update"));
+      client.close();
+      setTimeout(function(){
+        tessel_dfu.write(buff);
+      }, 500);
+    } else {
+      throw err;
+    }
   });
 }
 
@@ -46,6 +50,12 @@ function applyBuild(url, client){
 if (argv.list){
   // list possible builds
   common.checkBuildList("", function(builds){
+    function currentize (key, i) {
+      var date = key.match(/\d{4}-\d{2}-\d{2}/) || 'current   '.yellow;
+      return date
+    }
+
+    console.log("Switch to any of these builds with `tessel update -b <build name>`");
     var tags = builds.filter(function (file) {
       return file.url.match(/^firmware\/./) && file.url.match(/\.bin$/);
     }).sort(function (a, b) {
@@ -53,7 +63,7 @@ if (argv.list){
       if (a.url > b.url) return -1;
       return 0;
     }).map(function (file, i) {
-      return '  o '.blue + file.url.replace(/^firmware\//, '').match(/\d{4}-\d{2}-\d{1,2}/);
+      return '  o '.blue + currentize(file.url.replace(/^firmware\//, ''), i);
     });
 
     if (tags.length > 10) {
@@ -81,7 +91,7 @@ if (argv.list){
       applyBuild(argv.url, client);
     }  else if (argv.build){ 
       // rebuild url and download by build number
-      applyBuild(common.utils.buildsPath+"firmware/tessel-firmware-"+argv.build[0]+".bin", client);
+      applyBuild("firmware/tessel-firmware-"+argv.build[0]+".bin", client);
     } else {
       console.log(colors.grey("Checking for latest firmware... "));
       common.checkBuildList(client.version, function (builds, needUpdate){

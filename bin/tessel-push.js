@@ -5,7 +5,9 @@ var request = require('request'),
   colors = require('colors')
   ;
 
-var common = require('../src/cli');
+var common = require('../src/cli')
+  , colors = require('colors')
+  ;
 
 // Setup cli.
 common.basic();
@@ -34,17 +36,21 @@ var argv = require("nomnom")
     flag: true,
     help: '[Tessel] Forward stdin as child process messages.'
   })
+  .option('logs', {
+    abbr: 'l',
+    flag: true,
+    help: '[Tessel] Stay connected and print logs.'
+  })
   .option('single', {
     abbr: 's',
     flag: true,
     help: '[Tessel] Push a single script file to Tessel.'
   })
-  .option('flash', {
-    abbr: 'f',
+  .option('help', {
+    abbr: 'h',
     flag: true,
-    help: 'Write program to flash'
+    help: 'Show usage for tessel push'
   })
-
   .parse();
 
 argv.verbose = !argv.quiet;
@@ -54,7 +60,7 @@ function usage () {
   process.exit(1);
 }
 
-common.controller(function (err, client) {
+common.controller(true, function (err, client) {
   client.listen(true, [10, 11, 12, 13, 20, 21, 22])
   client.on('error', function (err) {
     if (err.code == 'ENOENT') {
@@ -107,25 +113,25 @@ common.controller(function (err, client) {
 
   function pushCode(){
     client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), {
-      flash: argv.flash
+      flash: true,
     }, function (err) {
-      // Stop on Ctrl+C.
-      process.on('SIGINT', function() {
-        client.once('script-stop', function (code) {
-          process.exit(code);
-        });
-        setTimeout(function () {
-          // timeout :|
-          process.exit(code);
-        }, 2000);
-        client.stop();
-      });
 
-      client.once('script-stop', function (code) {
+      console.log(colors.green("Finished deployment"));
+
+      function exit(code) {
+        console.log(colors.green("Run"), colors.red("tessel listen"), colors.green("or"), colors.red("tessel push <script.js> -l"), colors.green("to see logged output"));
         client.close(function () {
-          process.exit(code);
+          process.exit(code || 0);
         });
-      });
+      }
+
+      if (argv.logs) {
+        process.on('SIGINT', exit);
+        client.once('script-stop', exit);
+      } else {
+        exit();
+      }
+
     });
   }
 });

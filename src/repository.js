@@ -2,8 +2,10 @@ var request = require('request');
 var parseString = require('xml2js').parseString;
 var colors = require('colors');
 
+var baseURL = 'https://s3.amazonaws.com/builds.tessel.io/'
+
 function getToolsListing (next) {
-  request('https://s3.amazonaws.com/tessel-tools/', {
+  request(baseURL, {
     headers: {
       'User-Agent': 'tessel'
     }
@@ -37,9 +39,7 @@ function getToolsListing (next) {
 }
 
 function firmwareURL (tag) {
-  return 'https://s3.amazonaws.com/tessel-tools/firmware/tessel-firmware'
-    + (tag == 'current' ? '' : '-' + tag)
-    + '.bin';
+  return baseURL + 'firmware/tessel-firmware-' + tag + '.bin';
 }
 
 exports.getToolsListing = getToolsListing;

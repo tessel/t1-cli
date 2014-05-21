@@ -25,17 +25,17 @@ function usage () {
     "   tessel <filename>\n" +
     "   tessel list\n" +
     "   tessel logs\n" +
-    "   tessel push <filename> [-r <ip[:port>]] [-b <file>] [-c] [-a [options]]\n" +
-    // "          -r wireless pushing of code (inactive at the moment)\n" + 
-    "          -b pushes a binary\n" + 
-    "          -c compresses and pushes a dump dir\n" + 
-    "          -a passes arguments to tessel scripts\n" + 
-    "          -f writes the script to flash so it is run automatically on boot\n" + 
-    // "       tessel pushall <filename>\n"+
-    "   tessel wifi <ssid> <pass> <security (wep/wpa/wpa2, wpa2 by default)>\n"+
-    "   tessel wifi <ssid>\n" +
+    "   tessel push <filename> [options]\n" +
+    "          see 'tessel push --help' for options list\n" +
+    "   tessel run <filename> [args...]\n" +
+    "          run a script temporarily without writing it to flash\n" +
+    "          -s push the specified file only (rather than associated files and modules)\n" + 
+    "   tessel repl\n" +
+    "          interative JavaScript shell\n" +
+    "   tessel wifi -n <ssid> -p <pass> -s <security (wep/wpa/wpa2, wpa2 by default)>\n"+
+    "   tessel wifi -n <ssid>\n" +
     "          connects to a wifi network without a password\n" + 
-    "   tessel wifi\n" +
+    "   tessel wifi -l\n" +
     "          see current wifi status\n" + 
     "   tessel stop\n" +
     "   tessel check <file>\n" + 
@@ -46,10 +46,14 @@ function usage () {
     "          relative or absolute path: pushe a local binary to tessel\n" +
     "   tessel blink\n" +
     "          uploads test blinky script\n" +
-    "   tessel update [list] [-b build] [-u <url>]\n" +
+    "   tessel update [--list] [-b build] [-u <url>]\n" +
     "          updates tessel to the newest released firmware. Optionally can list all builds. Can specify by build or url to download firmware from\n" +
     "   tessel debug [script]\n" +
     "          runs through debug script and uploads logs\n" +
+    "   tessel version\n" +
+    "          show version\n" +
+    "   tessel version --board\n" +
+    "          show version of the connected Tessel\n" +
     ""
     );
 }
@@ -64,7 +68,8 @@ var builtinCommands = {
   'firmware': 'firmware', 'dfu-restore': 'firmware',
   'list': 'list',
   'logs': 'logs', 'listen': 'logs',
-  'node': 'node',
+  'node': 'node', 'run': 'node',
+  'pack': 'pack',
   'push': 'push',
   'repl': 'repl',
   'stop': 'stop',

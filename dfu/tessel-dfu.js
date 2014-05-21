@@ -148,7 +148,7 @@ exports.enterStage2 = function(callback) {
         var t = new Tessel(device);
         t.rx = false;
         t.init(function() {
-            t.claim(function(e) {
+            t.claim(true, function(e) {
                 if (e) throw e;
                 t.enterBootloader();
                 waitForBootloader(callback);

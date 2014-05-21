@@ -41,13 +41,19 @@ var header = {
   }
 }
 
-function controller (next)
+function controller (stop, next)
 {
   header.init();
-  tessel.findTessel(null, function (err, client) {
+
+  if (typeof stop === 'function' && typeof next === 'undefined') {
+    next = stop;
+    stop = false;
+  }
+
+  tessel.findTessel(null, stop, function (err, client) {
     if (!client || err) {
       console.error('ERR'.red, err);
-      return;
+      process.exit(1);
     }
 
     header.connected(client.serialNumber);
@@ -129,9 +135,9 @@ function checkBuildList (version, next){
     }
   }
 
-  try {
-    request.head(utils.buildsPath+'builds.json', function(err, res){
-
+  
+  request.head(utils.buildsPath+'builds.json', function(err, res){
+    if (!err && res){
       checkCache(res.headers, function(cachePath){
         if (cachePath) {
           // use the cached fs
@@ -146,10 +152,11 @@ function checkBuildList (version, next){
           });
         }
       });
-    });
-  } catch (e){
-    next && next(null, false);
-  }
+    } else {
+      next && next(null);
+    }
+  });
+  
 }
 
 function getBuild(url, next) {

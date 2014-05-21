@@ -32,6 +32,11 @@ var argv = require("nomnom")
     flag: true,
     help: '[Tessel] Push a single script file to Tessel.'
   })
+  .option('help',{
+    abbr: 'h',
+    flag: true,
+    help: 'Show usage for Tessel debug'
+  })
   .parse();
 
 function usage () {
@@ -167,7 +172,7 @@ function userScript(id, client, urls){
   });
 }
 
-common.controller(function (err, client) {
+common.controller(true, function (err, client) {
   client.listen(true);
   client.wifiVer(function(err, wifiVer){
     initDebug(client.serialNumber, wifiVer, client.version, function(init){

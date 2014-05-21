@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 var tesselClient = require('../')
-  , common = require('../src/common')
+  , common = require('../src/cli')
 
 // Setup cli.
 common.basic();
