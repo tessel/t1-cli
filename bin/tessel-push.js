@@ -5,9 +5,7 @@ var request = require('request'),
   colors = require('colors')
   ;
 
-var common = require('../src/cli')
-  , colors = require('colors')
-  ;
+var common = require('../src/cli');
 
 // Setup cli.
 common.basic();
@@ -105,7 +103,7 @@ common.controller(true, function (err, client) {
 
     if (needUpdate){
       // show warning
-      console.log(colors.red("WARNING: There is a newer version of firmware available. Use \"tessel update\" to update to the newest version"));
+      console.log(colors.red("NOTE: There is a newer version of firmware available. Use \"tessel update\" to update to the newest version"));
     }
     
     pushCode();

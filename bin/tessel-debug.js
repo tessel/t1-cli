@@ -7,7 +7,8 @@ var os = require("os"),
   path = require('path'),
   request = require('request'),
   fs = require('fs'),
-  colors = require('colors')
+  colors = require('colors'),
+  urls = require('../src/urls')
   ;
 
 temp.track();
@@ -46,7 +47,7 @@ function usage () {
 
 function stop(client, logId){
   console.log(colors.green("Done."));
-  console.log(colors.cyan("Debug logs can be viewed at"), colors.red(common.utils.debugPath+"logs/"+logId));
+  console.log(colors.cyan("Debug logs can be viewed at"), colors.red(urls.utils.debugPath+"logs/"+logId));
   console.log(colors.cyan("Please submit this link with your support request"))
 
   client.stop();
@@ -54,7 +55,7 @@ function stop(client, logId){
 }
 
 function postToWeb(path, data, next){
-  request({uri: common.utils.debugPath+path, method: 'post', json: true, headers:{
+  request({uri: urls.utils.debugPath+path, method: 'post', json: true, headers:{
     'Content-Type': 'application/json', 
       'Content-Length': Buffer.byteLength(JSON.stringify(data))
     }, body: data}
@@ -176,7 +177,7 @@ common.controller(true, function (err, client) {
   client.listen(true);
   client.wifiVer(function(err, wifiVer){
     initDebug(client.serialNumber, wifiVer, client.version, function(init){
-      console.log(colors.cyan("Starting debug logs... saving to"), colors.green(common.utils.debugPath+"logs/"+init.id));
+      console.log(colors.cyan("Starting debug logs... saving to"), colors.green(urls.utils.debugPath+"logs/"+init.id));
       var blinkyLogger = new Logger(init.id, init.urls, 'blinky_log', client);
       argv.save = true;
       argv.savePath = path.join(blinkyLogger.path, "blinky_tar");

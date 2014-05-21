@@ -145,28 +145,42 @@ common.controller(true, function (err, client) {
     }
   });
 
-  client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), function () {
-    // Stop on Ctrl+C.
-    process.on('SIGINT', function() {
-      setTimeout(function () {
-        // timeout :|
-        console.log(colors.grey('Script aborted'));
-        process.exit(131);
-      }, 200);
-      client.stop();
-    });
+  common.checkBuildList(client.version, function (builds, needUpdate){
+    if (!builds) return pushCode();
 
-    client.once('script-stop', function (code) {
-      client.close(function () {
-        process.exit(code);
-      });
-    });
-
-    // repl is implemented in repl/index.js. Uploaded to tessel, it sends a
-    // message telling host it's ready, then receives stdin via
-    // process.on('message')
-    if (argv.interactive) {
-      repl(client);
+    if (needUpdate){
+      // show warning
+      console.log(colors.red("NOTE: There is a newer version of firmware available. Use \"tessel update\" to update to the newest version"));
     }
+    
+    pushCode();
   });
+
+  function pushCode(){
+    client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), function () {
+      // Stop on Ctrl+C.
+      process.on('SIGINT', function() {
+        setTimeout(function () {
+          // timeout :|
+          console.log(colors.grey('Script aborted'));
+          process.exit(131);
+        }, 200);
+        client.stop();
+      });
+
+      client.once('script-stop', function (code) {
+        client.close(function () {
+          process.exit(code);
+        });
+      });
+
+      // repl is implemented in repl/index.js. Uploaded to tessel, it sends a
+      // message telling host it's ready, then receives stdin via
+      // process.on('message')
+      if (argv.interactive) {
+        repl(client);
+      }
+    });
+  }
+  
 })

@@ -5,7 +5,8 @@ var os = require("os"),
   request = require('request'),
   fs = require('fs'),
   colors = require('colors'),
-  tessel_dfu = require('../dfu/tessel-dfu')
+  tessel_dfu = require('../dfu/tessel-dfu'),
+  urls = require('../src/urls')
   ;
 
 var common = require('../src/cli');
@@ -33,7 +34,7 @@ var argv = require("nomnom")
 
 function applyBuild(url, client){
   console.log(colors.grey("Downloading firmware from "+url));
-  common.getBuild(common.utils.buildsPath+url, function(err, buff){
+  common.getBuild(urls.utils.buildsPath+url, function(err, buff){
     if (!err){
       console.log(colors.grey("Updating firmware... please wait. Tessel will reset itself after the update"));
       client.close();

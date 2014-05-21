@@ -2,6 +2,7 @@ var fs = require('fs')
   , path = require('path')
   , request = require('request')
   , os = require('os')
+  , urls = require('./urls')
 
 var tessel = require('./')
 
@@ -60,11 +61,6 @@ function controller (stop, next)
 
     next(null, client);
   });
-}
-
-var utils = {
-  "buildsPath": "http://builds.tessel.io/",
-  "debugPath": "http://debug.tessel.io/"
 }
 
 function saveCache(header, data, next){
@@ -136,7 +132,7 @@ function checkBuildList (version, next){
   }
 
   
-  request.head(utils.buildsPath+'builds.json', function(err, res){
+  request.head(urls.utils.buildsPath+'builds.json', function(err, res){
     if (!err && res){
       checkCache(res.headers, function(cachePath){
         if (cachePath) {
@@ -144,7 +140,7 @@ function checkBuildList (version, next){
           isExpired(sortBuilds(fs.readFileSync(cachePath)));
 
         } else {
-          request.get(utils.buildsPath+'builds.json', function(err, data){
+          request.get(urls.utils.buildsPath+'builds.json', function(err, data){
             if (err) next && next(null);
             saveCache(res.headers, data.body, function(){
               isExpired(sortBuilds(data.body));
@@ -167,7 +163,6 @@ function getBuild(url, next) {
 
 exports.getBuild = getBuild;
 exports.checkBuildList = checkBuildList;
-exports.utils = utils;
 
 exports.basic = basic;
 exports.controller = controller;
