@@ -40,10 +40,10 @@ var argv = require("nomnom")
     flag: true,
     help: 'Enter the REPL.'
   })
-  .option('receive', {
-    abbr: 'r',
+  .option('upload-dir', {
+    abbr: 'u',
     flag: false,
-    help: 'Receive file'
+    help: 'Directory where uploads from process.sendfile should be saved to'
   })
   // .option('remote', {
   //   abbr: 'r',
@@ -169,10 +169,15 @@ common.controller(true, function (err, client) {
     });
 
     if (argv.receive) {
-      var file = typeof argv.receive === 'string' ? argv.receive : "out.bin";
       client.on('rawMessage', function (tag, data) {
-        if (tag == 0xFFFF) {
-          fs.writeFileSync(file, data);
+        if (tag == 0x4113) {
+          try {
+            var packet = require('structured-clone').deserialize(data);
+            fs.writeFileSync(path.resolve(argv.receive, path.basename(packet.filename)), packet.buffer);
+            console.log(packet.filename, 'written');
+          } catch (e) {
+            console.error('ERR: invalid sendfile packet received.');
+          }
         }
       })
     }
