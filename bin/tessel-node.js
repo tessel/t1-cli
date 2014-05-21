@@ -9,6 +9,7 @@ var common = require('../src/cli')
   , builds = require('../src/builds')
 
 var colonyCompiler = require('colony-compiler')
+var fs = require('fs')
 
 // Setup cli.
 common.basic();
@@ -39,6 +40,11 @@ var argv = require("nomnom")
     abbr: 'i',
     flag: true,
     help: 'Enter the REPL.'
+  })
+  .option('upload-dir', {
+    abbr: 'u',
+    flag: false,
+    help: 'Directory where uploads from process.sendfile should be saved to'
   })
   // .option('remote', {
   //   abbr: 'r',
@@ -175,6 +181,20 @@ common.controller(true, function (err, client) {
         });
       });
 
+      if (argv.receive) {
+        client.on('rawMessage', function (tag, data) {
+          if (tag == 0x4113) {
+            try {
+              var packet = require('structured-clone').deserialize(data);
+              fs.writeFileSync(path.resolve(argv.receive, path.basename(packet.filename)), packet.buffer);
+              console.log(packet.filename, 'written');
+            } catch (e) {
+              console.error('ERR: invalid sendfile packet received.');
+            }
+          }
+        })
+      }
+      
       // repl is implemented in repl/index.js. Uploaded to tessel, it sends a
       // message telling host it's ready, then receives stdin via
       // process.on('message')
