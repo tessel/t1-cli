@@ -3,8 +3,10 @@
 var path = require('path')
 
 var common = require('../src/cli')
-var keypress = require('keypress')
-var read = require('read')
+  , keypress = require('keypress')
+  , read = require('read')
+  , colors = require('colors')
+
 var colonyCompiler = require('colony-compiler')
 
 // Setup cli.
