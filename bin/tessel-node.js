@@ -6,6 +6,7 @@ var common = require('../src/cli')
   , keypress = require('keypress')
   , read = require('read')
   , colors = require('colors')
+  , builds = require('../src/builds')
 
 var colonyCompiler = require('colony-compiler')
 var fs = require('fs')
@@ -151,42 +152,56 @@ common.controller(true, function (err, client) {
     }
   });
 
-  client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), function () {
-    // Stop on Ctrl+C.
-    process.on('SIGINT', function() {
-      setTimeout(function () {
-        // timeout :|
-        console.log(colors.grey('Script aborted'));
-        process.exit(131);
-      }, 200);
-      client.stop();
-    });
+  builds.checkBuildList(client.version, function (allBuilds, needUpdate){
+    if (!allBuilds) return pushCode();
 
-    client.once('script-stop', function (code) {
-      client.close(function () {
-        process.exit(code);
-      });
-    });
-
-    if (argv.receive) {
-      client.on('rawMessage', function (tag, data) {
-        if (tag == 0x4113) {
-          try {
-            var packet = require('structured-clone').deserialize(data);
-            fs.writeFileSync(path.resolve(argv.receive, path.basename(packet.filename)), packet.buffer);
-            console.log(packet.filename, 'written');
-          } catch (e) {
-            console.error('ERR: invalid sendfile packet received.');
-          }
-        }
-      })
+    if (needUpdate){
+      // show warning
+      console.log(colors.red("NOTE: There is a newer version of firmware available. Use \"tessel update\" to update to the newest version"));
     }
-
-    // repl is implemented in repl/index.js. Uploaded to tessel, it sends a
-    // message telling host it's ready, then receives stdin via
-    // process.on('message')
-    if (argv.interactive) {
-      repl(client);
-    }
+    
+    pushCode();
   });
+
+  function pushCode(){
+    client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), function () {
+      // Stop on Ctrl+C.
+      process.on('SIGINT', function() {
+        setTimeout(function () {
+          // timeout :|
+          console.log(colors.grey('Script aborted'));
+          process.exit(131);
+        }, 200);
+        client.stop();
+      });
+
+      client.once('script-stop', function (code) {
+        client.close(function () {
+          process.exit(code);
+        });
+      });
+
+      if (argv.receive) {
+        client.on('rawMessage', function (tag, data) {
+          if (tag == 0x4113) {
+            try {
+              var packet = require('structured-clone').deserialize(data);
+              fs.writeFileSync(path.resolve(argv.receive, path.basename(packet.filename)), packet.buffer);
+              console.log(packet.filename, 'written');
+            } catch (e) {
+              console.error('ERR: invalid sendfile packet received.');
+            }
+          }
+        })
+      }
+      
+      // repl is implemented in repl/index.js. Uploaded to tessel, it sends a
+      // message telling host it's ready, then receives stdin via
+      // process.on('message')
+      if (argv.interactive) {
+        repl(client);
+      }
+    });
+  }
+  
 })

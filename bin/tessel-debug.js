@@ -7,19 +7,19 @@ var os = require("os"),
   path = require('path'),
   request = require('request'),
   fs = require('fs'),
-  colors = require('colors')
+  colors = require('colors'),
+  builds = require('../src/builds')
   ;
 
 temp.track();
 
-var hostname = 'http://tessel-debug.herokuapp.com';
 common.basic();
 
 // Command-line arguments
 var argv = require("nomnom")
   .script('tessel-debug')
   .option('script', {
-    position: 1,
+    position: 0,
     full: 'script.js',
     help: 'Run this script on Tessel after default scripts.',
   })
@@ -47,7 +47,7 @@ function usage () {
 
 function stop(client, logId){
   console.log(colors.green("Done."));
-  console.log(colors.cyan("Debug logs can be viewed at"), colors.red(hostname+"/logs/"+logId));
+  console.log(colors.cyan("Debug logs can be viewed at"), colors.red(builds.utils.debugPath+"logs/"+logId));
   console.log(colors.cyan("Please submit this link with your support request"))
 
   client.stop();
@@ -55,7 +55,7 @@ function stop(client, logId){
 }
 
 function postToWeb(path, data, next){
-  request({uri: hostname+path, method: 'post', json: true, headers:{
+  request({uri: builds.utils.debugPath+path, method: 'post', json: true, headers:{
     'Content-Type': 'application/json', 
       'Content-Length': Buffer.byteLength(JSON.stringify(data))
     }, body: data}
@@ -78,7 +78,6 @@ function initDebug(serial, wifi, info, next){
     firmware_time: info.time, 
     wifi: wifi, 
     hostType: os.type(),
-    // hostname: os.hostname(),
     platform: os.platform(),
     arch: os.arch(),
     release: os.release(),
@@ -178,7 +177,7 @@ common.controller(true, function (err, client) {
   client.listen(true);
   client.wifiVer(function(err, wifiVer){
     initDebug(client.serialNumber, wifiVer, client.version, function(init){
-      console.log(colors.cyan("Starting debug logs... saving to"), colors.green(hostname+"/log/"+init.id));
+      console.log(colors.cyan("Starting debug logs... saving to"), colors.green(builds.utils.debugPath+"logs/"+init.id));
       var blinkyLogger = new Logger(init.id, init.urls, 'blinky_log', client);
       argv.save = true;
       argv.savePath = path.join(blinkyLogger.path, "blinky_tar");
@@ -191,7 +190,6 @@ common.controller(true, function (err, client) {
 
         setTimeout(function(){
           blinkyLogger.uploadFiles(function (){
-
             if (argv.script){
               // stop that client
               client.stop();

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-
-var common = require('../src/cli')
-  , colors = require('colors')
+var colors = require('colors'),
+  builds = require('../src/builds')
   ;
+
+var common = require('../src/cli');
 
 // Setup cli.
 common.basic();
@@ -94,25 +95,39 @@ common.controller(true, function (err, client) {
     }
   });
 
-  client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), {
-    flash: true,
-  }, function (err) {
+  // Forward path and code to tessel cli handling.
+  builds.checkBuildList(client.version, function (allBuilds, needUpdate){
+    if (!allBuilds) return pushCode();
 
-    console.log(colors.green("Finished deployment"));
-
-    function exit(code) {
-      console.log(colors.green("Run"), colors.red("tessel listen"), colors.green("or"), colors.red("tessel push <script.js> -l"), colors.green("to see logged output"));
-      client.close(function () {
-        process.exit(code || 0);
-      });
+    if (needUpdate){
+      // show warning
+      console.log(colors.red("NOTE: There is a newer version of firmware available. Use \"tessel update\" to update to the newest version"));
     }
-
-    if (argv.logs) {
-      process.on('SIGINT', exit);
-      client.once('script-stop', exit);
-    } else {
-      exit();
-    }
-
+    
+    pushCode();
   });
-})
+
+  function pushCode(){
+    client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), {
+      flash: true,
+    }, function (err) {
+
+      console.log(colors.green("Finished deployment"));
+
+      function exit(code) {
+        console.log(colors.green("Run"), colors.red("tessel listen"), colors.green("or"), colors.red("tessel push <script.js> -l"), colors.green("to see logged output"));
+        client.close(function () {
+          process.exit(code || 0);
+        });
+      }
+
+      if (argv.logs) {
+        process.on('SIGINT', exit);
+        client.once('script-stop', exit);
+      } else {
+        exit();
+      }
+
+    });
+  }
+});

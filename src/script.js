@@ -1,5 +1,6 @@
 var fs = require('fs')
   , path = require('path')
+  ;
 
 var hardwareResolve = require('hardware-resolve')
   , effess = require('effess')
