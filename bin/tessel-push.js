@@ -1,8 +1,5 @@
 #!/usr/bin/env node
-var request = require('request'),
-  prompt = require('prompt'),
-  fs = require('fs'),
-  colors = require('colors'),
+var colors = require('colors'),
   builds = require('../src/builds')
   ;
 

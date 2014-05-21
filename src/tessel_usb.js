@@ -28,7 +28,7 @@ Tessel.prototype.init = function init(next) {
 	var self = this;
 	this.usb.open();
 	this.initCommands();
-	
+
 	this.logColors = true;
 	this.logLevels = [];
 

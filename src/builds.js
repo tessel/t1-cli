@@ -77,7 +77,6 @@ function checkBuildList (version, next){
     }
   }
 
-  
   request.head(utils.buildsPath+'builds.json', function(err, res){
     if (!err && res){
       checkCache(res.headers, function(cachePath){
