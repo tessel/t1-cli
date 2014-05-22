@@ -123,7 +123,9 @@ function waitForBootloader(callback) {
         state = guessDeviceState(device);
         if (state !== 'dfu') {
             if (--retrycount > 0) {
-                device.__destroy(); // Workaround for https://github.com/libusb/libusb/issues/7
+                if (device) {
+                    device.__destroy(); // Workaround for https://github.com/libusb/libusb/issues/7
+                }
                 return setTimeout(retry, 1000)
             } else {
                 console.error("Failed to load bootloader: found state", state);

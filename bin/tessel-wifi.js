@@ -51,7 +51,7 @@ common.controller(false, function (err, client) {
         }
         console.log(key.replace(/^./, function (a) { return a.toUpperCase(); }) + ':', data[key]);
       })
-      process.exit(0);
+      client.close();
     })
 
   } else {
