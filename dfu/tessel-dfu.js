@@ -166,3 +166,6 @@ exports.enterStage2 = function(callback) {
         callback(device);
     }
 }
+
+exports.findDevice = findDevice;
+exports.guessDeviceState = guessDeviceState;

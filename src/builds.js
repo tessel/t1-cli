@@ -66,6 +66,8 @@ function sortBuilds(data){
 function checkBuildList (version, next){
 
   function isExpired(builds){
+    if (!version) return next && next(builds, true);
+    
     var firmwareDate = new Date(version.date+" "+version.time);
     var newFirmwareDate = new Date(builds[0].modified);
     // in case the builds.version has the full git commithash instead of the first 10 char
