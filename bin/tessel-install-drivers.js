@@ -31,6 +31,8 @@ if (process.platform === 'linux') {
     if (code !== 0) {
       console.log("Error reloading udev");
       process.exit(code);
+    } else {
+      console.log("Done. Unplug and re-plug Tessel to update permissions.")
     }
   });
 } else {
