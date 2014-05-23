@@ -107,6 +107,12 @@ function getBuild(url, next) {
   });
 }
 
+function isValid(buff){
+  // check if buff is a valid firmware build
+  return buff.readUInt32LE(28) == 0x5A5A5A5A;
+}
+
 exports.getBuild = getBuild;
 exports.checkBuildList = checkBuildList;
 exports.utils = utils;
+exports.isValid = isValid;
