@@ -17,7 +17,7 @@ if (process.platform === 'linux') {
   } catch (e) {
     if (e.code === 'EACCES') {
       console.log("Could not write to " + dest);
-      console.log("Run with `sudo tessel install-drivers`");
+      console.log("Run `sudo tessel install-drivers`");
       process.exit(1);
     } else {
       throw e;
