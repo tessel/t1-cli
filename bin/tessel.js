@@ -67,6 +67,7 @@ var builtinCommands = {
   'check': 'check',
   'debug-stack': 'debug-stack',
   'erase': 'erase',
+  'firmware': 'firmware',
   'update': 'update', 'dfu-restore': 'update',
   'list': 'list',
   'logs': 'logs', 'listen': 'logs',
