@@ -95,12 +95,35 @@ function repl (client)
 
   client.on('message', prompt);
 
+  function convertToContext (cmd) {
+    var self = this, matches,
+        scopeVar = /^\s*var\s*([_\w\$]+)(.*)$/m,
+        scopeFunc = /^\s*function\s*([_\w\$]+)/;
+
+    // Replaces: var foo = "bar";  with: self.context.foo = bar;
+    matches = scopeVar.exec(cmd);
+    if (matches && matches.length === 3) {
+      return matches[1] + matches[2];
+    }
+
+    // Replaces: function foo() {};  with: foo = function foo() {};
+    matches = scopeFunc.exec(self.bufferedCommand);
+    if (matches && matches.length === 2) {
+      return matches[1] + ' = ' + self.bufferedCommand;
+    }
+
+    return cmd;
+  };
+
   function prompt() {
     read({prompt: '>>'}, function (err, data) {
       try {
         if (err) {
           throw err;
         }
+        data = String(data);
+
+        data = convertToContext(data);
         var script
           // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
           = 'local function _run ()\n' + colonyCompiler.colonize(data, {returnLastStatement: true, wrap: false}) + '\nend\nsetfenv(_run, colony.global);\nreturn _run()';
