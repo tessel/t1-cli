@@ -66,6 +66,8 @@ function sortBuilds(data){
 function checkBuildList (version, next){
 
   function isExpired(builds){
+    if (!version) return next && next(builds, true);
+    
     var firmwareDate = new Date(version.date+" "+version.time);
     var newFirmwareDate = new Date(builds[0].modified);
     // in case the builds.version has the full git commithash instead of the first 10 char
@@ -107,6 +109,12 @@ function getBuild(url, next) {
   });
 }
 
+function isValid(buff){
+  // check if buff is a valid firmware build
+  return buff.readUInt32LE(28) == 0x5A5A5A5A;
+}
+
 exports.getBuild = getBuild;
 exports.checkBuildList = checkBuildList;
 exports.utils = utils;
+exports.isValid = isValid;

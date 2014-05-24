@@ -50,6 +50,8 @@ function usage () {
     "          updates tessel to the newest released firmware. Optionally can list all builds. Can specify by build or url to download firmware from\n" +
     "   tessel debug [script]\n" +
     "          runs through debug script and uploads logs\n" +
+    "   tessel update\n" +
+    "          updates tessel firmware\n" +
     "   tessel version\n" +
     "          show version\n" +
     "   tessel version --board\n" +
@@ -65,7 +67,8 @@ var builtinCommands = {
   'check': 'check',
   'debug-stack': 'debug-stack',
   'erase': 'erase',
-  'firmware': 'firmware', 'dfu-restore': 'firmware',
+  'firmware': 'firmware',
+  'update': 'update', 'dfu-restore': 'update',
   'list': 'list',
   'logs': 'logs', 'listen': 'logs',
   'node': 'node', 'run': 'node',
@@ -73,7 +76,6 @@ var builtinCommands = {
   'push': 'push',
   'repl': 'repl',
   'stop': 'stop',
-  'update': 'update',
   'verbose': 'verbose',
   'version': 'version',
   'wifi': 'wifi',

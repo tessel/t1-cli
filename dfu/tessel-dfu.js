@@ -117,7 +117,7 @@ exports.runNXP = function (image_filename) {
 function waitForBootloader(callback) {
     process.stdout.write("Waiting for bootloader....\n");
 
-    var retrycount = 5;
+    var retrycount = 8;
     setTimeout(function retry (error) {
         var device = findDevice();
         state = guessDeviceState(device);
@@ -166,3 +166,6 @@ exports.enterStage2 = function(callback) {
         callback(device);
     }
 }
+
+exports.findDevice = findDevice;
+exports.guessDeviceState = guessDeviceState;
