@@ -21,7 +21,7 @@ var argv = require("nomnom")
   })
   .option('wifi', {
     abbr: 'w',
-    help: 'Optional version of the TI wifi patch to apply'
+    help: 'optional version of CC3000 wifi firmware to install'
   })
   .option('build', {
     abbr: 'b',
@@ -30,12 +30,12 @@ var argv = require("nomnom")
   .option('force',{
     abbr: 'f',
     flag: true,
-    help: 'forces the firmware build to update'
+    help: 'forcibly reload firmware onto Tessel'
   })
   .option('dfu', {
     abbr: 'd',
     flag: true,
-    help: 'does firmware updates only to devices in dfu mode'
+    help: 'apply firmware update to device in DFU mode'
   })
   .parse();
 
@@ -45,17 +45,9 @@ function usage(){
 }
 
 function restore(buff, client, next){
-  function delayNext(){
-    // hack. otherwise device.__destroy can't be called (device isn't reacquired yet?)
-
-    setTimeout(function(){
-      next && next();
-    }, 1500);
-  }
-
   // check to make sure buffer is valid
   if (!builds.isValid(buff)){
-    console.log(colors.red("Error, firmware is not valid"));
+    console.log(colors.red("Err"), "file is not a valid firmware image");
     return next && next(err)
   }
 
@@ -64,10 +56,10 @@ function restore(buff, client, next){
 
   if (client){
     client.on('close', function(){
-      delayNext();
+      next && next();
     })
   } else {
-    delayNext();
+    next && next();
   }
 }
 
@@ -147,7 +139,7 @@ function update(client, wifiVer){
             // wait for reboot and reacquire tessel
             setTimeout(function(){
               applyRam(builds.utils.buildsPath+"wifi/"+allBuilds[0].wifi+".bin", null);
-            }, 2000);
+            }, 1000);
             
           }
         }
@@ -210,14 +202,8 @@ if (argv.list){
 } else {
   // check for dfu mode
   var device = tessel_dfu.findDevice();
-  if (tessel_dfu.guessDeviceState(device) == 'dfu'){
-    if (!argv.dfu) {
-      console.log('Err: Tessel is already in DFU mode, run "tessel update --dfu"'.red);
-      process.exit(1);
-    }
-
-    // otherwise they've run it in dfu mode
-    console.log("updating");
+  if (tessel_dfu.guessDeviceState(device) == 'dfu' || argv.dfu){
+    // looks like they've run it in dfu mode, don't bother with common
     update(null, 0);
   } else {
     common.controller(function (err, client) {
