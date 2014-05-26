@@ -8,7 +8,9 @@ var clone = require('structured-clone');
 var tessel = require('./');
 var prototype = tessel.Tessel.prototype;
 
-prototype.initCommands = function() {
+prototype.initCommands = function () {
+  var self = this;
+
   this.stdout = new stream.Readable();
   this.stdout._read = function () {
   };
@@ -19,7 +21,7 @@ prototype.initCommands = function() {
 
   this.stdin = new stream.Writable();
   this.stdin._write = function (chunk, encoding, callback) {
-    throw new Error('stdin not yet supported');
+    self.command('n', Buffer.isBuffer(chunk) ? chunk : new Buffer(chunk, encoding), callback);
   };
 
   this.on('command', function (command, data) {
