@@ -58,11 +58,6 @@ var argv = require("nomnom")
     flag: true,
     help: '[Tessel] Hide tessel deployment messages.'
   })
-  .option('messages', {
-    abbr: 'm',
-    flag: true,
-    help: '[Tessel] Forward stdin as child process messages.'
-  })
   .option('single', {
     abbr: 's',
     flag: true,
@@ -146,13 +141,9 @@ common.controller(true, function (err, client) {
     }
   })
 
-  // Forward stdin as messages with "-m" option
-  if (argv.messages) {
-    process.stdin.resume();
-    require('readline').createInterface(process.stdin, {}, null).on('line', function (std) {
-      client.send(JSON.stringify(std));
-    })
-  }
+  // Forward stdin by line.
+  process.stdin.resume();
+  process.stdin.pipe(client.stdin);
 
   // Check pushing path.
   if (argv.interactive) {
