@@ -79,6 +79,7 @@ var builtinCommands = {
   'verbose': 'verbose',
   'version': 'version',
   'wifi': 'wifi',
+  'install-drivers': 'install-drivers',
 }
 
 if (process.argv.length < 3 || !builtinCommands[process.argv[2]]) {

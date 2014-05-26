@@ -26,7 +26,14 @@ util.inherits(Tessel, EventEmitter);
 
 Tessel.prototype.init = function init(next) {
 	var self = this;
-	this.usb.open();
+	try {
+		this.usb.open();
+	} catch (e) {
+		if (e.message === 'LIBUSB_ERROR_ACCESS' && process.platform === 'linux') {
+			console.log("Could not open USB device.\nRun `sudo tessel install-drivers` to fix permissions.")
+		}
+		return next(e)
+	}
 	this.initCommands();
 
 	this.logColors = true;
