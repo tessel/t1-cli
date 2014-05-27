@@ -10,7 +10,7 @@ common.basic();
 
 // Command-line arguments
 var argv = require("nomnom")
-  .script('tessel-push')
+  .script('tessel push')
   .option('script', {
     position: 0,
     // required: true,

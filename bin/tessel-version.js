@@ -7,7 +7,7 @@ common.basic();
 
 // Command-line arguments
 var argv = require("nomnom")
-  .script('tessel-version')
+  .script('tessel version')
   .option('board', {
     abbr: 'b',
     flag: true,

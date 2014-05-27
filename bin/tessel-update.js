@@ -14,7 +14,7 @@ common.basic();
 
 // Command-line arguments
 var argv = require("nomnom")
-  .script('tessel-update')
+  .script('tessel update')
   .option('list', {
     abbr: 'l',
     flag: true
@@ -131,7 +131,7 @@ function update(client, wifiVer){
         // check if we need a wifi update
         var wifiUpdate = function (){};
         if ( (argv.dfu && argv.wifi) || // if its in dfu mode and a wifi flag is passed, do both updates
-          (allBuilds[0].wifi && Number(wifiVer) < Number(allBuilds[0].wifi)) ){ // otherwise only update if version is outdated
+          (allBuilds[0].wifi && Number(wifiVer) != Number(allBuilds[0].wifi)) ){ // otherwise only update if version is outdated
          
           console.log(colors.grey("Wifi version is also outdated, applying wifi patch after firmware."));
 
@@ -143,6 +143,8 @@ function update(client, wifiVer){
             
           }
         }
+
+        console.log(allBuilds[0].url);
 
         applyBuild(builds.utils.buildsPath+allBuilds[0].url, client, wifiUpdate);
         
