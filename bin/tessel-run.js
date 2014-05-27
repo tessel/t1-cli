@@ -33,7 +33,7 @@ var argv = require("nomnom")
   .option('version', {
     abbr: 'v',
     flag: true,
-    help: 'Print tessel-run\'s version.',
+    help: 'Print tessel-node\'s version.',
     callback: function() {
       return require('./package.json').version.replace(/^v?/, 'v');
     }
@@ -57,11 +57,6 @@ var argv = require("nomnom")
     abbr: 'q',
     flag: true,
     help: '[Tessel] Hide tessel deployment messages.'
-  })
-  .option('messages', {
-    abbr: 'm',
-    flag: true,
-    help: '[Tessel] Forward stdin as child process messages.'
   })
   .option('single', {
     abbr: 's',
@@ -146,13 +141,9 @@ common.controller(true, function (err, client) {
     }
   })
 
-  // Forward stdin as messages with "-m" option
-  if (argv.messages) {
-    process.stdin.resume();
-    require('readline').createInterface(process.stdin, {}, null).on('line', function (std) {
-      client.send(JSON.stringify(std));
-    })
-  }
+  // Forward stdin by line.
+  process.stdin.resume();
+  process.stdin.pipe(client.stdin);
 
   // Check pushing path.
   if (argv.interactive) {

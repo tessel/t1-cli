@@ -1,10 +1,3 @@
-#!/usr/bin/env node
+var colors = require('colors');
 
-var common = require('../src/cli')
-
-// Setup cli.
-common.basic();
-
-common.controller(false, function (err, client) {
-  client.listen(true);
-})
+console.log(colors.red('Err'), 'tessel verbose is removed. use "tessel listen --all" instead.')

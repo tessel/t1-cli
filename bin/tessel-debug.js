@@ -17,7 +17,7 @@ common.basic();
 
 // Command-line arguments
 var argv = require("nomnom")
-  .script('tessel-debug')
+  .script('tessel debug')
   .option('script', {
     position: 0,
     full: 'script.js',

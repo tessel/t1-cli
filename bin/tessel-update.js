@@ -14,7 +14,7 @@ common.basic();
 
 // Command-line arguments
 var argv = require("nomnom")
-  .script('tessel-update')
+  .script('tessel update')
   .option('list', {
     abbr: 'l',
     flag: true
@@ -143,6 +143,8 @@ function update(client, wifiVer){
             
           }
         }
+
+        console.log(allBuilds[0].url);
 
         applyBuild(builds.utils.buildsPath+allBuilds[0].url, client, wifiUpdate);
         

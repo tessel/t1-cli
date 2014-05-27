@@ -10,7 +10,7 @@ common.basic();
 
 // Command-line arguments
 var argv = require("nomnom")
-  .script('tessel-wifi')
+  .script('tessel wifi')
   .option('list', {
     abbr: 'l',
     flag: true,
