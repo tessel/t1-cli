@@ -115,7 +115,7 @@ common.controller(true, function (err, client) {
       console.log(colors.green("Finished deployment"));
 
       function exit(code) {
-        console.log(colors.green("Run"), colors.red("tessel listen"), colors.green("or"), colors.red("tessel push <script.js> -l"), colors.green("to see logged output"));
+        console.log("Run \"tessel logs\" or \"tessel push <script.js> -l\" to see logged output.");
         client.close(function () {
           process.exit(code || 0);
         });

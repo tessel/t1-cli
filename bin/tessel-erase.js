@@ -27,7 +27,8 @@ if (argv.force) {
 } else {
   common.controller(true, function (err, client) {
     client.erase(function () {
-    console.log('Tessel filesystem erased.');
+      console.log('Attempting to erase Tessel filesystem.');
+      console.log("If erasing failed try running \"tessel erase --force\"");
       client.close();
     }); 
   });
