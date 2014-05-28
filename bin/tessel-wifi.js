@@ -29,6 +29,10 @@ var argv = require("nomnom")
     default: 'wpa2',
     help: '[Tessel] Security type of the network, one of (wpa2|wpa|wep). Omit for unsecured networks.'
   })
+  .option('timeout', {
+    abbr: 't',
+    help: '[Tessel] Sets the timeout in seconds for trying to acquire a wifi network. Defaults to 8.'
+  })
   .option('help', {
     abbr: 'h',
     help: '[Tessel] Show usage for tessel wifi'
