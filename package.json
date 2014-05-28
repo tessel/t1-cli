@@ -9,8 +9,7 @@
     "postinstall": "tessel install-drivers || true"
   },
   "bin": {
-    "tessel": "./bin/tessel.js",
-    "tessel-node": "./bin/tessel-node.js"
+    "tessel": "./bin/tessel.js"
   },
   "repository": "git://github.com/tessel/cli.git",
   "author": "Technical Machine <team@technical.io>",
