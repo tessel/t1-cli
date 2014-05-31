@@ -9,6 +9,12 @@ var utils = {
   "debugPath": "http://debug.tessel.io/"
 }
 
+var manifesturl = utils.buildsPath + 'builds.json';
+
+/*
+
+// Caching disabled until error cases are checked.
+
 function saveCache(header, data, next){
   var d = new Date(header["last-modified"]);
   var maxAge = header["cache-control"].split("=")[1];
@@ -41,10 +47,9 @@ function checkCache(current, next){
     });
   });
 }
+*/
 
-function sortBuilds(data){
-  var builds = JSON.parse(data);
-
+function sortBuilds(builds){
   // find the latest
   builds.sort(function(a, b){
     var aBuildDate = a.url.match(/-firmware-(.*?).bin/);
@@ -63,37 +68,36 @@ function sortBuilds(data){
 }
 
 // check the builds list
-function checkBuildList (version, next){
+function checkBuildList (version, next) {
 
-  function isExpired(builds){
-    if (!version) return next && next(builds, true);
-    
+  function isExpired (builds) {
+    if (!version) return true;
+
     var firmwareDate = new Date(version.date+" "+version.time);
     var newFirmwareDate = new Date(builds[0].modified);
     // in case the builds.version has the full git commithash instead of the first 10 char
-    if (newFirmwareDate.valueOf() > firmwareDate.valueOf() && builds[0].version.search(version.firmware_git) == -1){
-      // out of date
-      return next && next(builds, true);
-    } else {
-      return next && next(builds, false);
-    }
+    return newFirmwareDate.valueOf() > firmwareDate.valueOf() && builds[0].version.search(version.firmware_git) == -1;
   }
 
-  request.head(utils.buildsPath+'builds.json', function(err, res){
-    if (!err && res){
-      checkCache(res.headers, function(cachePath){
-        if (cachePath) {
-          // use the cached fs
-          isExpired(sortBuilds(fs.readFileSync(cachePath)));
-
-        } else {
-          request.get(utils.buildsPath+'builds.json', function(err, data){
-            if (err) next && next(null);
-            saveCache(res.headers, data.body, function(){
-              isExpired(sortBuilds(data.body));
-            });
-          });
+  request.head(manifesturl, function (err, res) {
+    if (!err && res) {
+      request.get({
+        url: manifesturl,
+        json: true
+      }, function(err, req, builds) {
+        // HTTP error or JSON parsing error.
+        if (err || typeof builds != 'object') return next && next(null);
+      
+        // Catch builds formatting errors.
+        var expired;
+        try {
+          expired = isExpired(sortBuilds(builds));
+        } catch (e) {
+          return next && next(null);
         }
+
+        // Return results of expired check.
+        next && next(builds, expired);
       });
     } else {
       next && next(null);
@@ -104,7 +108,10 @@ function checkBuildList (version, next){
 
 
 function getBuild(url, next) {
-  request.get({url: url, encoding:null}, function(err, res, body){
+  request.get({
+    url: url,
+    encoding: null
+  }, function(err, res, body){
     next(err, body);
   });
 }
