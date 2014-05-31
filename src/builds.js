@@ -88,7 +88,7 @@ function checkBuildList (version, next){
 
         } else {
           request.get(utils.buildsPath+'builds.json', function(err, data){
-            if (err) next && next(null);
+            if (err) return next && next(null);
             saveCache(res.headers, data.body, function(){
               isExpired(sortBuilds(data.body));
             });
