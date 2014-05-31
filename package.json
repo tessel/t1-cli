@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "private": true,
   "scripts": {
-    "test": "MOCK_USB=1 tap test/*.js",
+    "test": "MOCK_USB=1 tap test/*.js test/badserver/test.js",
     "postinstall": "tessel install-drivers || true"
   },
   "bin": {
