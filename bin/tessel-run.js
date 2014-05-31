@@ -181,11 +181,14 @@ common.controller(true, function (err, client) {
 
   function pushCode(){
     client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), function () {
+      // script-start emitted.
+      console.error(colors.grey('Running script...'));
+
       // Stop on Ctrl+C.
       process.on('SIGINT', function() {
         setTimeout(function () {
           // timeout :|
-          console.log(colors.grey('Script aborted'));
+          console.error(colors.grey('Script aborted'));
           process.exit(131);
         }, 200);
         client.stop();
@@ -207,7 +210,7 @@ common.controller(true, function (err, client) {
           try {
             var packet = require('structured-clone').deserialize(data);
             fs.writeFileSync(path.resolve(argv['upload-dir'], path.basename(packet.filename)), packet.buffer);
-            console.log(colors.grey(util.format(packet.filename, 'saved to', argv['upload-dir'])));
+            console.error(colors.grey(util.format(packet.filename, 'saved to', argv['upload-dir'])));
           } catch (e) {
             console.error(colors.red('ERR:'), colors.grey('invalid sendfile packet received.'));
           }
