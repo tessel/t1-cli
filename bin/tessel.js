@@ -70,6 +70,7 @@ var builtinCommands = {
   'logs': 'logs', 'listen': 'logs',
   'node': 'run', 'run': 'run',
   'pack': 'pack',
+  'ping': 'ping',
   'push': 'push',
   'repl': 'repl',
   'stop': 'stop',

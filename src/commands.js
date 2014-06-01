@@ -39,17 +39,8 @@ prototype.initCommands = function () {
     // Wifi.
     if (command == 'W') {
       var packet = JSON.parse(data);
-      // if ('acquiring' in packet) {
-      //   this.emit('wifi-acquire');
-      // }
-      // if ('ip' in packet && 'dhcp' in packet && packet.dhcp == null) {
-      //   this.emit('wifi-dhcp-lost');
-      // }
-      // if ('ip' in packet && 'dhcp' in packet && packet.dhcp == null) {
-      //   this.emit('wifi-dhcp-lost');
-      // }
-      console.log(packet);
       this.emit('wifi-' + packet.event, packet);
+      // console.log(packet);
     }
 
     // Ping / pong.
@@ -88,6 +79,10 @@ prototype.wifiStatus = function (next) {
 prototype.configureWifi = function (ssid, pass, security, opts, next) {
   var self = this;
 
+  typeof opts == 'function' && (next = opts);
+  next == null && (opts = {});
+  var timeout = opts.timeout || 20;
+
   var switching = false;
   self.once('wifi-status', function (data) {
     if (data.connected) {
@@ -97,66 +92,67 @@ prototype.configureWifi = function (ssid, pass, security, opts, next) {
     } else {
       start();
     }
-    // if (command == 'W') {
-    //   console.log(data);
-    //   if (data.connected == 0) {
-    //     if (switching && 'dhcp' in data) return;
-    //     self.removeListener('command', oncommand);
-    //     setTimeout(start, 3000);
-    //   } else {
-    //     switching = true;
-    //     console.log('Switching wifi networks...');
-    //     self.command('Y', new Buffer(4));
-    //   }
-    // }
   });
   self.checkWifi(true);
-  // self.command('Y', new Buffer(4));
 
   function start () {
     console.error('Connecting to "%s" with %s security...', ssid, security);
     (function timeoutloop () {
-      typeof opts == 'function' && (next = opts);
-      next == null && (opts = {});
-      var checkInterval;
+      var checkInterval = null;
       var acquiring = false;
 
-      // TODO batch connections then 
-
-      self.once('wifi-acquire', function (packet) {
+      function onAcquire (packet) {
         // Polling animation
         acquiring = true;
         process.stderr.write('Acquiring IP address. ')
         var count = 0;
-        var maxCount = switching ? 1 : opts.timeout;
+        var maxCount = timeout;
 
         checkInterval = setInterval(function(){
           count++;
           if (count >= maxCount){
             process.stderr.write(' timeout.\n');
             console.error('Retrying...');
-            // self.removeListener('command', oncommand);
-            clearInterval(checkInterval);
+
+            cleanup();
             setTimeout(timeoutloop, 1000);
           } else {
             process.stderr.write('.');
           }
         }, 1000);
-      });
+      }
 
-      self.once('wifi-connect', function (packet) {
+      function onConnect (packet) {
         if (acquiring) {
           process.stderr.write('\n');
-          clearInterval(checkInterval);
         }
+        cleanup();
+
         self.once('wifi-status', function (packet) {
           next(packet);
         })
-      })
+      }
 
-      self.once('wifi-error', function (packet) {
-        // ...
-      })
+      function onError (packet) {
+        cleanup();
+
+        next(packet);
+      }
+
+      function cleanup () {
+        if (checkInterval != null) {
+          clearInterval(checkInterval);
+        }
+        self.removeListener('wifi-acquire', onAcquire);
+        self.removeListener('wifi-connect', onConnect);
+        self.removeListener('wifi-disconnect', onConnect);
+        self.removeListener('wifi-error', onError);
+      }
+
+      self.once('wifi-acquire', onAcquire);
+      self.once('wifi-connect', onConnect);
+      self.once('wifi-disconnect', onConnect);
+      self.once('wifi-error', onError);
 
       // Package Wifi arguments
       var outbuf = new Buffer(128);

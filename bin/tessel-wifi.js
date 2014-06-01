@@ -72,13 +72,13 @@ common.controller(false, function (err, client) {
       client.configureWifi(ssid, pass, security, {
         timeout: argv.timeout
       }, function (data) {
-        if (data.error) {
+        if (data.event == 'error') {
           console.error('Error in connecting (%d). Please try again.', data.error);
           process.on('exit', function () {
             process.exit(1);
           })
           client.close();
-        } else if (!data.connected && !argv['no-retry']) {
+        } else if (!data.connected) {
           console.error('Could not connect. Check that your network and password are correct.');
           client.close();
         } else {
