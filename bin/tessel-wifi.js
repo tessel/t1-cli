@@ -69,7 +69,6 @@ common.controller(false, function (err, client) {
       var pass = argv.password || "";
       var security = (argv.security || (pass ? 'wpa2' : 'unsecure')).toLowerCase();
 
-      console.error('Connecting to "%s" with %s security...', ssid, security);
       client.configureWifi(ssid, pass, security, {
         timeout: argv.timeout
       }, function (data) {
@@ -96,6 +95,6 @@ common.controller(false, function (err, client) {
 
     // Flush earlier USB network messages.
     // TODO: Actually flush these.
-    setTimeout(retry, 250);
+    setTimeout(retry, 2000);
   }
 })
