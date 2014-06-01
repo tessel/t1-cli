@@ -56,41 +56,50 @@ prototype.wifiStatus = function (next) {
 }
 
 prototype.configureWifi = function (ssid, pass, security, opts, next) {
-  typeof opts == 'function' && (next = opts);
-  next == null && (opts = {});
-  var checkInterval;
-  this.on('command', function oncommand (command, data) {
-    data = JSON.parse(data)
-    if (command == 'W' && data.hasOwnProperty('ip')) {
-      this.removeListener('command', oncommand);
-      clearInterval(checkInterval);
-      next(data);
-    } else if (command == 'W' && data.hasOwnProperty('acquiring')){
-      // now do some periodic checks
-      var count = 0;
-      var maxCount = 8;
-      var self = this;
-      checkInterval = setInterval(function(){
-        console.log("...");
-        count++;
-        if (count >= maxCount){
-          self.checkWifi(true);
-          clearInterval(checkInterval);
-        } else {
-          self.checkWifi(false);
+  var self = this;
+  (function timeoutloop () {
+    typeof opts == 'function' && (next = opts);
+    next == null && (opts = {});
+    var checkInterval;
+    var acquiring = false;
+    self.on('command', function oncommand (command, data) {
+      data = JSON.parse(data)
+      if (command == 'W' && (data.hasOwnProperty('ip') || data.hasOwnProperty('error'))) {
+        if (acquiring) {
+          process.stderr.write('\n');
         }
-      }, opts.timeout/8 * 1000);
-    }
-  });
+        self.removeListener('command', oncommand);
+        clearInterval(checkInterval);
+        next(data);
+      } else if (command == 'W' && data.hasOwnProperty('acquiring')){
+        acquiring = true;
+        // Polling animation
+        process.stderr.write('Acquiring IP address. ')
+        var count = 0;
+        var maxCount = opts.timeout;
+        checkInterval = setInterval(function(){
+          count++;
+          if (count >= maxCount){
+            process.stderr.write(' timeout.\n');
+            console.error('Retrying...');
+            self.removeListener('command', oncommand);
+            clearInterval(checkInterval);
+            setTimeout(timeoutloop, 1000);
+          } else {
+            process.stderr.write('.');
+          }
+        }, 1000);
+      }
+    });
 
-  // Package Wifi arguments
-  var outbuf = new Buffer(128);
-  outbuf.fill(0);
-  new Buffer(String(ssid)).copy(outbuf, 0, 0, ssid.length);
-  new Buffer(String(pass)).copy(outbuf, 32, 0, pass.length);
-  new Buffer(String(security)).copy(outbuf, 96, 0, security.length);
-  this.command('W', outbuf);
-  
+    // Package Wifi arguments
+    var outbuf = new Buffer(128);
+    outbuf.fill(0);
+    new Buffer(String(ssid)).copy(outbuf, 0, 0, ssid.length);
+    new Buffer(String(pass)).copy(outbuf, 32, 0, pass.length);
+    new Buffer(String(security)).copy(outbuf, 96, 0, security.length);
+    self.command('W', outbuf);
+  })();
 }
 
 prototype.checkWifi = function(lastCheck){
