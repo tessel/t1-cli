@@ -8,6 +8,26 @@ var clone = require('structured-clone');
 var tessel = require('./');
 var prototype = tessel.Tessel.prototype;
 
+// Abstract raw command writing from JS API.
+// Eventually this will correspond to the USB interface.
+var commands = {
+  disconnect: function (client, callback) {
+    client.command('Y', new Buffer(4), callback);
+  },
+  connect: function (client, ssid, pass, security, callback) {
+    // Package Wifi arguments
+    var outbuf = new Buffer(128);
+    outbuf.fill(0);
+    new Buffer(String(ssid)).copy(outbuf, 0, 0, ssid.length);
+    new Buffer(String(pass)).copy(outbuf, 32, 0, pass.length);
+    new Buffer(String(security)).copy(outbuf, 96, 0, security.length);
+    client.command('W', outbuf, callback);
+  },
+  writeStdin: function (client, buffer, callback) {
+    client.command('n', buffer, callback);
+  }
+}
+
 prototype.initCommands = function () {
   var self = this;
 
@@ -21,7 +41,7 @@ prototype.initCommands = function () {
 
   this.stdin = new stream.Writable();
   this.stdin._write = function (chunk, encoding, callback) {
-    self.command('n', Buffer.isBuffer(chunk) ? chunk : new Buffer(chunk, encoding), callback);
+    commands.writeStdin(self, Buffer.isBuffer(chunk) ? chunk : new Buffer(chunk, encoding), callback)
   };
 
   // Interpret old-form commands, emit as events.
@@ -88,7 +108,7 @@ prototype.configureWifi = function (ssid, pass, security, opts, next) {
     if (data.connected) {
       console.log('Disconnecting from current network...');
       self.once('wifi-disconnect', start);
-      self.command('Y', new Buffer(4));
+      commands.disconnect(self);
     } else {
       start();
     }
@@ -154,13 +174,7 @@ prototype.configureWifi = function (ssid, pass, security, opts, next) {
       self.once('wifi-disconnect', onConnect);
       self.once('wifi-error', onError);
 
-      // Package Wifi arguments
-      var outbuf = new Buffer(128);
-      outbuf.fill(0);
-      new Buffer(String(ssid)).copy(outbuf, 0, 0, ssid.length);
-      new Buffer(String(pass)).copy(outbuf, 32, 0, pass.length);
-      new Buffer(String(security)).copy(outbuf, 96, 0, security.length);
-      self.command('W', outbuf);
+      commands.connect(self, ssid, pass, security);
     })();
   }
 }
