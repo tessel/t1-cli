@@ -8,7 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-var fork = require('child_process').fork
+require('../src/pester'); // force a current node version
 
 function usage () {
   console.error("Tessel CLI\nUsage:\n" +

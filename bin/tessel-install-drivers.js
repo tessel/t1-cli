@@ -24,23 +24,23 @@ if (process.platform === 'linux') {
     fs.writeFileSync(dest, rules);
   } catch (e) {
     if (e.code === 'EACCES') {
-      console.log("Could not write to " + dest);
-      console.log("Run `sudo tessel install-drivers`");
+      console.log('NOTE: Please run `sudo tessel install-drivers` to complete your driver installation.');
+      console.log('(error: could not write to ' + dest + ')');
       process.exit(1);
     } else {
       throw e;
     }
   }
-  console.log("udev rules installed to " + dest);
+  console.log("udev rules installed to", dest);
 
 
   var udevadm = child_process.spawn('udevadm', ['control', '--reload-rules']);
   udevadm.on('close', function (code) {
     if (code !== 0) {
-      console.log("Error reloading udev");
+      console.log("Error reloading udev.");
       process.exit(code);
     } else {
-      console.log("Done. Unplug and re-plug Tessel to update permissions.")
+      console.log("Driver installation complete. Unplug and re-plug Tessel to begin using it.")
     }
   });
 } else {
