@@ -16,7 +16,6 @@
   "license": "MIT",
   "dependencies": {
     "async": "~0.2.9",
-    "choices": "0.0.2",
     "colony-compiler": "~0.6.4",
     "colors": "~0.6.0-1",
     "colorsafeconsole": "0.0.4",
@@ -30,17 +29,12 @@
     "my-local-ip": "~1.0.0",
     "nomnom": "~1.6.2",
     "optimist": "~0.6.0",
-    "osenv": "0.0.3",
-    "portscanner": "~0.1.3",
     "read": "~1.0.5",
     "request": "~2.33.0",
     "structured-clone": "~0.2.2",
     "tar": "~0.1.18",
     "temp": "~0.6.0",
-    "usb": "~0.3.11",
-    "colorsafeconsole": "0.0.4",
-    "xml2js": "~0.4.1",
-    "structured-clone": "~0.2.2"
+    "usb": "~0.3.11"
   },
   "devDependencies": {
     "tap": "~0.4.8",
