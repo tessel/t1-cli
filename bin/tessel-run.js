@@ -11,15 +11,21 @@
 var path = require('path')
 
 var common = require('../src/cli')
+  , tessel = require('../')
   , keypress = require('keypress')
   , read = require('read')
   , colors = require('colors')
   , builds = require('../src/builds')
   , util = require('util')
+  , humanize = require('humanize')
+  , temp = require('temp')
+  , path = require('path')
   ;
 
 var colonyCompiler = require('colony-compiler')
 var fs = require('fs')
+
+temp.track();
 
 // Setup cli.
 common.basic();
@@ -56,20 +62,19 @@ var argv = require("nomnom")
     flag: false,
     help: 'Directory where uploads from process.sendfile should be saved to'
   })
-  // .option('remote', {
-  //   abbr: 'r',
-  //   flag: true,
-  //   help: '[Tessel] Push code to a Tessel by IP address.'
-  // })
+  .option('evaluate', {
+    abbr: 'e',
+    help: 'Evaluate a string of code.'
+  })
   .option('quiet', {
     abbr: 'q',
     flag: true,
-    help: '[Tessel] Hide tessel deployment messages.'
+    help: 'Hide tessel deployment messages from the PC.'
   })
   .option('single', {
     abbr: 's',
     flag: true,
-    help: '[Tessel] Push a single script file to Tessel.'
+    help: 'Push a single script file to Tessel.'
   })
   .option('help', {
     abbr: 'h',
@@ -98,6 +103,8 @@ function repl (client)
 
   client.on('message', prompt);
 
+  // Ripped from the archives of joyent/node,
+  // This code enables var and local functions to work in a repl.
   function convertToContext (cmd) {
     var self = this, matches,
         scopeVar = /^\s*var\s*([_\w\$]+)(.*)$/m,
@@ -118,6 +125,7 @@ function repl (client)
     return cmd;
   };
 
+  // Prompt for code in a repl, and loop.
   function prompt() {
     read({prompt: '>>'}, function (err, data) {
       try {
@@ -128,7 +136,6 @@ function repl (client)
 
         data = convertToContext(data);
         var script
-          // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
           = 'local function _run ()\n' + colonyCompiler.colonize(data, {returnLastStatement: true, wrap: false}) + '\nend\nsetfenv(_run, colony.global);\nreturn _run()';
         client.command('M', new Buffer(JSON.stringify(script)));
       } catch (e) {
@@ -140,7 +147,6 @@ function repl (client)
 }
 
 common.controller(true, function (err, client) {
-  client.listen(true, [10, 11, 12, 13, 20, 21, 22])
   client.on('error', function (err) {
     if (err.code == 'ENOENT') {
       console.error('Error: Cannot connect to Tessel locally.')
@@ -149,20 +155,18 @@ common.controller(true, function (err, client) {
     }
   })
 
-  // Forward stdin by line.
-  process.stdin.resume();
-  process.stdin.pipe(client.stdin);
-
   // Check pushing path.
   if (argv.interactive) {
     var pushpath = path.resolve(__dirname, '../scripts/repl');
+  } else if ('evaluate' in argv) {
+    argv.arguments && argv.arguments.shift(argv.script);
   } else if (!argv.script) {
     usage();
   } else {
     var pushpath = argv.script;
   }
 
-  // Command command.
+  // Read tessel messages, output information.
   var updating = false;
   client.on('command', function (command, data) {
     if (command == 'u') {
@@ -177,20 +181,42 @@ common.controller(true, function (err, client) {
   });
 
   builds.checkBuildList(client.version, function (allBuilds, needUpdate){
-    if (!allBuilds) return pushCode();
-
-    if (needUpdate){
+    if (allBuilds && needUpdate){
       // show warning
-      console.log(colors.red("NOTE: There is a newer version of firmware available. Use \"tessel update\" to update to the newest version"));
+      console.log(colors.red("NOTE"), "Your Tessel firmware is outdated. Update by running \"tessel update\".");
     }
-    
-    pushCode();
+
+    if ('evaluate' in argv) {
+      // Compile and evaluate a line of code.
+      temp.mkdir('colony-evaluate', function (err, dirpath) {
+        fs.writeFileSync(path.resolve(dirpath, 'index.js'), argv.evaluate);
+        fs.writeFileSync(path.resolve(dirpath, 'package.json'), '{}');
+        pushpath = path.resolve(dirpath, 'index.js');
+        pushCode();
+      });
+    } else {
+      pushCode();
+    }
   });
 
-  function pushCode(){
-    client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), function () {
-      // script-start emitted.
+  function pushCode () {
+    // Bundle code based on file path.
+    tessel.bundleScript(pushpath, ['tessel', pushpath].concat(argv.arguments || []), {}, function (err, tarbundle) {
+      console.error(('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...').grey);
+      deploy(tarbundle);
+    });
+  }
+
+  function deploy (tarbundle) {
+    client.deployBundle(tarbundle, {}, function () {
+      // Launch
       console.error(colors.grey('Running script...'));
+
+      // Open the pipe floodgates.
+      client.stdout.pipe(process.stdout);
+      client.stderr.pipe(process.stderr);
+      // Forward stdin by line.
+      process.stdin.pipe(client.stdin);
 
       // Stop on Ctrl+C.
       process.on('SIGINT', function() {
