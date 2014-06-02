@@ -39,7 +39,7 @@ Tessel.prototype.init = function init(next) {
 		this.usb.open();
 	} catch (e) {
 		if (e.message === 'LIBUSB_ERROR_ACCESS' && process.platform === 'linux') {
-			console.log("Could not open USB device.\nRun `sudo tessel install-drivers` to fix permissions.")
+			console.error("Please run `sudo tessel install-drivers` to fix device permissions.\n(Error: could not open USB device.)")
 		}
 		return next(e)
 	}
