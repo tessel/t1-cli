@@ -28,7 +28,6 @@
     "mkdirp": "~0.3.5",
     "my-local-ip": "~1.0.0",
     "nomnom": "~1.6.2",
-    "optimist": "~0.6.0",
     "read": "~1.0.5",
     "request": "~2.33.0",
     "structured-clone": "~0.2.2",
