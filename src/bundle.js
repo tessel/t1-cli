@@ -15,7 +15,6 @@ var path = require('path')
   , async = require('async')
   , fstream = require('fstream')
   , tar = require('tar')
-  , osenv = require('osenv')
   , effess = require('effess')
   , debug = require('debug')('tessel')
   ;
