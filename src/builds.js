@@ -14,8 +14,8 @@ var request = require('request')
   ;
 
 var utils = {
-  "buildsPath": "http://builds.tessel.io/",
-  "debugPath": "http://debug.tessel.io/"
+  "buildsPath": "https://builds.tessel.io/",
+  "debugPath": "https://debug.tessel.io/"
 }
 
 var manifesturl = utils.buildsPath + 'builds.json';
