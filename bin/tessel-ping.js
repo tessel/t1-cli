@@ -21,9 +21,14 @@ common.basic();
 common.controller(true, function (err, client) {
   (function loop () {
     console.error('ping...');
-    client.ping(function pong (data) {
-      console.log(data);
-      setTimeout(loop, 1000);
+    client.ping(function pong (err, data) {
+      if (err) {
+        console.error(err.message);
+        setImmediate(loop);
+      } else {
+        console.log(data);
+        setTimeout(loop, 1000);
+      }
     });
   })();
 });

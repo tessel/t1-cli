@@ -34,6 +34,9 @@ var commands = {
   },
   writeStdin: function (client, buffer, callback) {
     client.command('n', buffer, callback);
+  },
+  ping: function (client, callback) {
+    client.command('G', new Buffer('ping'));
   }
 }
 
@@ -86,9 +89,31 @@ prototype.initCommands = function () {
   })
 }
 
-prototype.ping = function (next) {
-  this.once('pong', next);
-  this.command('G', new Buffer('ping'));
+prototype.ping = function (opts, next) {
+  if (typeof opts == 'function') {
+    next = opts;
+    opts = null;
+  }
+  opts = opts || {};
+  opts.timeout = opts.timeout || 3000;
+
+  var self = this;
+  function ponghandler (data) {
+    if (timeout) {
+      clearTimeout(timeout);
+      self.removeListener('pong', ponghandler);
+      next(null, data);
+    }
+  }
+  var timeout = setTimeout(function () {
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = null;
+      next(new Error('timeout occurred after ' + (opts.timeout / 1000) + ' seconds!'), null);
+    }
+  }, opts.timeout)
+  self.once('pong', ponghandler);
+  commands.ping(self);
 }
 
 
