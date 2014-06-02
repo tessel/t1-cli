@@ -29,6 +29,11 @@ var argv = require("nomnom")
     default: 'wpa2',
     help: '[Tessel] Security type of the network, one of (wpa2|wpa|wep). Omit for unsecured networks.'
   })
+  .option('timeout', {
+    abbr: 't',
+    default: 20,
+    help: '[Tessel] Sets timeout before retrying connection to network.'
+  })
   .option('help', {
     abbr: 'h',
     help: '[Tessel] Show usage for tessel wifi'
@@ -41,8 +46,8 @@ function usage () {
 }
 
 common.controller(false, function (err, client) {
-  client.listen(true, null); // TODO: should use [20, 21, 22, 86] once firmware logs at the right level
   if (argv.list) {
+    client.listen(true, null); // TODO: should use [20, 21, 22, 86] once firmware logs at the right level
     client.wifiStatus(function (err, data) {
       Object.keys(data).map(function (key) {
         if (key.toUpperCase() == "IP"){
@@ -65,18 +70,31 @@ common.controller(false, function (err, client) {
       var security = (argv.security || (pass ? 'wpa2' : 'unsecure')).toLowerCase();
 
       client.configureWifi(ssid, pass, security, {
-        timeout: argv.timeout || 8
+        timeout: argv.timeout
       }, function (data) {
-        if (!data.connected && !argv['no-retry']) {
-          console.error('Retrying...');
-          setImmediate(retry);
+        if (data.event == 'error') {
+          console.error('Error in connecting (%d). Please try again.', data.error);
+          process.on('exit', function () {
+            process.exit(1);
+          })
+          client.close();
+        } else if (!data.connected) {
+          console.error('Could not connect. Check that your network and password are correct.');
+          client.close();
         } else {
-          console.log(colors.grey(util.format('Connected to network %s (pw: %s) with %s security', ssid, pass, security)));
+          console.error('Connected!\n');
+
+          console.log('IP\t', data.ip);
+          console.log('DNS\t', data.dns);
+          console.log('DHCP\t', data.dhcp);
+          console.log('Gateway\t', data.gateway);
           client.close();
         }
       });
     }
 
-    retry();
+    // Flush earlier USB network messages.
+    // TODO: Actually flush these.
+    setTimeout(retry, 2000);
   }
 })
