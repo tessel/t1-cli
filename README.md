@@ -90,4 +90,4 @@ Emitted when a client script exits.
 
 ## License
 
-MIT
+MIT or Apache 2.0, at your option
