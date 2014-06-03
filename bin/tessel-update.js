@@ -219,7 +219,7 @@ if (argv.list){
     common.controller(function (err, client) {
 
       if (!err) {
-        client.listen(true);
+        // client.listen(true);
 
         client.on('error', function (err) {
           if (err.code == 'ENOENT') {
