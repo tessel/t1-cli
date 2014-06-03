@@ -60,6 +60,15 @@ prototype.initCommands = function () {
     commands.writeStdin(self, Buffer.isBuffer(chunk) ? chunk : new Buffer(chunk, encoding), callback)
   };
 
+  this.on('log', function (level, str) {
+    if (level == 10 || level == 11 || level == 12) {
+      self.stdout.push(str + '\n');
+    }
+    if (level == 13 || level == 22) {
+      self.stderr.push(str + '\n');
+    }
+  });
+
   // Interpret old-form commands, emit as events.
   this.on('command', function (command, data) {
     // Script status.

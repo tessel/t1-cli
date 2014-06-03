@@ -141,13 +141,6 @@ Tessel.prototype._receiveLogs = function _receiveLogs() {
 
 			var str = data.toString('utf8', pos+2, next);
 
-			if (level == 10 || level == 11 || level == 12) {
-				self.stdout.push(str + '\n');
-			}
-			if (level == 13 || level == 22) {
-				self.stderr.push(str + '\n');
-			}
-
 			if ((!self.logLevels && typeof self.logLevels != 'array') || self.logLevels.indexOf(level) != -1) {
 				process.stdout.write(str + "\n");
 			}
