@@ -6,7 +6,7 @@ var builds = require('../../src/builds');
 
 console.log('1..5');
 
-assert(builds.utils.buildsPath == 'http://builds.tessel.io/');
+assert(builds.utils.buildsPath == 'https://builds.tessel.io/');
 
 function checkBogusServer (path) {
 	return function (next) {
