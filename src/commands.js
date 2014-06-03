@@ -23,7 +23,7 @@ var prototype = tessel.Tessel.prototype;
 // Eventually this will correspond to the USB interface.
 var commands = {
   disconnect: function (client, callback) {
-    client.command('Y', new Buffer(4), callback);
+    client.postMessage('Y'.charCodeAt(0), new Buffer(4), callback);
   },
   connect: function (client, ssid, pass, security, callback) {
     // Package Wifi arguments
@@ -32,76 +32,80 @@ var commands = {
     new Buffer(String(ssid)).copy(outbuf, 0, 0, ssid.length);
     new Buffer(String(pass)).copy(outbuf, 32, 0, pass.length);
     new Buffer(String(security)).copy(outbuf, 96, 0, security.length);
-    client.command('W', outbuf, callback);
+    client.postMessage('W'.charCodeAt(0), outbuf, callback);
   },
   writeStdin: function (client, buffer, callback) {
-    client.command('n', buffer, callback);
+    client.postMessage('n'.charCodeAt(0), buffer, callback);
   },
   ping: function (client, callback) {
-    client.command('G', new Buffer('ping'), callback);
+    client.postMessage('G'.charCodeAt(0), new Buffer('ping'), callback);
   },
   checkWifi: function (client, lastCheck, callback) {
-    client.command('C', new Buffer([lastCheck ? 0x1 : 0x0]), callback);
+    client.postMessage('C'.charCodeAt(0), new Buffer([lastCheck ? 0x1 : 0x0]), callback);
   },
   uploadRam: function (client, bundle, callback) {
-    client.command('U', bundle, callback);
+    client.postMessage('U'.charCodeAt(0), bundle, callback);
   },
   uploadFlash: function (client, bundle, callback) {
-    client.command('P', bundle, callback);
+    client.postMessage('P'.charCodeAt(0), bundle, callback);
   },
   writeMessage: function (client, data, callback) {
-    client.command('M', clone.serialize(data), callback);
+    client.postMessage('M'.charCodeAt(0), clone.serialize(data), callback);
   },
   requestWifiNetworksAndStatus: function (client, callback) {
-    client.command('V', null, callback);
+    client.postMessage('V'.charCodeAt(0), null, callback);
   },
   enterBootloader: function (client, callback) {
-    client.command('B', null, callback);
+    client.postMessage('B'.charCodeAt(0), null, callback);
   },
 };
 
 prototype.initCommands = function () {
   var self = this;
 
-  // Interpret old-form commands, emit as events.
-  this.on('command', function (command, data) {
-    // Script status.
-    if (command == 'S') {
-      var code = parseInt(data);
-      if (code > 0) {
-        this.emit('script-start');
-      } else {
-        this.emit('script-stop', -code);
-      }
+  // Script status.
+  this.on('rawMessage:0053', function (data) {
+    var code = parseInt(String(data));
+    if (code > 0) {
+      this.emit('script-start');
+    } else {
+      this.emit('script-stop', -code);
     }
+  });
 
-    // Wifi.
-    if (command == 'W') {
-      var packet = JSON.parse(data);
-      this.emit('wifi-' + packet.event, packet);
-    }
+  // Upload status.
+  this.on('rawMessage:0055', function (data) {
+    var packet = JSON.parse(data);
+    this.emit('upload-status', packet);
+  });
 
-    // Ping / pong.
-    if (command == 'G') {
-      var packet = JSON.parse(data);
-      this.emit('pong', packet);
-    }
+  // Wifi events.
+  this.on('rawMessage:0057', function (data) {
+    var packet = JSON.parse(data);
+    this.emit('wifi-' + packet.event, packet);
+    // console.log(packet);
+  });
 
-    // Wifi list.
-    if (command == 'V') {
-      var packet = JSON.parse(data);
-      this.emit('wifi-list', packet);
-    }
+  // Wifi list.
+  this.on('rawMessage:0056', function (data) {
+    var packet = JSON.parse(data);
+    this.emit('wifi-list', packet);
+  });
 
-    // process.send() message
-    if (command == 'M') {
-      this.emit('message', clone.deserialize(data));
-    }
+  // process.send() message
+  this.on('rawMessage:004d', function (data) {
+    this.emit('message', clone.deserialize(data));
+  });
 
-    // debug stack
-    if (command == 'k') {
-      this.emit('debug-stack', String(data));
-    }
+  // Debug stack
+  this.on('rawMessage:006b', function (data) {
+    this.emit('debug-stack', data.toString('utf-8'));
+  });
+
+  // Ping / pong.
+  this.on('rawMessage:0047', function (data) {
+    var packet = JSON.parse(data);
+    this.emit('pong', packet);
   });
 
   this.stdout = new stream.Readable();

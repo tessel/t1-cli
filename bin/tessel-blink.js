@@ -31,16 +31,12 @@ common.controller(true, function (err, client) {
 
   // Command command.
   var updating = false;
-  client.on('command', function (command, data) {
-    if (command == 'u') {
-      verbose && console.error(data.grey)
-    } else if (command == 'U') {
-      if (updating) {
-        // Interrupted by other deploy
-        process.exit(0);
-      }
-      updating = true;
+  client.on('upload-status', function () {
+    if (updating) {
+      // Interrupted by other deploy
+      process.exit(0);
     }
+    updating = true;
   });
 
   client.run(path.resolve(__dirname, '../scripts/blink'), ['tessel', 'blink.js'], function (err) {

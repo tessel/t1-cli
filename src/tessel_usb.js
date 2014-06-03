@@ -158,14 +158,13 @@ Tessel.prototype.postMessage = function postMessage(tag, buf, cb) {
 	header.writeUInt32LE(tag, 4);
 	var data = Buffer.concat([header, buf]);
 
-	this.msg_out_ep.transferWithZLP(data, function(error) {
+	var self = this;
+	self.msg_out_ep.transferWithZLP(data, function(error) {
+		if (error) {
+			self.emit('error', error);
+		}
 		cb && cb(error);
 	});
-}
-
-Tessel.prototype.command = function command(cmd, buf, next) {
-	next = next || function(error) { if(error) console.error(error); }
-	this.postMessage(cmd.charCodeAt(0), buf, next);
 }
 
 Tessel.prototype._receiveMessages = function _receiveMessages() {
@@ -184,11 +183,9 @@ Tessel.prototype._receiveMessages = function _receiveMessages() {
 				var tag = b.readUInt32LE(4);
 				b = b.slice(8);
 
+				// Emit messages.
 				self.emit('rawMessage', tag, b);
-
-				if (tag >> 24 === 0) {
-					self.emit('command', String.fromCharCode(tag&0xff), b.toString('utf8'));
-				}
+				self.emit('rawMessage:' + ('0000' + tag.toString(16)).slice(-4), b);
 			}
 
 			buffers = [];

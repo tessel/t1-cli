@@ -131,7 +131,7 @@ function repl (client)
         var script
           // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
           = 'local function _run ()\n' + colonyCompiler.colonize(data, {returnLastStatement: true, wrap: false}) + '\nend\nsetfenv(_run, colony.global);\nreturn _run()';
-        client.command('M', new Buffer(JSON.stringify(script)));
+        client.send(script);
       } catch (e) {
         console.error(e.stack);
         setImmediate(prompt);
@@ -160,16 +160,12 @@ common.controller(true, function (err, client) {
 
   // Command command.
   var updating = false;
-  client.on('command', function (command, data) {
-    if (command == 'u') {
-      verbose && logs.info(data)
-    } else if (command == 'U') {
-      if (updating) {
-        // Interrupted by other deploy
-        process.exit(0);
-      }
-      updating = true;
+  client.on('upload-status', function () {
+    if (updating) {
+      // Interrupted by other deploy
+      process.exit(0);
     }
+    updating = true;
   });
 
   builds.checkBuildList(client.version, function (allBuilds, needUpdate){
