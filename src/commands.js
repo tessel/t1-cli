@@ -130,6 +130,23 @@ prototype.wifiStatus = function (next) {
   });
 }
 
+prototype.wifiErase = function (next) {
+  this.command('D', new Buffer('erase'), function(){
+    console.error('Erasing saved wifi profiles'.grey);
+  });
+
+  this.on('command', function oncommand (command,data) {
+    if (command == 'D'){
+      this.removeListener('command', oncommand);
+      if (Number(data) < 0) {
+        next(data);
+      } else {
+        next(null);
+      } 
+    }
+  });
+}
+
 prototype.configureWifi = function (ssid, pass, security, opts, next) {
   var self = this;
 

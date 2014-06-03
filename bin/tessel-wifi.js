@@ -42,6 +42,11 @@ var argv = require("nomnom")
     default: 20,
     help: '[Tessel] Sets timeout before retrying connection to network.'
   })
+  .option('disconnect', {
+    abbr: 'd',
+    flag: true,
+    help: '[Tessel] erases stored wifi configurations on Tessel'
+  })
   .option('help', {
     abbr: 'h',
     help: '[Tessel] Show usage for tessel wifi'
@@ -67,6 +72,12 @@ common.controller(false, function (err, client) {
       client.close();
     })
 
+  } else if (argv.disconnect) {
+    client.wifiErase(function(err){
+      if (err) return console.error("Got error code:", err, "while erasing profiles");
+      console.log("Erased wifi profiles");
+      client.close();
+    })
   } else {
     if (!argv.network){
       usage();
