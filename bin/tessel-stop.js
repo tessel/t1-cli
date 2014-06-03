@@ -9,11 +9,12 @@
 // except according to those terms.
 
 var common = require('../src/cli')
-
+  , logs = require('../src/logs')
+  ;
 // Setup cli.
 common.basic();
 
 common.controller(true, function (err, client) {
-    console.log('tessel runtime stopped.');
+    logs.info('tessel runtime stopped.');
     client.close();
 })

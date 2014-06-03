@@ -15,6 +15,8 @@ var hardwareResolve = require('hardware-resolve')
   , effess = require('effess')
   , humanize = require('humanize')
   , tessel = require('../')
+  , logs = require('../src/logs')
+  ;
 
 // analyzeScript (string arg, { verbose, single }) -> { pushdir, relpath, files, size }
 // Given a command-line file path, resolve whether we are bundling a file, 
@@ -101,9 +103,9 @@ function analyzeScript (arg, opts)
   });
   if (opts.verbose) {
     Object.keys(sizelookup).sort().forEach(function (file) {
-      console.error('LOG'.cyan.blueBG, file.match(/\/$/) ? ' ' + file.underline : ' \u2192 ' + file, '(' + humanize.filesize(sizelookup[file]) + ')');
+      logs.info(file.match(/\/$/) ? ' ' + file.underline : ' \u2192 ' + file, '(' + humanize.filesize(sizelookup[file]) + ')');
     });
-    console.error('LOG'.cyan.blueBG, 'Total file size:', humanize.filesize(sizelookup['./'] || 0));
+    logs.info('Total file size:', humanize.filesize(sizelookup['./'] || 0));
   }
   ret.size = sizelookup['./'] || 0;
 
@@ -124,9 +126,9 @@ tessel.bundleScript = function (pushpath, argv, bundleopts, next)
 
   var ret = analyzeScript(pushpath, bundleopts);
   if (ret.warning) {
-    verbose && console.error(('WARN').yellow, ret.warning.grey);
+    verbose && logs.warn(ret.warning);
   }
-  verbose && console.error(('Bundling directory ' + ret.pushdir + ' (~' + humanize.filesize(ret.size) + ')').grey);
+  verbose && logs.info('Bundling directory ' + ret.pushdir + ' (~' + humanize.filesize(ret.size) + ')');
 
   // Create archive and deploy it to tessel.
   tessel.bundleFiles(ret.relpath, argv, ret.files, next);
@@ -147,7 +149,7 @@ tessel.Tessel.prototype.run = function (pushpath, argv, bundleopts, next)
 
   // Bundle code based on file path.
   tessel.bundleScript(pushpath, argv, bundleopts, function (err, tarbundle) {
-    verbose && console.error(('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...').grey);
+    verbose && logs.info('Deploying bundle (' + humanize.filesize(tarbundle.length) + ')...');
     self.deployBundle(tarbundle, bundleopts, next);
   })
 }
@@ -168,15 +170,14 @@ function script (pushpath, args, next)
     client.run(pushpath, args, function (err) {
       // Log errors.
       client.on('error', function (err) {
-        console.error('Error: Cannot connect to Tessel locally.', err);
+        logs.err('Cannot connect to Tessel locally.', err);
       })
 
       // Bundle and upload code.
-      console.error('uploading tessel code...'.grey);
+      logs.info('uploading tessel code...');
 
       // When this script ends, stop the client.
       client.once('script-stop', function (code) {
-        // console.log('stopped.'.grey);
         client.close();
       });
 

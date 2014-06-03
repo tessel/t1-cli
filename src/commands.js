@@ -12,7 +12,9 @@ var zlib = require('zlib');
 var path = require('path');
 var fs = require('fs');
 var stream = require('stream');
-var clone = require('structured-clone');
+var clone = require('structured-clone')
+  , logs = require('../src/logs')
+  ;
 
 var tessel = require('./');
 var prototype = tessel.Tessel.prototype;
@@ -72,7 +74,6 @@ prototype.initCommands = function () {
     if (command == 'W') {
       var packet = JSON.parse(data);
       this.emit('wifi-' + packet.event, packet);
-      // console.log(packet);
     }
 
     // Ping / pong.
@@ -119,7 +120,7 @@ prototype.ping = function (opts, next) {
 
 prototype.wifiStatus = function (next) {
   this.command('V', new Buffer([0xde, 0xad, 0xbe, 0xef]), function () {
-    console.error('Requesting wifi status...'.grey);
+    logs.info('Requesting wifi status...');
   });
 
   this.on('command', function oncommand (command, data) {
@@ -157,7 +158,7 @@ prototype.configureWifi = function (ssid, pass, security, opts, next) {
   var switching = false;
   self.once('wifi-status', function (data) {
     if (data.connected) {
-      console.log('Disconnecting from current network...');
+      logs.info('Disconnecting from current network...');
       self.once('wifi-disconnect', start);
       commands.disconnect(self);
     } else {
@@ -167,7 +168,7 @@ prototype.configureWifi = function (ssid, pass, security, opts, next) {
   self.checkWifi(true);
 
   function start () {
-    console.error('Connecting to "%s" with %s security...', ssid, security);
+    logs.info('Connecting to "%s" with %s security...', ssid, security);
     (function timeoutloop () {
       var checkInterval = null;
       var acquiring = false;
@@ -175,7 +176,7 @@ prototype.configureWifi = function (ssid, pass, security, opts, next) {
       function onAcquire (packet) {
         // Polling animation
         acquiring = true;
-        process.stderr.write('Acquiring IP address. ')
+        logs.info('Acquiring IP address. ')
         var count = 0;
         var maxCount = timeout;
 
@@ -183,7 +184,7 @@ prototype.configureWifi = function (ssid, pass, security, opts, next) {
           count++;
           if (count >= maxCount){
             process.stderr.write(' timeout.\n');
-            console.error('Retrying...');
+            logs.info('Retrying...');
 
             cleanup();
             setTimeout(timeoutloop, 1000);

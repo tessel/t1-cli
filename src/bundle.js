@@ -17,6 +17,7 @@ var path = require('path')
   , tar = require('tar')
   , effess = require('effess')
   , debug = require('debug')('tessel')
+  , logs = require('../src/logs')
   ;
 
 // We want to force node-tar to not use extended headers.
@@ -95,11 +96,11 @@ exports.bundleFiles = function (startpath, args, files, next)
             next(err);
           });
         } catch (e) {
-          console.log('ERR'.red, 'Compilation process failed for the following file:');
-          console.log('ERR'.red, ' ', f.replace(/^[^/]+/, '.'))
-          console.log('ERR'.red, 'This is a compilation bug! Please file an issue at');
-          console.log('ERR'.red, 'https://github.com/tessel/beta/issues with this text');
-          console.log('ERR'.red, 'and a copy of the file that failed to compile.')
+          logs.err('Compilation process failed for the following file:');
+          logs.err(f.replace(/^[^/]+/, '.'))
+          logs.err('This is a compilation bug! Please file an issue at');
+          logs.err('https://github.com/tessel/beta/issues with this text');
+          logs.err('and a copy of the file that failed to compile.')
           process.exit(1);
         }
       }
@@ -123,7 +124,7 @@ exports.tarCode = function (dirpath, pushdir, next)
   })
 
   fstr.on('error', function (err) {
-    console.error('Error bundling code archive: ' + err);
+    logs.err('Error bundling code archive: ' + err);
     process.exit(1);
   })
 
@@ -142,7 +143,7 @@ exports.tarCode = function (dirpath, pushdir, next)
       }
     }).on('end', function () {
       if (!hasIndex) {
-        console.error('ERR'.red, 'Command line generated bundle without an /_start.js file. Please report this error.');
+        logs.err('Command line generated bundle without an /_start.js file. Please report this error.');
         process.exit(1);
       }
 
@@ -151,7 +152,7 @@ exports.tarCode = function (dirpath, pushdir, next)
     p.write(bundle);
     p.end();
   }).on('error', function (err) {
-    console.error('ERR'.red, 'Error in compressing code archive: ' + err);
+    logs.err('Error in compressing code archive: ' + err);
     process.exit(1);
   });
 }

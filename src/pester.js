@@ -2,12 +2,13 @@
 
 var colors = require('colors')
   , semver = require('semver')
+  , logs = require('../src/logs')
   ;
 
 if ('node' in process.versions) {
   var expecting = require('../package.json').engines.node;
   if (!semver.satisfies(process.versions.node, expecting)) {
-    console.error('%s Expecting Node version %s. You are running %s, please upgrade.', colors.red('ERR'), expecting, process.versions.node);
+    logs.err('Expecting Node version %s. You are running %s, please upgrade.', expecting, process.versions.node);
     process.exit(127);
   }
 }

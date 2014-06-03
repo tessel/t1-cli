@@ -15,6 +15,7 @@ var common = require('../src/cli')
   , fs = require('fs')
   , util = require('util')
   , humanize = require('humanize')
+  , logs = require('../src/logs')
   ;
 
 // Setup cli.
@@ -54,10 +55,10 @@ function usage () {
 tessel.bundleScript(argv.script, argv.args, {
   quiet: true
 }, function (err, tarbundle) {
-  console.error('wrote %s bytes', humanize.filesize(tarbundle.length))
+  logs.info('wrote %s bytes', humanize.filesize(tarbundle.length))
   if (!argv.dry) {
     var file = 'tessel-' + path.basename(process.cwd()) + '.tar';
-    console.log(file)
+    logs.info(file)
     fs.writeFileSync(file, tarbundle);
   }
 })

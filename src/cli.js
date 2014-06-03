@@ -9,6 +9,7 @@
 
 var fs = require('fs')
   , path = require('path')
+  , logs = require('../src/logs')
   ;
 
 var tessel = require('./')
@@ -60,7 +61,7 @@ function controller (stop, next)
 
   tessel.findTessel(null, stop, function (err, client) {
     if (!client || err) {
-      console.error('ERR'.red, err);
+      logs.err(err);
       process.exit(1);
     }
 

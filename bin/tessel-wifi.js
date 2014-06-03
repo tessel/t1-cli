@@ -11,6 +11,7 @@
 var common = require('../src/cli')
   , colors = require('colors')
   , util = require('util')
+  , logs = require('../src/logs')
   ;
 
 // Setup cli.
@@ -67,7 +68,7 @@ common.controller(false, function (err, client) {
           // reverse key.data
           data[key] = data[key].split(".").reverse().join(".");
         }
-        console.log(key.replace(/^./, function (a) { return a.toUpperCase(); }) + ':', data[key]);
+        logs.info(key.replace(/^./, function (a) { return a.toUpperCase(); }) + ':', data[key]);
       })
       client.close();
     })
@@ -92,16 +93,17 @@ common.controller(false, function (err, client) {
         timeout: argv.timeout
       }, function (data) {
         if (data.event == 'error') {
-          console.error('Error in connecting (%d). Please try again.', data.error);
+          logs.err('Error in connecting (%d). Please try again.', data.error);
           process.on('exit', function () {
             process.exit(1);
           })
           client.close();
         } else if (!data.connected) {
-          console.error('Connection failed. Check that your ssid and password are correct. Try moving closer to your router for a quicker connection.');
+          logs.err('Connection failed. Check that your ssid and password are correct. Try moving closer to your router for a quicker connection.');
+          logs.info('The wifi connection timeout can be increased with "tessel wifi -n <network> -p <password> -t <timeout (s)>" if the connection is weak.');
           client.close();
         } else {
-          console.error('Connected!\n');
+          logs.info('Connected!\n');
 
           console.log('IP\t', data.ip);
           console.log('DNS\t', data.dns);

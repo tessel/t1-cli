@@ -8,8 +8,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-var colors = require('colors'),
-  builds = require('../src/builds')
+var colors = require('colors')
+  , builds = require('../src/builds')
+  , logs = require('../src/logs')
   ;
 
 var common = require('../src/cli');
@@ -69,7 +70,7 @@ common.controller(true, function (err, client) {
   client.listen(true, [10, 11, 12, 13, 20, 21, 22])
   client.on('error', function (err) {
     if (err.code == 'ENOENT') {
-      console.error('Error: Cannot connect to Tessel locally.')
+      logs.err('Error: Cannot connect to Tessel locally.')
     } else {
       console.error(err);
     }
@@ -94,7 +95,7 @@ common.controller(true, function (err, client) {
   var updating = false;
   client.on('command', function (command, data) {
     if (command == 'u') {
-      verbose && console.error(data.grey)
+      verbose && logs.info(data)
     } else if (command == 'U') {
       if (updating) {
         // Interrupted by other deploy
@@ -110,7 +111,7 @@ common.controller(true, function (err, client) {
 
     if (needUpdate){
       // show warning
-      console.log(colors.red("NOTE: There is a newer version of firmware available. Use \"tessel update\" to update to the newest version"));
+      logs.warn("There is a newer version of firmware available. Use \"tessel update\" to update to the newest version");
     }
     
     pushCode();
@@ -121,10 +122,10 @@ common.controller(true, function (err, client) {
       flash: true,
     }, function (err) {
 
-      console.log(colors.green("Finished deployment"));
+      logs.info("Finished deployment");
 
       function exit(code) {
-        console.log("Run \"tessel logs\" or \"tessel push <script.js> -l\" to see logged output.");
+        logs.info("Run \"tessel logs\" or \"tessel push <script.js> -l\" to see logged output.");
         client.close(function () {
           process.exit(code || 0);
         });

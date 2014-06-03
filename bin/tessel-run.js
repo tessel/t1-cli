@@ -16,6 +16,7 @@ var common = require('../src/cli')
   , colors = require('colors')
   , builds = require('../src/builds')
   , util = require('util')
+  , logs = require('../src/logs')
   ;
 
 var colonyCompiler = require('colony-compiler')
@@ -143,7 +144,7 @@ common.controller(true, function (err, client) {
   client.listen(true, [10, 11, 12, 13, 20, 21, 22])
   client.on('error', function (err) {
     if (err.code == 'ENOENT') {
-      console.error('Error: Cannot connect to Tessel locally.')
+      logs.err('Cannot connect to Tessel locally.')
     } else {
       console.error(err);
     }
@@ -166,7 +167,7 @@ common.controller(true, function (err, client) {
   var updating = false;
   client.on('command', function (command, data) {
     if (command == 'u') {
-      verbose && console.error(data.grey)
+      verbose && logs.info(data)
     } else if (command == 'U') {
       if (updating) {
         // Interrupted by other deploy
@@ -181,7 +182,7 @@ common.controller(true, function (err, client) {
 
     if (needUpdate){
       // show warning
-      console.log(colors.red("NOTE: There is a newer version of firmware available. Use \"tessel update\" to update to the newest version"));
+      logs.err("NOTE: There is a newer version of firmware available. Use \"tessel update\" to update to the newest version");
     }
     
     pushCode();
@@ -190,13 +191,13 @@ common.controller(true, function (err, client) {
   function pushCode(){
     client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), function () {
       // script-start emitted.
-      console.error(colors.grey('Running script...'));
+      logs.info('Running script...');
 
       // Stop on Ctrl+C.
       process.on('SIGINT', function() {
         setTimeout(function () {
           // timeout :|
-          console.error(colors.grey('Script aborted'));
+          logs.info('Script aborted');
           process.exit(131);
         }, 200);
         client.stop();
@@ -211,16 +212,16 @@ common.controller(true, function (err, client) {
       client.on('rawMessage', function (tag, data) {
         if (tag == 0x4113) {
           if (!argv['upload-dir']) {
-            console.error(colors.red('ERR:'), colors.grey('ignoring uploaded file. call tessel with --upload-dir to save files from a running script.'));
+            logs.err('ignoring uploaded file. call tessel with --upload-dir to save files from a running script.');
             return;
           }
 
           try {
             var packet = require('structured-clone').deserialize(data);
             fs.writeFileSync(path.resolve(argv['upload-dir'], path.basename(packet.filename)), packet.buffer);
-            console.error(colors.grey(util.format(packet.filename, 'saved to', argv['upload-dir'])));
+            logs.info(util.format(packet.filename, 'saved to', argv['upload-dir']));
           } catch (e) {
-            console.error(colors.red('ERR:'), colors.grey('invalid sendfile packet received.'));
+            logs.err('invalid sendfile packet received.');
           }
         }
       });
