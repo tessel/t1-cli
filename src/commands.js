@@ -48,10 +48,12 @@ prototype.initCommands = function () {
   this.stdout = new stream.Readable();
   this.stdout._read = function () {
   };
+  this.stdout.pause();
 
   this.stderr = new stream.Readable();
   this.stderr._read = function () {
   };
+  this.stderr.pause();
 
   this.stdin = new stream.Writable();
   this.stdin._write = function (chunk, encoding, callback) {

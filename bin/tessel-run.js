@@ -189,7 +189,9 @@ common.controller(true, function (err, client) {
       logs.info('Running script...');
 
       // Forward pipes.
+      client.stdout.resume();
       client.stdout.pipe(process.stdout);
+      client.stderr.resume();
       client.stderr.pipe(process.stderr);
       process.stdin.pipe(client.stdin);
 

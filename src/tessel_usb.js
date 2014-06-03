@@ -144,7 +144,7 @@ Tessel.prototype._receiveLogs = function _receiveLogs() {
 			if (level == 10 || level == 11 || level == 12) {
 				self.stdout.push(str + '\n');
 			}
-			if (level == 13) {
+			if (level == 13 || level == 22) {
 				self.stderr.push(str + '\n');
 			}
 
