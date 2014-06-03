@@ -207,20 +207,18 @@ common.controller(true, function (err, client) {
         });
       });
 
-      client.on('rawMessage', function (tag, data) {
-        if (tag == 0x4113) {
-          if (!argv['upload-dir']) {
-            logs.err('ignoring uploaded file. call tessel with --upload-dir to save files from a running script.');
-            return;
-          }
+      client.on('rawMessage:4113', function (tag, data) {
+        if (!argv['upload-dir']) {
+          logs.err('ignoring uploaded file. call tessel with --upload-dir to save files from a running script.');
+          return;
+        }
 
-          try {
-            var packet = require('structured-clone').deserialize(data);
-            fs.writeFileSync(path.resolve(argv['upload-dir'], path.basename(packet.filename)), packet.buffer);
-            logs.info(util.format(packet.filename, 'saved to', argv['upload-dir']));
-          } catch (e) {
-            logs.err('invalid sendfile packet received.');
-          }
+        try {
+          var packet = require('structured-clone').deserialize(data);
+          fs.writeFileSync(path.resolve(argv['upload-dir'], path.basename(packet.filename)), packet.buffer);
+          logs.info(util.format(packet.filename, 'saved to', argv['upload-dir']));
+        } catch (e) {
+          logs.err('invalid sendfile packet received.');
         }
       });
       
