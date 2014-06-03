@@ -87,7 +87,7 @@ common.controller(false, function (err, client) {
           })
           client.close();
         } else if (!data.connected) {
-          console.error('Could not connect. Check that your network and password are correct.');
+          console.error('Connection failed. Check that your ssid and password are correct. Try moving closer to your router for a quicker connection.');
           client.close();
         } else {
           console.error('Connected!\n');
