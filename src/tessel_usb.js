@@ -201,7 +201,7 @@ Tessel.prototype._receiveMessages = function _receiveMessages() {
 			buffers = [];
 		} else if (buffers.length * transferSize > 32 * 1024 * 1024) {
 			// The message wouldn't fit in Tessel's memory. It probably didn't mean to send this...
-			throw new Error("Malformed message (oversize): " + buffers[0].slice(0, 8))
+			throw new Error("Malformed message (oversize): " + buffers[0].toString('hex', 0, 8))
 		}
 	});
 };
