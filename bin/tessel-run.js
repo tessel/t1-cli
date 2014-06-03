@@ -141,7 +141,6 @@ function repl (client)
 }
 
 common.controller(true, function (err, client) {
-  client.listen(true, [10, 11, 12, 13, 20, 21, 22])
   client.on('error', function (err) {
     if (err.code == 'ENOENT') {
       logs.err('Cannot connect to Tessel locally.')
@@ -149,10 +148,6 @@ common.controller(true, function (err, client) {
       console.error(err);
     }
   })
-
-  // Forward stdin by line.
-  process.stdin.resume();
-  process.stdin.pipe(client.stdin);
 
   // Check pushing path.
   if (argv.interactive) {
@@ -192,6 +187,11 @@ common.controller(true, function (err, client) {
     client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), function () {
       // script-start emitted.
       logs.info('Running script...');
+
+      // Forward pipes.
+      client.stdout.pipe(process.stdout);
+      client.stderr.pipe(process.stderr);
+      process.stdin.pipe(client.stdin);
 
       // Stop on Ctrl+C.
       process.on('SIGINT', function() {
