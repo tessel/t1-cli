@@ -189,6 +189,7 @@ common.controller(true, function (err, client) {
       client.stdout.pipe(process.stdout);
       client.stderr.resume();
       client.stderr.pipe(process.stderr);
+      process.stdin.resume();
       process.stdin.pipe(client.stdin);
 
       // Stop on Ctrl+C.

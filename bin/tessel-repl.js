@@ -9,13 +9,9 @@
 // except according to those terms.
 
 // tessel-repl
-// Thin redirect to tessel-node -i
+// Thin redirect to tessel-run -i
 
-var spawn = require('child_process').spawn;
-
-spawn(__dirname + '/tessel-run.js', ['-i'], {
-  stdio: 'inherit'
-})
-.on('exit', function (code) {
-  process.exit(code);
-});
+// Launch subprocess as though it were ourself
+var subprocess = './tessel-run.js';
+process.argv.splice(1, 2, subprocess, '-i')
+require(subprocess);
