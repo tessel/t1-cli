@@ -11,6 +11,7 @@
 var common = require('../src/cli')
   , colors = require('colors')
   , util = require('util')
+  , logs = require('../src/logs')
   ;
 
 // Setup cli.
@@ -62,7 +63,7 @@ common.controller(false, function (err, client) {
           // reverse key.data
           data[key] = data[key].split(".").reverse().join(".");
         }
-        console.log(key.replace(/^./, function (a) { return a.toUpperCase(); }) + ':', data[key]);
+        logs.info(key.replace(/^./, function (a) { return a.toUpperCase(); }) + ':', data[key]);
       })
       client.close();
     })
@@ -81,21 +82,21 @@ common.controller(false, function (err, client) {
         timeout: argv.timeout
       }, function (data) {
         if (data.event == 'error') {
-          console.error('Error in connecting (%d). Please try again.', data.error);
+          logs.err('Error in connecting (%d). Please try again.', data.error);
           process.on('exit', function () {
             process.exit(1);
           })
           client.close();
         } else if (!data.connected) {
-          console.error('Could not connect. Check that your network and password are correct.');
+          logs.err('Could not connect. Check that your network and password are correct.');
           client.close();
         } else {
-          console.error('Connected!\n');
+          logs.info('Connected!\n');
 
-          console.log('IP\t', data.ip);
-          console.log('DNS\t', data.dns);
-          console.log('DHCP\t', data.dhcp);
-          console.log('Gateway\t', data.gateway);
+          logs.info('IP\t', data.ip);
+          logs.info('DNS\t', data.dns);
+          logs.info('DHCP\t', data.dhcp);
+          logs.info('Gateway\t', data.gateway);
           client.close();
         }
       });

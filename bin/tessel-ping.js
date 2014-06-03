@@ -11,6 +11,7 @@
 var tessel_dfu = require('../dfu/tessel-dfu')
   , fs = require('fs')
   , path = require('path')
+  , logs = require('../src/logs')
   ;
 
 var common = require('../src/cli');
@@ -20,13 +21,13 @@ common.basic();
 
 common.controller(true, function (err, client) {
   (function loop () {
-    console.error('ping...');
+    logs.info('ping...');
     client.ping(function pong (err, data) {
       if (err) {
-        console.error(err.message);
+        logs.err(err.message);
         setImmediate(loop);
       } else {
-        console.log(data);
+        logs.info(data);
         setTimeout(loop, 1000);
       }
     });

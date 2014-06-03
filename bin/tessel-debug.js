@@ -17,7 +17,8 @@ var os = require("os"),
   request = require('request'),
   fs = require('fs'),
   colors = require('colors'),
-  builds = require('../src/builds')
+  builds = require('../src/builds'),
+  logs = require('../src/logs')
   ;
 
 temp.track();
@@ -55,9 +56,9 @@ function usage () {
 }
 
 function stop(client, logId){
-  console.log(colors.green("Done."));
-  console.log(colors.cyan("Debug logs can be viewed at"), colors.red(builds.utils.debugPath+"logs/"+logId));
-  console.log(colors.cyan("Please submit this link with your support request"))
+  logs.info("Done.");
+  logs.info("Debug logs can be viewed at", builds.utils.debugPath+"logs/"+logId);
+  logs.info("Please submit this link with your support request");
 
   client.stop();
   process.exit();
@@ -70,8 +71,8 @@ function postToWeb(path, data, next){
     }, body: data}
   , function(error, res, body){
     if (error) {
-      console.error("ERROR: There was an issue uploading the debug files.", body);
-      console.error("Trying with path", path, "with data", data);
+      logs.err("There was an issue uploading the debug files.", body);
+      logs.info("Trying with path", path, "with data", data);
       process.exit();
     } 
     next && next(body);
@@ -93,7 +94,7 @@ function initDebug(serial, wifi, info, next){
     node: process.version,
     cli: pjson.version }, 
     function(res){
-      if (!res || res == false) return console.log("Could not communicate with host debug server", res);
+      if (!res || res == false) return logs.err("Could not communicate with host debug server", res);
       // res = JSON.parse(res);
       next && next(res);
     }
@@ -208,7 +209,7 @@ common.controller(true, function (err, client) {
               }, 1000);
               
             } else {
-              console.log(colors.grey("No userscript detected. In order to run a userscript, specify `tessel debug <script.js>`"));
+              logs.info("No userscript detected. In order to run a userscript, specify `tessel debug <script.js>`")
               stop(client, init.id);
             }
           });

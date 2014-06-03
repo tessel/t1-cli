@@ -9,7 +9,8 @@
 // except according to those terms.
 
 var common = require('../src/cli')
-
+  , logs = require('../src/logs')
+  ;
 // Setup cli.
 common.basic();
 
@@ -35,10 +36,10 @@ function usage () {
 if (argv.board){
   common.controller(true, function (err, client) {
     client.wifiVer(function(err, wifiVer){
-      console.log("Serial #:", client.serialNumber);
-      console.log("Wifi Version:", wifiVer);
-      console.log("Firmware Version:", client.version.firmware_git);
-      console.log("Runtime Version:", client.version.runtime_git);
+      logs.info("Serial #:", client.serialNumber);
+      logs.info("Wifi Version:", wifiVer);
+      logs.info("Firmware Version:", client.version.firmware_git);
+      logs.info("Runtime Version:", client.version.runtime_git);
       client.close(function () {
         process.exit(0);
       });
@@ -46,9 +47,9 @@ if (argv.board){
   });
 } else {
   try {
-    console.log(require('../package.json').version.replace(/^v?/, 'v'))
+    logs.info(require('../package.json').version.replace(/^v?/, 'v'))
   } catch (e) {
-    console.error('version unknown');
+    logs.err('version unknown');
   }
 }
 

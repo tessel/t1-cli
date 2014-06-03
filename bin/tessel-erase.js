@@ -11,6 +11,7 @@
 var tessel_dfu = require('../dfu/tessel-dfu')
   , fs = require('fs')
   , path = require('path')
+  , logs = require('../src/logs')
   ;
 
 var common = require('../src/cli')
@@ -31,13 +32,13 @@ var argv = require("nomnom")
 
 if (argv.force) {
   tessel_dfu.runRam(fs.readFileSync(erasePath), function(){
-    console.log('Tessel filesystem erased.');
+    logs.info('Tessel filesystem erased.');
   });
 } else {
   common.controller(true, function (err, client) {
     client.erase(function () {
-      console.log('Attempting to erase Tessel filesystem.');
-      console.log("If erasing failed try running \"tessel erase --force\"");
+      logs.info('Attempting to erase Tessel filesystem.');
+      logs.info("If erasing failed try running \"tessel erase --force\"");
       client.close();
     }); 
   });

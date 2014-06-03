@@ -10,7 +10,9 @@
 
 var fs = require('fs');
 var child_process = require('child_process');
-var common = require('../src/cli');
+var common = require('../src/cli')
+  , logs = require('../src/logs')
+  ;
 
 // Setup cli.
 common.basic();
@@ -24,26 +26,26 @@ if (process.platform === 'linux') {
     fs.writeFileSync(dest, rules);
   } catch (e) {
     if (e.code === 'EACCES') {
-      console.log('NOTE: Please run `sudo tessel install-drivers` to complete your driver installation.');
-      console.log('(error: could not write to ' + dest + ')');
+      logs.info('NOTE: Please run `sudo tessel install-drivers` to complete your driver installation.');
+      logs.err('could not write to ' + dest);
       process.exit(1);
     } else {
       throw e;
     }
   }
-  console.log("udev rules installed to", dest);
+  logs.info("udev rules installed to", dest);
 
 
   var udevadm = child_process.spawn('udevadm', ['control', '--reload-rules']);
   udevadm.on('close', function (code) {
     if (code !== 0) {
-      console.log("Error reloading udev.");
+      logs.err("reloading udev.");
       process.exit(code);
     } else {
-      console.log("Driver installation complete. Unplug and re-plug Tessel to begin using it.")
+      logs.info("Driver installation complete. Unplug and re-plug Tessel to begin using it.")
     }
   });
 } else {
-  console.log("No driver installation necessary.");
+  logs.info("No driver installation necessary.");
 }
 

@@ -7,6 +7,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-var colors = require('colors');
+var logs = require('../src/logs')
 
-console.log(colors.red('Err'), 'tessel verbose is removed. use "tessel listen --all" instead.')
+logs.err('tessel verbose is removed. use "tessel listen --all" instead.')
