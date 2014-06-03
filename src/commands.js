@@ -23,7 +23,7 @@ var prototype = tessel.Tessel.prototype;
 // Eventually this will correspond to the USB interface.
 var commands = {
   disconnect: function (client, callback) {
-    client.postMessage('Y'.charCodeAt(0), new Buffer(4), callback);
+    client.postMessage(0x0059, new Buffer(4), callback);
   },
   connect: function (client, ssid, pass, security, callback) {
     // Package Wifi arguments
@@ -32,32 +32,35 @@ var commands = {
     new Buffer(String(ssid)).copy(outbuf, 0, 0, ssid.length);
     new Buffer(String(pass)).copy(outbuf, 32, 0, pass.length);
     new Buffer(String(security)).copy(outbuf, 96, 0, security.length);
-    client.postMessage('W'.charCodeAt(0), outbuf, callback);
+    client.postMessage(0x0057, outbuf, callback);
   },
   writeStdin: function (client, buffer, callback) {
-    client.postMessage('n'.charCodeAt(0), buffer, callback);
+    client.postMessage(0x006e, buffer, callback);
   },
   ping: function (client, callback) {
-    client.postMessage('G'.charCodeAt(0), new Buffer('ping'), callback);
+    client.postMessage(0x0047, new Buffer('ping'), callback);
   },
   checkWifi: function (client, lastCheck, callback) {
-    client.postMessage('C'.charCodeAt(0), new Buffer([lastCheck ? 0x1 : 0x0]), callback);
+    client.postMessage(0x0043, new Buffer([lastCheck ? 0x1 : 0x0]), callback);
   },
   uploadRam: function (client, bundle, callback) {
-    client.postMessage('U'.charCodeAt(0), bundle, callback);
+    client.postMessage(0x0055, bundle, callback);
   },
   uploadFlash: function (client, bundle, callback) {
-    client.postMessage('P'.charCodeAt(0), bundle, callback);
+    client.postMessage(0x0050, bundle, callback);
   },
   writeMessage: function (client, data, callback) {
-    client.postMessage('M'.charCodeAt(0), clone.serialize(data), callback);
+    client.postMessage(0x004d, clone.serialize(data), callback);
   },
   requestWifiNetworksAndStatus: function (client, callback) {
-    client.postMessage('V'.charCodeAt(0), null, callback);
+    client.postMessage(0x0056, null, callback);
   },
   enterBootloader: function (client, callback) {
-    client.postMessage('B'.charCodeAt(0), null, callback);
+    client.postMessage(0x0042, null, callback);
   },
+  eraseWifiProfiles: function (client, callback) {
+    client.postMessage(0x0044, new Buffer('erase'), callback);
+  }
 };
 
 prototype.initCommands = function () {
@@ -108,6 +111,12 @@ prototype.initCommands = function () {
     this.emit('pong', packet);
   });
 
+  // Wifi profile erase ACK.
+  this.on('rawMessage:0044', function (data) {
+    this.emit('wifi-profile-erase', parseInt(data.toString('utf-8')));
+  });
+
+  // Create stream objects.
   this.stdout = new stream.Readable();
   this.stdout._read = function () {
   };
@@ -134,7 +143,7 @@ prototype.initCommands = function () {
 }
 
 prototype.enterBootloader = function (next) {
-  this.command('B', next);
+  commands.enterBootloader(this, next);
 };
 
 prototype.ping = function (opts, next) {
@@ -175,18 +184,15 @@ prototype.wifiStatus = function (next) {
 }
 
 prototype.wifiErase = function (next) {
-  this.command('D', new Buffer('erase'), function(){
+  commands.eraseWifiProfiles(this, function () {
     console.error('Erasing saved wifi profiles'.grey);
   });
 
-  this.on('command', function oncommand (command,data) {
-    if (command == 'D'){
-      this.removeListener('command', oncommand);
-      if (Number(data) < 0) {
-        next(data);
-      } else {
-        next(null);
-      } 
+  this.once('wifi-profile-erase', function (data) {
+    if (Number(data) < 0) {
+      next(data);
+    } else {
+      next(null);
     }
   });
 }
