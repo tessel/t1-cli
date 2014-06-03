@@ -196,10 +196,6 @@ Tessel.prototype._receiveMessages = function _receiveMessages() {
 	});
 };
 
-Tessel.prototype.enterBootloader = function enterBootloader(next) {
-	this.command('B');
-};
-
 Tessel.prototype._info = function info(next) {
 	this.usb.controlTransfer(VENDOR_REQ_IN, REQ_INFO, 0, 0, 512, function(error, data) {
 		if (error) return next(error);
@@ -220,20 +216,9 @@ Tessel.prototype.debugstack = function stop(next) {
 		// otherwise, wait for the message
 	});
 
-
-	function oncommand(command, msg) {
-		if (command == 'k') {
-			callNext(null, msg.toString());
-		}
-	}
-
-	this.on('command', oncommand)
-
-	var self = this;
-	function callNext(err, data) {
-		self.removeListener('command', oncommand);
-		next(err, data);
-	}
+	this.once('debug-stack', function (stack) {
+		next(null, stack)
+	})
 }
 
 Tessel.prototype.wifiIP = function (next) {
