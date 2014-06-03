@@ -1,25 +1,19 @@
-var colors = require('colors');
+var colors = require('colors')
+  , util = require('util')
+  ;
 
-function checkArg() {
-  return arguments && arguments.length > 0;
+function warn() {
+  console.error(colors.yellow('WARN'), util.format.apply(util, arguments));
 }
 
-exports.warn = function(){
-  if (checkArg(arguments))
-    arguments[0] = "WARN ".yellow + arguments[0];
+function err() {
+  console.error(colors.red('ERR!'), util.format.apply(util, arguments));
+}
 
-  console.log.apply(console, arguments);
+function info() {
+  console.log(colors.grey('INFO'), util.format.apply(util, arguments));
 };
 
-exports.err = function(){
-  if (checkArg(arguments))
-    arguments[0] = "ERR! ".red + arguments[0];
-
-  console.log.apply(console, arguments);
-};
-
-exports.info = function(){
-  if (checkArg(arguments))
-    arguments[0] = "INFO ".grey + arguments[0];
-  console.log.apply(console, arguments);
-};
+exports.warn = warn;
+exports.err = err;
+exports.info = info;
