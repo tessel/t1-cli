@@ -49,7 +49,7 @@ var commands = {
   uploadFlash: function (client, bundle, callback) {
     client.postMessage(0x0050, bundle, callback);
   },
-  writeMessage: function (client, data, callback) {
+  writeProcessMessage: function (client, data, callback) {
     client.postMessage(0x004d, clone.serialize(data), callback);
   },
   requestWifiNetworksAndStatus: function (client, callback) {
@@ -304,5 +304,5 @@ prototype.erase = function (next) {
 }
 
 prototype.send = function (data) {
-  commands.writeMessage(this, data);
+  commands.writeProcessMessage(this, data);
 };
