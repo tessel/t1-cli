@@ -94,10 +94,10 @@ common.controller(false, function (err, client) {
         } else {
           logs.info('Connected!\n');
 
-          logs.info('IP\t', data.ip);
-          logs.info('DNS\t', data.dns);
-          logs.info('DHCP\t', data.dhcp);
-          logs.info('Gateway\t', data.gateway);
+          console.log('IP\t', data.ip);
+          console.log('DNS\t', data.dns);
+          console.log('DHCP\t', data.dhcp);
+          console.log('Gateway\t', data.gateway);
           client.close();
         }
       });

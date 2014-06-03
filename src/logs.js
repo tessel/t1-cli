@@ -11,7 +11,7 @@ function err() {
 }
 
 function info() {
-  console.log(colors.grey('INFO'), util.format.apply(util, arguments));
+  console.error(colors.grey('INFO'), util.format.apply(util, arguments));
 };
 
 exports.warn = warn;
