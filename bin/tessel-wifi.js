@@ -88,8 +88,8 @@ common.controller(false, function (err, client) {
           })
           client.close();
         } else if (!data.connected) {
-          logs.err('Could not connect. Check that your network and password are correct.');
-          logs.info('Try increasing the timeout with "tessel wifi -n <network> -p <password> -t <timeout (s)>" if the connection is weak.');
+          logs.err('Connection failed. Check that your ssid and password are correct. Try moving closer to your router for a quicker connection.');
+          logs.info('The wifi connection timeout can be increased with "tessel wifi -n <network> -p <password> -t <timeout (s)>" if the connection is weak.');
           client.close();
         } else {
           logs.info('Connected!\n');
