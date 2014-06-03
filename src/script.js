@@ -38,7 +38,7 @@ function analyzeScript (arg, opts)
     var files;
     if (opts.single || !pushdir) {
       if (!opts.single && fs.lstatSync(arg).isDirectory()) {
-        ret.warning = String(err || 'Warning.').replace(/\.( |$)/, ', pushing just this directory.');
+        ret.warning = String(err ? err.message : 'Warning.').replace(/\.( |$)/, '. Deploying just this directory.');
 
         pushdir = fs.realpathSync(arg);
         relpath = fs.lstatSync(path.join(arg, 'index.js')) && 'index.js';
@@ -47,7 +47,7 @@ function analyzeScript (arg, opts)
           excludeHiddenUnix: true
         }))
       } else {
-        ret.warning = String(err || 'Warning.').replace(/\.( |$)/, ', pushing just this file.');
+        ret.warning = String(err ? err.message : 'Warning.').replace(/\.( |$)/, '. Deploying just this file.');
 
         pushdir = path.dirname(fs.realpathSync(arg));
         relpath = path.basename(arg);

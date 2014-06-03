@@ -182,7 +182,7 @@ common.controller(true, function (err, client) {
 
     if (needUpdate){
       // show warning
-      logs.err("NOTE: There is a newer version of firmware available. Use \"tessel update\" to update to the newest version");
+      logs.warn("There is a newer version of firmware available. You should run \"tessel update\".");
     }
     
     pushCode();
