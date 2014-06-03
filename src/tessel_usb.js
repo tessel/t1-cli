@@ -79,26 +79,30 @@ Tessel.prototype.claim = function claim(stop, next) {
 		self.intf.claim();
 
 		if (stop) {
-			this.stop();
+			this.stop(step);
+		} else {
+			step();
 		}
+		
+		function step() {
+			// We use an alternate setting so it is automatically released if the program is killed
+			self.intf.setAltSetting(1, function(error) {
+				if (error) return next(error);
+				self.log_ep = self.intf.endpoints[0];
+				self.msg_in_ep = self.intf.endpoints[1];
+				self.msg_out_ep = self.intf.endpoints[2];
+				self.claimed = 'claimed';
 
-		// We use an alternate setting so it is automatically released if the program is killed
-		self.intf.setAltSetting(1, function(error) {
-			if (error) return next(error);
-			self.log_ep = self.intf.endpoints[0];
-			self.msg_in_ep = self.intf.endpoints[1];
-			self.msg_out_ep = self.intf.endpoints[2];
-			self.claimed = 'claimed';
+				self.usb.timeout = 10000;
 
-			self.usb.timeout = 10000;
+				if (self.rx) {
+					self._receiveLogs();
+					self._receiveMessages();
+				}
 
-			if (self.rx) {
-				self._receiveLogs();
-				self._receiveMessages();
-			}
-
-			self.emit('claimed');
-		});
+				self.emit('claimed');
+			});
+		}
 	}
 }
 
