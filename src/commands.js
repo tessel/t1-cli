@@ -53,10 +53,38 @@ prototype.initCommands = function () {
   this.stderr._read = function () {
   };
 
+  var full = false, chunksize = 1024;
   this.stdin = new stream.Writable();
   this.stdin._write = function (chunk, encoding, callback) {
-    commands.writeStdin(self, Buffer.isBuffer(chunk) ? chunk : new Buffer(chunk, encoding), callback)
+    full = true;
+    (function loop () {
+      if (self.closed) {
+        callback(new Error('USB closed.'));
+      }
+      if (!chunk) {
+        console.log('next');
+        return callback();
+      }
+      if (chunk.length > chunksize) {
+        var subchunk = chunk.slice(0, chunksize);
+        chunk = chunk.slice(chunksize);
+      } else {
+        var subchunk = chunk;
+        chunk = null;
+      }
+      console.log('writing', subchunk.length);
+      commands.writeStdin(self, subchunk, function () {
+        self.once('stdin-drain', function () {
+          setTimeout(loop, 10);
+        });
+      })
+    })();
   };
+  this.on('command', function (command, data) {
+    if (command = 'n') {
+      self.emit('stdin-drain');
+    }
+  })
 
   // Interpret old-form commands, emit as events.
   this.on('command', function (command, data) {
