@@ -63,6 +63,17 @@ var commands = {
   }
 };
 
+// Soon, interface should be an instance of the commands object.
+Object.defineProperty(prototype, 'interface', {
+  get: function () {
+    var obj = {};
+    for (var key in commands) {
+      obj[key] = commands[key].bind(this, this);
+    }
+    return obj;
+  }
+});
+
 prototype.initCommands = function () {
   var self = this;
 
