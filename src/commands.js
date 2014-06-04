@@ -23,7 +23,7 @@ var prototype = tessel.Tessel.prototype;
 // Eventually this will correspond to the USB interface.
 var commands = {
   disconnect: function (client, callback) {
-    client.command('Y', new Buffer(4), callback);
+    client.postMessage(0x0059, new Buffer(4), callback);
   },
   connect: function (client, ssid, pass, security, callback) {
     // Package Wifi arguments
@@ -32,63 +32,119 @@ var commands = {
     new Buffer(String(ssid)).copy(outbuf, 0, 0, ssid.length);
     new Buffer(String(pass)).copy(outbuf, 32, 0, pass.length);
     new Buffer(String(security)).copy(outbuf, 96, 0, security.length);
-    client.command('W', outbuf, callback);
+    client.postMessage(0x0057, outbuf, callback);
   },
   writeStdin: function (client, buffer, callback) {
-    client.command('n', buffer, callback);
+    client.postMessage(0x006e, buffer, callback);
   },
   ping: function (client, callback) {
-    client.command('G', new Buffer('ping'));
+    client.postMessage(0x0047, new Buffer('ping'), callback);
+  },
+  checkWifi: function (client, lastCheck, callback) {
+    client.postMessage(0x0043, new Buffer([lastCheck ? 0x1 : 0x0]), callback);
+  },
+  uploadRam: function (client, bundle, callback) {
+    client.postMessage(0x0055, bundle, callback);
+  },
+  uploadFlash: function (client, bundle, callback) {
+    client.postMessage(0x0050, bundle, callback);
+  },
+  writeProcessMessage: function (client, data, callback) {
+    client.postMessage(0x004d, clone.serialize(data), callback);
+  },
+  requestWifiNetworksAndStatus: function (client, callback) {
+    client.postMessage(0x0056, null, callback);
+  },
+  enterBootloader: function (client, callback) {
+    client.postMessage(0x0042, null, callback);
+  },
+  eraseWifiProfiles: function (client, callback) {
+    client.postMessage(0x0044, new Buffer('erase'), callback);
   }
-}
+};
 
 prototype.initCommands = function () {
   var self = this;
 
+  // Script status.
+  this.on('rawMessage:0053', function (data) {
+    var code = parseInt(String(data));
+    if (code > 0) {
+      this.emit('script-start');
+    } else {
+      this.emit('script-stop', -code);
+    }
+  });
+
+  // Upload status.
+  this.on('rawMessage:0055', function (data) {
+    var packet = JSON.parse(data);
+    this.emit('upload-status', packet);
+  });
+
+  // Wifi events.
+  this.on('rawMessage:0057', function (data) {
+    var packet = JSON.parse(data);
+    this.emit('wifi-' + packet.event, packet);
+    // console.log(packet);
+  });
+
+  // Wifi list.
+  this.on('rawMessage:0056', function (data) {
+    var packet = JSON.parse(data);
+    this.emit('wifi-list', packet);
+  });
+
+  // process.send() message
+  this.on('rawMessage:004d', function (data) {
+    this.emit('message', clone.deserialize(data));
+  });
+
+  // Debug stack
+  this.on('rawMessage:006b', function (data) {
+    this.emit('debug-stack', data.toString('utf-8'));
+  });
+
+  // Ping / pong.
+  this.on('rawMessage:0047', function (data) {
+    var packet = JSON.parse(data);
+    this.emit('pong', packet);
+  });
+
+  // Wifi profile erase ACK.
+  this.on('rawMessage:0044', function (data) {
+    this.emit('wifi-profile-erase', parseInt(data.toString('utf-8')));
+  });
+
+  // Create stream objects.
   this.stdout = new stream.Readable();
   this.stdout._read = function () {
   };
+  this.stdout.pause();
 
   this.stderr = new stream.Readable();
   this.stderr._read = function () {
   };
+  this.stderr.pause();
 
   this.stdin = new stream.Writable();
   this.stdin._write = function (chunk, encoding, callback) {
     commands.writeStdin(self, Buffer.isBuffer(chunk) ? chunk : new Buffer(chunk, encoding), callback)
   };
 
-  // Interpret old-form commands, emit as events.
-  this.on('command', function (command, data) {
-    // Script status.
-    if (command == 'S') {
-      var code = parseInt(data);
-      if (code > 0) {
-        this.emit('script-start');
-      } else {
-        this.emit('script-stop', -code);
-      }
+  this.on('log', function (level, str) {
+    if (level == 10 || level == 11 || level == 12) {
+      self.stdout.push(str + '\n');
     }
-
-    // Wifi.
-    if (command == 'W') {
-      var packet = JSON.parse(data);
-      this.emit('wifi-' + packet.event, packet);
-    }
-
-    // Ping / pong.
-    if (command == 'G') {
-      var packet = JSON.parse(data);
-      this.emit('pong', packet);
+    if (level == 13 || level == 22) {
+      self.stderr.push(str + '\n');
     }
   });
-
-  this.on('rawMessage', function (command, data) {
-    if (String.fromCharCode(command&0xff) == 'M') {
-      this.emit('message', clone.deserialize(data));
-    }
-  })
 }
+
+prototype.enterBootloader = function (next) {
+  commands.enterBootloader(this, next);
+};
 
 prototype.ping = function (opts, next) {
   if (typeof opts == 'function') {
@@ -117,33 +173,26 @@ prototype.ping = function (opts, next) {
   commands.ping(self);
 }
 
-
 prototype.wifiStatus = function (next) {
-  this.command('V', new Buffer([0xde, 0xad, 0xbe, 0xef]), function () {
-    logs.info('Requesting wifi status...');
+  commands.requestWifiNetworksAndStatus(this, function () {
+    logs.info('Requesting wifi status...'.grey);
   });
 
-  this.on('command', function oncommand (command, data) {
-    if (command == 'V') {
-      this.removeListener('command', oncommand);
-      next(null, JSON.parse(data));
-    }
+  this.once('wifi-list', function (list) {
+    next(null, list);
   });
 }
 
 prototype.wifiErase = function (next) {
-  this.command('D', new Buffer('erase'), function(){
+  commands.eraseWifiProfiles(this, function () {
     console.error('Erasing saved wifi profiles'.grey);
   });
 
-  this.on('command', function oncommand (command,data) {
-    if (command == 'D'){
-      this.removeListener('command', oncommand);
-      if (Number(data) < 0) {
-        next(data);
-      } else {
-        next(null);
-      } 
+  this.once('wifi-profile-erase', function (data) {
+    if (Number(data) < 0) {
+      next(data);
+    } else {
+      next(null);
     }
   });
 }
@@ -232,38 +281,28 @@ prototype.configureWifi = function (ssid, pass, security, opts, next) {
 }
 
 prototype.checkWifi = function(lastCheck){
-  var outbuf = new Buffer([lastCheck ? 0x1 : 0x0]);
-  this.command('C', outbuf);
-}
-
-// prototype.deploy = function (file, args, next) {
-//   tessel.detectDirectory(file, function (err, dirpath, relpath) {
-//     tessel.bundleCode(dirpath, relpath, args, function (err, tarstream) {
-//       this.deployBundle(tarstream, {}, next);
-//     });
-//   });
-// }
+  commands.checkWifi(this, lastCheck);
+};
 
 prototype.deployBundle = function (bundle, options, next) {
-  this.stop(function () {
-    next && this.once('script-start', next);
-    this.command(options.flash?'P':'U', bundle);
-  }.bind(this));
-}
+  var self = this;
+  self.stop(function () {
+    next && self.once('script-start', next);
+    if (options.flash) {
+      commands.uploadFlash(self, bundle);
+    } else {
+      commands.uploadRam(self, bundle);
+    }
+  });
+};
 
 prototype.erase = function (next) {
-  this.stop(function () {
-    this.command('P', new Buffer([0xff, 0xff, 0xff, 0xff]), next);
-  }.bind(this));
-}
-
-prototype.deployBinary = function (file, next) {
-  // open up the file
-  var buffer = fs.readFileSync(file);
-  next && this.once('script-start', next);
-  this.command('U', buffer);
+  var self = this;
+  self.stop(function () {
+    commands.uploadFlash(self, new Buffer([0xff, 0xff, 0xff, 0xff]), next);
+  });
 }
 
 prototype.send = function (data) {
-  this.command('M', clone.serialize(data));
+  commands.writeProcessMessage(this, data);
 };

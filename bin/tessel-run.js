@@ -131,7 +131,7 @@ function repl (client)
         var script
           // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
           = 'local function _run ()\n' + colonyCompiler.colonize(data, {returnLastStatement: true, wrap: false}) + '\nend\nsetfenv(_run, colony.global);\nreturn _run()';
-        client.command('M', new Buffer(JSON.stringify(script)));
+        client.send(script);
       } catch (e) {
         console.error(e.stack);
         setImmediate(prompt);
@@ -141,7 +141,6 @@ function repl (client)
 }
 
 common.controller(true, function (err, client) {
-  client.listen(true, [10, 11, 12, 13, 20, 21, 22])
   client.on('error', function (err) {
     if (err.code == 'ENOENT') {
       logs.err('Cannot connect to Tessel locally.')
@@ -149,10 +148,6 @@ common.controller(true, function (err, client) {
       console.error(err);
     }
   })
-
-  // Forward stdin by line.
-  process.stdin.resume();
-  process.stdin.pipe(client.stdin);
 
   // Check pushing path.
   if (argv.interactive) {
@@ -165,16 +160,12 @@ common.controller(true, function (err, client) {
 
   // Command command.
   var updating = false;
-  client.on('command', function (command, data) {
-    if (command == 'u') {
-      verbose && logs.info(data)
-    } else if (command == 'U') {
-      if (updating) {
-        // Interrupted by other deploy
-        process.exit(0);
-      }
-      updating = true;
+  client.on('upload-status', function () {
+    if (updating) {
+      // Interrupted by other deploy
+      process.exit(0);
     }
+    updating = true;
   });
 
   builds.checkBuildList(client.version, function (allBuilds, needUpdate){
@@ -182,7 +173,7 @@ common.controller(true, function (err, client) {
 
     if (needUpdate){
       // show warning
-      logs.err("NOTE: There is a newer version of firmware available. Use \"tessel update\" to update to the newest version");
+      logs.warn("There is a newer version of firmware available. You should run \"tessel update\".");
     }
     
     pushCode();
@@ -192,6 +183,14 @@ common.controller(true, function (err, client) {
     client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), function () {
       // script-start emitted.
       logs.info('Running script...');
+
+      // Forward pipes.
+      client.stdout.resume();
+      client.stdout.pipe(process.stdout);
+      client.stderr.resume();
+      client.stderr.pipe(process.stderr);
+      process.stdin.resume();
+      process.stdin.pipe(client.stdin);
 
       // Stop on Ctrl+C.
       process.on('SIGINT', function() {
@@ -209,20 +208,18 @@ common.controller(true, function (err, client) {
         });
       });
 
-      client.on('rawMessage', function (tag, data) {
-        if (tag == 0x4113) {
-          if (!argv['upload-dir']) {
-            logs.err('ignoring uploaded file. call tessel with --upload-dir to save files from a running script.');
-            return;
-          }
+      client.on('rawMessage:4113', function (tag, data) {
+        if (!argv['upload-dir']) {
+          logs.err('ignoring uploaded file. call tessel with --upload-dir to save files from a running script.');
+          return;
+        }
 
-          try {
-            var packet = require('structured-clone').deserialize(data);
-            fs.writeFileSync(path.resolve(argv['upload-dir'], path.basename(packet.filename)), packet.buffer);
-            logs.info(util.format(packet.filename, 'saved to', argv['upload-dir']));
-          } catch (e) {
-            logs.err('invalid sendfile packet received.');
-          }
+        try {
+          var packet = require('structured-clone').deserialize(data);
+          fs.writeFileSync(path.resolve(argv['upload-dir'], path.basename(packet.filename)), packet.buffer);
+          logs.info(util.format(packet.filename, 'saved to', argv['upload-dir']));
+        } catch (e) {
+          logs.err('invalid sendfile packet received.');
         }
       });
       

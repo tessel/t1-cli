@@ -46,7 +46,7 @@ var header = {
     header._msg('TESSEL? No Tessel found, waiting...'.grey);
   },
   connected: function (serialNumber) {
-    header._msg('TESSEL!'.bold.cyan + ' Connected to '.cyan + ("" + serialNumber).green + '.          \n'.cyan);
+    header._msg('TESSEL!'.bold.cyan + ' Connected to '.cyan + ("" + serialNumber).green + '.\n'.cyan);
   }
 }
 

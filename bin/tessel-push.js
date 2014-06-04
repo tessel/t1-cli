@@ -93,16 +93,12 @@ common.controller(true, function (err, client) {
 
   // Command command.
   var updating = false;
-  client.on('command', function (command, data) {
-    if (command == 'u') {
-      verbose && logs.info(data)
-    } else if (command == 'U') {
-      if (updating) {
-        // Interrupted by other deploy
-        process.exit(0);
-      }
-      updating = true;
+  client.on('upload-status', function () {
+    if (updating) {
+      // Interrupted by other deploy
+      process.exit(0);
     }
+    updating = true;
   });
 
   // Forward path and code to tessel cli handling.

@@ -141,13 +141,6 @@ Tessel.prototype._receiveLogs = function _receiveLogs() {
 
 			var str = data.toString('utf8', pos+2, next);
 
-			if (level == 10 || level == 11 || level == 12) {
-				self.stdout.push(str + '\n');
-			}
-			if (level == 13) {
-				self.stderr.push(str + '\n');
-			}
-
 			if ((!self.logLevels && typeof self.logLevels != 'array') || self.logLevels.indexOf(level) != -1) {
 				process.stdout.write(str + "\n");
 			}
@@ -165,14 +158,13 @@ Tessel.prototype.postMessage = function postMessage(tag, buf, cb) {
 	header.writeUInt32LE(tag, 4);
 	var data = Buffer.concat([header, buf]);
 
-	this.msg_out_ep.transferWithZLP(data, function(error) {
+	var self = this;
+	self.msg_out_ep.transferWithZLP(data, function(error) {
+		if (error) {
+			self.emit('error', error);
+		}
 		cb && cb(error);
 	});
-}
-
-Tessel.prototype.command = function command(cmd, buf, next) {
-	next = next || function(error) { if(error) console.error(error); }
-	this.postMessage(cmd.charCodeAt(0), buf, next);
 }
 
 Tessel.prototype._receiveMessages = function _receiveMessages() {
@@ -191,11 +183,9 @@ Tessel.prototype._receiveMessages = function _receiveMessages() {
 				var tag = b.readUInt32LE(4);
 				b = b.slice(8);
 
+				// Emit messages.
 				self.emit('rawMessage', tag, b);
-
-				if (tag >> 24 === 0) {
-					self.emit('command', String.fromCharCode(tag&0xff), b.toString('utf8'));
-				}
+				self.emit('rawMessage:' + ('0000' + tag.toString(16)).slice(-4), b);
 			}
 
 			buffers = [];
@@ -204,10 +194,6 @@ Tessel.prototype._receiveMessages = function _receiveMessages() {
 			throw new Error("Malformed message (oversize): " + buffers[0].toString('hex', 0, 8))
 		}
 	});
-};
-
-Tessel.prototype.enterBootloader = function enterBootloader(next) {
-	this.command('B');
 };
 
 Tessel.prototype._info = function info(next) {
@@ -230,20 +216,9 @@ Tessel.prototype.debugstack = function stop(next) {
 		// otherwise, wait for the message
 	});
 
-
-	function oncommand(command, msg) {
-		if (command == 'k') {
-			callNext(null, msg.toString());
-		}
-	}
-
-	this.on('command', oncommand)
-
-	var self = this;
-	function callNext(err, data) {
-		self.removeListener('command', oncommand);
-		next(err, data);
-	}
+	this.once('debug-stack', function (stack) {
+		next(null, stack)
+	})
 }
 
 Tessel.prototype.wifiIP = function (next) {

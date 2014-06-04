@@ -124,8 +124,8 @@ function Logger(id, urls, name, client) {
     });
   });
 
-  this.client.on('command', function(command, str){
-    fs.appendFile(self.logPaths[name], "[CMD]["+command+"]: "+str+"\n", function(err){
+  this.client.on('rawMessage', function(tag, buf){
+    fs.appendFile(self.logPaths[name], "[CMD]["+tag.toString(16)+"]: "+buf.toString('utf-8')+"\n", function(err){
       if (err) throw err;
     });
   });
@@ -134,7 +134,6 @@ function Logger(id, urls, name, client) {
 Logger.prototype.detach = function(){
   this.client.removeListener('rawMessage');
   this.client.removeListener('log');
-  this.client.removeListener('command');
 }
 
 Logger.prototype.uploadFiles = function(next){
