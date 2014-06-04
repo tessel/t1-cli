@@ -208,7 +208,7 @@ common.controller(true, function (err, client) {
         });
       });
 
-      client.on('rawMessage:4113', function (tag, data) {
+      client.on('rawMessage:4113', function (data) {
         if (!argv['upload-dir']) {
           logs.err('ignoring uploaded file. call tessel with --upload-dir to save files from a running script.');
           return;
