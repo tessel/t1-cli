@@ -27,6 +27,7 @@ var argv = require("nomnom")
   .option('script', {
     position: 0,
     // required: true,
+    default: '.',
     full: 'script.js',
     help: 'Pack this script as an archive.',
   })
