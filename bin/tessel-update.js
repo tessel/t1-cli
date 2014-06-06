@@ -126,8 +126,31 @@ function isUrl (str){
   return str.match(/^(ftp|http|https):\/\//);
 }
 
-function update(client, wifiVer){
-  if (process.argv.length == 2 || argv.force || argv.dfu){
+function update(client, wifiVer) {
+  if (argv._.length > 0) {
+    var updateVer = argv._[0];
+    if (isUrl(updateVer)) {
+      // if it's a custom url
+      logs.info('Downloading remote file', updateVer);
+      applyBuild(updateVer, client);
+      return;
+    } else if (isLocalPath(updateVer)){
+      // if it's a local path just send this file
+      logs.info('Using local file', updateVer);
+      restoreBuild(fs.readFileSync(updateVer), client);
+      return;
+    }
+  }
+
+  // Use registry.
+  if (argv.build) { 
+    // rebuild url and download by build number
+    applyBuild(builds.utils.buildsPath+"firmware/tessel-firmware-"+argv.build+".bin", client);
+  } else if (argv.wifi) {
+    // apply the wifi build
+    applyRam(builds.utils.buildsPath+"wifi/"+argv.wifi+".bin", client);
+  
+  } else {
     // if there's only 2 args apply latest firmware patch
     logs.info("Checking for latest firmware... ");
     builds.checkBuildList(client == null ? null : client.version, function (allBuilds, needUpdate){
@@ -162,23 +185,6 @@ function update(client, wifiVer){
         return client && client.close();
       }
     });
-  } else {
-    var updateVer = process.argv[2];
-
-    // check if we have a url
-    if (isUrl(updateVer)) {
-      // if it's a custom url
-      applyBuild(updateVer, client);
-    } else if (isLocalPath(updateVer)){
-      // if it's a local path just send this file
-      restoreBuild(fs.readFileSync(updateVer), client);
-    } else if (argv.build){ 
-      // rebuild url and download by build number
-      applyBuild(builds.utils.buildsPath+"firmware/tessel-firmware-"+argv.build+".bin", client);
-    } else if (argv.wifi) {
-      // apply the wifi build
-      applyRam(builds.utils.buildsPath+"wifi/"+argv.wifi+".bin", client);
-    }
   }
 }
 
