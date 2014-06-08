@@ -209,15 +209,16 @@ common.controller(true, function (err, client) {
       });
 
       client.on('rawMessage:4113', function (data) {
-        if (!argv['upload-dir']) {
+		var upload_dir = argv['upload-dir'] || process.env.TESSEL_UPLOAD_DIR
+        if (!upload_dir) {
           logs.err('ignoring uploaded file. call tessel with --upload-dir to save files from a running script.');
           return;
         }
 
         try {
           var packet = require('structured-clone').deserialize(data);
-          fs.writeFileSync(path.resolve(argv['upload-dir'], path.basename(packet.filename)), packet.buffer);
-          logs.info(util.format(packet.filename, 'saved to', argv['upload-dir']));
+          fs.writeFileSync(path.resolve(upload_dir, path.basename(packet.filename)), packet.buffer);
+          logs.info(util.format(packet.filename, 'saved to', upload_dir));
         } catch (e) {
           logs.err('invalid sendfile packet received.');
         }
