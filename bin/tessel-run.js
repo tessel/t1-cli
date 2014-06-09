@@ -17,6 +17,7 @@ var common = require('../src/cli')
   , builds = require('../src/builds')
   , util = require('util')
   , logs = require('../src/logs')
+  , repl = require('repl')
   ;
 
 var colonyCompiler = require('colony-compiler')
@@ -86,19 +87,8 @@ function usage () {
   process.exit(1);
 }
 
-function repl (client)
+function interactiveClient (client)
 {
-  // make `process.stdin` begin emitting "keypress" events
-  keypress(process.stdin);
-  // listen for the ctrl+c event, which seems not to be caught in read loop
-  process.stdin.on('keypress', function (ch, key) {
-    if (key && key.ctrl && key.name == 'c') {
-      process.exit(0);
-    }
-  });
-
-  client.on('message', prompt);
-
   function convertToContext (cmd) {
     var self = this, matches,
         scopeVar = /^\s*var\s*([_\w\$]+)(.*)$/m,
@@ -119,25 +109,30 @@ function repl (client)
     return cmd;
   };
 
-  function prompt() {
-    read({prompt: '>>'}, function (err, data) {
-      try {
-        if (err) {
-          throw err;
-        }
-        data = String(data);
+  client.once('message', function () {
+    // one message to start with
+    repl.start({
+      prompt: '> ',
+      eval: function (cmd, context, filename, callback) {
+        client.once('message', function (data) {
+          callback(data.error, data.value);
+        });
 
-        data = convertToContext(data);
-        var script
-          // = 'function _locals()\nlocal variables = {}\nlocal idx = 1\nwhile true do\nlocal ln, lv = debug.getlocal(2, idx)\nif ln ~= nil then\n_G[ln] = lv\nelse\nbreak\nend\nidx = 1 + idx\nend\nreturn variables\nend\n'
-          = 'local function _run ()\n' + colonyCompiler.colonize(data, {returnLastStatement: true, wrap: false}) + '\nend\nsetfenv(_run, colony.global);\nreturn _run()';
-        client.send(script);
-      } catch (e) {
-        console.error(e.stack);
-        setImmediate(prompt);
-      }
-    });
-  }
+        try {
+          var data = convertToContext(cmd.slice(1, -2));
+          var script
+            = 'local function _run ()\n' + colonyCompiler.colonize(data, {returnLastStatement: true, wrap: false}) + '\nend\nsetfenv(_run, colony.global);\nreturn _run()';
+          client.send(script);
+        } catch (e) {
+          console.error(e.stack);
+          callback();
+        }
+      },
+    })
+    .on('exit', function () {
+      client.close();
+    })
+  });
 }
 
 common.controller(true, function (err, client) {
@@ -227,7 +222,7 @@ common.controller(true, function (err, client) {
       // message telling host it's ready, then receives stdin via
       // process.on('message')
       if (argv.interactive) {
-        repl(client);
+        interactiveClient(client);
       }
     });
   }

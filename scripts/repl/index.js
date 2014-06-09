@@ -10,16 +10,14 @@
 var lua = process.binding('lua');
 
 process.on('message', function (data) {
-	var ret = null;
 	try {
-		ret = lua.loadstring(data)()
-		console.log(ret);
+		var ret = lua.loadstring(data)()
+		process.send({ready: true, value: ret});
 	} catch (e) {
-		console.error(e);
+		process.send({ready: true, error: e});
 	}
-	process.send({ready: true, ret: ret});
 })
 
-process.send({ready: true, ret: null});
+process.send({ready: true, value: null});
 
 setInterval(function () { }, 1000);
