@@ -12,6 +12,7 @@ var lua = process.binding('lua');
 process.on('message', function (data) {
 	try {
 		var ret = lua.loadstring(data)()
+		global['__'] = ret;
 		process.send({ready: true, value: ret});
 	} catch (e) {
 		process.send({ready: true, error: e});
