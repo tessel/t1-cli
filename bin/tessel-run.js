@@ -204,27 +204,49 @@ common.controller(true, function (err, client) {
       });
 
       var deets = [], profile = {};
+      var first = true;
       client.on('rawMessage:0078', function (data) {
         // process.stdout.write('.');
-        var obj = {};
-        String(data).split(/\n/).forEach(function (line) {
-          var key = line.split(' ', 2);
-          obj[key[0]] = key[1];
-        })
-        if (obj.type == 'out') {
-          var last = deets.pop();
-          if (last) {
-            (profile[last.source + ':' + last.line] || (profile[last.source + ':' + last.name] = [])).push([last.start, obj.end]);
-          }
-        } else {
-          deets.push(obj);
+        // var obj = {};
+        // String(data).split(/\n/).forEach(function (line) {
+        //   var key = line.split(' ', 2);
+        //   obj[key[0]] = key[1];
+        // })
+        // process.stdout.write('.');
+        if (first) {
+          fs.writeFileSync('colony.log', '');
         }
+        var first = false;
+        fs.appendFileSync('colony.log', data.toString() + '\n\n');
+        // console.log(data.toString());
+        // if (obj.type == 'out') {
+        //   var last = deets.pop();
+        //   if (last) {
+        //     var line = last.short_src + ':' + last.name + ':' + last.lastline;
+        //     if (!profile[line]) {
+        //       profile[line] = [];
+        //     }
+        //     profile[line].push([last.start, obj.end]);
+        //   }
+        // } else {
+        //   deets.push(obj);
+        // }
       })
       process.once('exit', function () {
-        console.error(profile);
-        console.error(deets.map(function (line) {
-          return line.source + ':' + line.line;
-        }))
+        console.error(Object.keys(profile).map(function (key) {
+          return [key, profile[key].map(function (sample) {
+            return sample[1] - sample[0];
+          }).reduce(function (a, b) {
+            return a + b;
+          }, 0)];
+        }).sort(function (a, b) {
+          return a[1] > b[1] ? -1 : a[1] < b[1] ? 1 : 0
+        }).map(function (a) {
+          return ('        ' + a[1]).slice(-8) + ' ms\t' + a[0];
+        }).join('\n'));
+        // console.error(deets.map(function (line) {
+        //   return line.source + ':' + line.line;
+        // }))
       })
 
       client.on('rawMessage:4113', function (data) {
