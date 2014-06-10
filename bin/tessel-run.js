@@ -203,6 +203,30 @@ common.controller(true, function (err, client) {
         });
       });
 
+      var deets = [], profile = {};
+      client.on('rawMessage:0078', function (data) {
+        // process.stdout.write('.');
+        var obj = {};
+        String(data).split(/\n/).forEach(function (line) {
+          var key = line.split(' ', 2);
+          obj[key[0]] = key[1];
+        })
+        if (obj.type == 'out') {
+          var last = deets.pop();
+          if (last) {
+            (profile[last.source + ':' + last.line] || (profile[last.source + ':' + last.name] = [])).push([last.start, obj.end]);
+          }
+        } else {
+          deets.push(obj);
+        }
+      })
+      process.once('exit', function () {
+        console.error(profile);
+        console.error(deets.map(function (line) {
+          return line.source + ':' + line.line;
+        }))
+      })
+
       client.on('rawMessage:4113', function (data) {
         if (!argv['upload-dir']) {
           logs.err('ignoring uploaded file. call tessel with --upload-dir to save files from a running script.');
