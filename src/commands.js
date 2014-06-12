@@ -29,9 +29,10 @@ var commands = {
     // Package Wifi arguments
     var outbuf = new Buffer(128);
     outbuf.fill(0);
-    new Buffer(String(ssid)).copy(outbuf, 0, 0, ssid.length);
-    new Buffer(String(pass)).copy(outbuf, 32, 0, pass.length);
-    new Buffer(String(security)).copy(outbuf, 96, 0, security.length);
+    ssid.copy(outbuf, 0, 0, ssid.length);
+    pass.copy(outbuf, 32, 0, pass.length)
+    security.copy(outbuf, 96, 0, security.length);
+
     client.postMessage(0x0057, outbuf, callback);
   },
   writeStdin: function (client, buffer, callback) {
