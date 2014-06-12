@@ -218,7 +218,8 @@ if (argv.list){
 } else {
   // check for dfu mode
   var device = tessel_dfu.findDevice();
-  if (tessel_dfu.guessDeviceState(device) == 'dfu' || argv.dfu){
+  var state = tessel_dfu.guessDeviceState(device);
+  if (state == 'dfu' || state == 'rom' || argv.dfu){
     // looks like they've run it in dfu mode, don't bother with common
     update(null, 0);
   } else {
