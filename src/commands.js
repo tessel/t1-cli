@@ -30,7 +30,13 @@ var commands = {
     var outbuf = new Buffer(128);
     outbuf.fill(0);
     new Buffer(String(ssid)).copy(outbuf, 0, 0, ssid.length);
-    new Buffer(String(pass)).copy(outbuf, 32, 0, pass.length);
+
+    if (pass instanceof Buffer) {
+      pass.copy(outbuf, 32, 0, pass.length)
+    } else {
+      new Buffer(String(pass)).copy(outbuf, 32, 0, pass.length);
+    }
+
     new Buffer(String(security)).copy(outbuf, 96, 0, security.length);
     client.postMessage(0x0057, outbuf, callback);
   },

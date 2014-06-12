@@ -33,6 +33,9 @@ var argv = require("nomnom")
     abbr: 'p',
     help: '[Tessel] Password of the network. Omit for unsecured networks.'
   })
+  .option('password-hex', {
+    help: '[Tessel] Password of the network in hex.'
+  })
   .option('security', {
     abbr: 's',
     default: 'wpa2',
@@ -53,6 +56,7 @@ var argv = require("nomnom")
     help: '[Tessel] Show usage for tessel wifi'
   })
   .parse();
+
 
 function usage () {
   console.error(require('nomnom').getUsage());
@@ -86,7 +90,12 @@ common.controller(false, function (err, client) {
 
     function retry () {
       var ssid = argv.network;
-      var pass = argv.password || "";
+      var pass = argv['password-hex'] || argv.password || "";
+
+      if (argv['password-hex']) {
+        pass = new Buffer(argv['password-hex'], 'hex');
+      }
+
       var security = (argv.security || (pass ? 'wpa2' : 'unsecure')).toLowerCase();
 
       client.configureWifi(ssid, pass, security, {
