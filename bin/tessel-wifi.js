@@ -89,16 +89,16 @@ common.controller(false, function (err, client) {
     }
 
     function retry () {
-      var ssid = new Buffer(argv.network);
+      var ssid = new Buffer(String(argv.network));
       var pass = argv.password || "";
 
       if (argv['password-hex']) {
         pass = new Buffer(argv['password-hex'], 'hex');
       } else {
-        pass = new Buffer(pass);
+        pass = new Buffer(String(pass));
       }
 
-      var security = new Buffer((argv.security || (pass ? 'wpa2' : 'unsecure')).toLowerCase());
+      var security = new Buffer((String(argv.security) || (pass ? 'wpa2' : 'unsecure')).toLowerCase());
 
       client.configureWifi(ssid, pass, security, {
         timeout: argv.timeout
