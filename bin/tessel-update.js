@@ -17,6 +17,7 @@ var os = require("os")
   , tessel_dfu = require('../dfu/tessel-dfu')
   , builds = require('../src/builds')
   , logs = require('../src/logs')
+  , semver = require('semver')
   ;
 
 var common = require('../src/cli');
@@ -192,19 +193,34 @@ if (argv.list){
   // list possible builds
   builds.checkBuildList("", function(allBuilds){
     function currentize (key, i) {
-      var date = key.match(/\d{4}-\d{2}-\d{2}/) || 'current   '.yellow;
-      return date
+      return key == 'current' ? key.yellow : key;
     }
 
-    logs.info("Switch to any of these builds with `tessel update -b <build name>`");
-    var tags = allBuilds.filter(function (file) {
-      return file.url.match(/^firmware\/./) && file.url.match(/\.bin$/);
-    }).sort(function (a, b) {
+    function tagsort (a, b) {
       if (a.url < b.url) return 1;
       if (a.url > b.url) return -1;
       return 0;
-    }).map(function (file, i) {
-      return '  o '.blue + currentize(file.url.replace(/^firmware\//, ''), i);
+    }
+
+    logs.info("Switch to any of these builds with `tessel update -b <build name>`");
+    var alltags = allBuilds.filter(function (file) {
+      return file.url.match(/^firmware\/./) && file.url.match(/\.bin$/);
+    }).map(function (file) {
+      return path.basename(file.url, '.bin').replace(/^tessel-firmware-/, '');
+    });
+
+    var currenttags = alltags.filter(function (tag) {
+      return tag == 'current';
+    }).sort(tagsort);
+    var vertags = alltags.filter(function (tag) {
+      return semver.valid(tag);
+    }).sort(tagsort);
+    var datetags = alltags.filter(function (tag) {
+      return tag.match(/^\d{4}\-\d{2}\-\d{2}$/);
+    }).sort(tagsort);
+
+    var tags = [].concat(currenttags, vertags, datetags).map(function (file, i) {
+      return '  o '.blue + currentize(file);
     });
 
     if (tags.length > 10) {
