@@ -175,7 +175,9 @@ common.controller(true, function (err, client) {
   });
 
   function pushCode(){
-    client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), function () {
+    client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), {
+      single: argv.single
+    }, function () {
       // script-start emitted.
       logs.info('Running script...');
 
