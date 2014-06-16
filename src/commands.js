@@ -255,13 +255,13 @@ prototype.configureWifi = function (ssid, pass, security, opts, next) {
         }, 1000);
       }
 
-      function onConnect (packet) {
+      function onDHCPSuccess(packet) {
         if (acquiring) {
           process.stderr.write('\n');
         }
-        cleanup();
 
         self.once('wifi-status', function (packet) {
+          cleanup();
           next(packet);
         })
       }
@@ -277,14 +277,14 @@ prototype.configureWifi = function (ssid, pass, security, opts, next) {
           clearInterval(checkInterval);
         }
         self.removeListener('wifi-acquire', onAcquire);
-        self.removeListener('wifi-connect', onConnect);
-        self.removeListener('wifi-disconnect', onConnect);
+        self.removeListener('wifi-dhcp-success', onDHCPSuccess);
+        self.removeListener('wifi-disconnect', onDHCPSuccess);
         self.removeListener('wifi-error', onError);
       }
 
       self.once('wifi-acquire', onAcquire);
-      self.once('wifi-connect', onConnect);
-      self.once('wifi-disconnect', onConnect);
+      self.once('wifi-dhcp-success', onDHCPSuccess);
+      self.once('wifi-disconnect', onDHCPSuccess);
       self.once('wifi-error', onError);
 
       commands.connect(self, ssid, pass, security);
