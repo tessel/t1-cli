@@ -24,6 +24,14 @@ var REQ_CC = 0x21;
 var VENDOR_REQ_OUT = usb.LIBUSB_REQUEST_TYPE_VENDOR | usb.LIBUSB_RECIPIENT_DEVICE | usb.LIBUSB_ENDPOINT_OUT;
 var VENDOR_REQ_IN  = usb.LIBUSB_REQUEST_TYPE_VENDOR | usb.LIBUSB_RECIPIENT_DEVICE | usb.LIBUSB_ENDPOINT_IN;
 
+
+var usb_debug = parseInt(process.env.TESSEL_USB_DEBUG, 10);
+if (usb_debug) {
+  console.log("USB debug level", usb_debug);
+  usb.setDebugLevel(usb_debug);
+}
+
+
 function Tessel(dev) {
   this.usb = dev;
   this.rx = true;
