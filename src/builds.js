@@ -30,7 +30,7 @@ function saveCache(header, data, next){
   d.setDate(d.getDate() + maxAge/60/60/24);
   var cacheFolder = path.join(os.tmpDir(), "tessel");
   var cachePath = path.join(cacheFolder, 'builds-'+d.valueOf()+"-"+header['etag'].substring(1, header['etag'].length-1)+"-list.json");
-  
+
   fs.mkdir(cacheFolder, function(err){
     fs.writeFile(cachePath, data, function(err){
       next(err, cachePath);
@@ -88,15 +88,18 @@ function checkBuildList (version, next) {
     return newFirmwareDate.valueOf() > firmwareDate.valueOf() && builds[0].version.search(version.firmware_git) == -1;
   }
 
-  request.head(manifesturl, function (err, res) {
+  request.head(manifesturl, {
+    timeout: 3000
+  }, function (err, res) {
     if (!err && res) {
       request.get({
         url: manifesturl,
-        json: true
+        json: true,
+        timeout: 3000
       }, function(err, req, builds) {
         // HTTP error or JSON parsing error.
         if (err || typeof builds != 'object') return next && next(null);
-      
+
         // Catch builds formatting errors.
         var expired;
         try {
@@ -112,14 +115,15 @@ function checkBuildList (version, next) {
       next && next(null);
     }
   });
-  
+
 }
 
 
 function getBuild(url, next) {
   request.get({
     url: url,
-    encoding: null
+    encoding: null,
+    timeout: 3000,
   }, function(err, res, body){
     next(err, body);
   });
