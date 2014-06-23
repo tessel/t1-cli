@@ -24,6 +24,14 @@ var REQ_CC = 0x21;
 var VENDOR_REQ_OUT = usb.LIBUSB_REQUEST_TYPE_VENDOR | usb.LIBUSB_RECIPIENT_DEVICE | usb.LIBUSB_ENDPOINT_OUT;
 var VENDOR_REQ_IN  = usb.LIBUSB_REQUEST_TYPE_VENDOR | usb.LIBUSB_RECIPIENT_DEVICE | usb.LIBUSB_ENDPOINT_IN;
 
+
+var usb_debug = parseInt(process.env.TESSEL_USB_DEBUG, 10);
+if (usb_debug) {
+  console.log("USB debug level", usb_debug);
+  usb.setDebugLevel(usb_debug);
+}
+
+
 function Tessel(dev) {
   this.usb = dev;
   this.rx = true;
@@ -76,7 +84,15 @@ Tessel.prototype.claim = function claim(stop, next) {
     this.claimed = 'claiming';
     var self = this;
     self.intf = self.usb.interface(0);
-    self.intf.claim();
+
+    try {
+      self.intf.claim();
+    } catch (e) {
+      if (e.message === 'LIBUSB_ERROR_BUSY') {
+        e = "Device is in use by another process";
+      }
+      return next(e);
+    }
 
     if (stop) {
       this.stop(step);
@@ -149,9 +165,17 @@ Tessel.prototype._receiveLogs = function _receiveLogs() {
       pos = next;
     }
   });
+  self.log_ep.on('error', function(e) {
+    console.error("Error reading USB log endpoint:", e);
+    process.exit(-5);
+  });
 }
 
 Tessel.prototype.postMessage = function postMessage(tag, buf, cb) {
+  if (usb_debug) {
+    console.log("USB TX: ", buf.length, tag.toString(16), buf);
+  }
+
   var header = new Buffer(8);
   buf = buf || new Buffer(0);
   header.writeUInt32LE(buf.length, 0);
@@ -161,6 +185,7 @@ Tessel.prototype.postMessage = function postMessage(tag, buf, cb) {
   var self = this;
   self.msg_out_ep.transferWithZLP(data, function(error) {
     if (error) {
+      console.error("Error writing USB message endpoint", error);
       self.emit('error', error);
     }
     cb && cb(error);
@@ -183,6 +208,10 @@ Tessel.prototype._receiveMessages = function _receiveMessages() {
         var tag = b.readUInt32LE(4);
         b = b.slice(8);
 
+        if (usb_debug) {
+          console.log("USB RX: ", len, tag.toString(16), data);
+        }
+
         // Emit messages.
         self.emit('rawMessage', tag, b);
         self.emit('rawMessage:' + ('0000' + tag.toString(16)).slice(-4), b);
@@ -193,6 +222,11 @@ Tessel.prototype._receiveMessages = function _receiveMessages() {
       // The message wouldn't fit in Tessel's memory. It probably didn't mean to send this...
       throw new Error("Malformed message (oversize): " + buffers[0].toString('hex', 0, 8))
     }
+  });
+
+  self.msg_in_ep.on('error', function(e) {
+    console.error("Error reading USB message endpoint:", e);
+    process.exit(-5);
   });
 };
 
