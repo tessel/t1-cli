@@ -1,6 +1,6 @@
 {
   "name": "tessel",
-  "version": "v0.3.5",
+  "version": "v0.3.6",
   "description": "Tessel command line tools and programmatic access library.",
   "main": "src/index.js",
   "scripts": {
