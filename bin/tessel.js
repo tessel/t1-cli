@@ -22,7 +22,7 @@ function usage () {
     "   tessel erase [--force]\n" +
     "          erases saved usercode (JavaScript) on Tessel\n" +
     "   tessel repl\n" +
-    "          interative JavaScript shell\n" +
+    "          interactive JavaScript shell\n" +
     "   tessel wifi -n <ssid> -p <pass> -s <security (wep/wpa/wpa2, wpa2 by default)>\n"+
     "   tessel wifi -n <ssid>\n" +
     "          connects to a wifi network without a password\n" + 
