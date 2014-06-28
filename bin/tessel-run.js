@@ -40,14 +40,6 @@ var argv = require("nomnom")
     list: true,
     help: 'Arguments to pass in as process.argv.'
   })
-  .option('version', {
-    abbr: 'v',
-    flag: true,
-    help: 'Print tessel-node\'s version.',
-    callback: function() {
-      return require('./package.json').version.replace(/^v?/, 'v');
-    }
-  })
   .option('interactive', {
     abbr: 'i',
     flag: true,
