@@ -116,6 +116,7 @@ common.controller(true, function (err, client) {
   function pushCode(){
     client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), {
       flash: true,
+      single: argv.single
     }, function (err) {
 
       logs.info("Finished deployment");
