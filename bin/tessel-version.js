@@ -10,6 +10,7 @@
 
 var common = require('../src/cli')
   , logs = require('../src/logs')
+  , builds = require('../src/builds')
   ;
 // Setup cli.
 common.basic();
@@ -40,9 +41,25 @@ if (argv.board){
       logs.info("Wifi Version:", wifiVer);
       logs.info("Firmware Version:", client.version.firmware_git);
       logs.info("Runtime Version:", client.version.runtime_git);
-      client.close(function () {
-        process.exit(0);
+
+      // try to check for the semver
+      builds.checkBuildList(client.version.firmware_git, function (builds){
+        var filtered = builds.filter(function(build){
+          if (build.version) return build.version.search(client.version.firmware_git) >= 0
+          return false;
+        });
+
+        if (filtered.length > 0) {
+          // parse out the semver
+          var ver = filtered[0].url;
+          logs.info("Firmware Build:", ver.substring(ver.lastIndexOf('-')+1, ver.lastIndexOf('.')));
+        }
+
+        client.close(function () {
+          process.exit(0);
+        });
       });
+      
     });
   });
 } else {
