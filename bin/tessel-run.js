@@ -8,24 +8,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-var path = require('path')
-
-var common = require('../src/cli')
-  , keypress = require('keypress')
-  , read = require('read')
-  , colors = require('colors')
-  , builds = require('../src/builds')
-  , util = require('util')
-  , logs = require('../src/logs')
-  , repl = require('repl')
-  ;
-
-var colonyCompiler = require('colony-compiler')
-var fs = require('fs')
-
-// Setup cli.
-common.basic();
-
 // Command-line arguments
 var argv = require("nomnom")
   .script('tessel run')
@@ -55,6 +37,10 @@ var argv = require("nomnom")
   //   flag: true,
   //   help: '[Tessel] Push code to a Tessel by IP address.'
   // })
+  .option('show', {
+    flag: true,
+    help: 'Lists which files are being bundled during the push'
+  })
   .option('quiet', {
     abbr: 'q',
     flag: true,
@@ -73,6 +59,28 @@ var argv = require("nomnom")
   .parse();
 
 argv.verbose = !argv.quiet;
+
+if (argv.show && !argv.quiet) {
+  process.env.DEBUG = '*';
+}
+
+var path = require('path')
+
+var common = require('../src/cli')
+  , keypress = require('keypress')
+  , read = require('read')
+  , colors = require('colors')
+  , builds = require('../src/builds')
+  , util = require('util')
+  , logs = require('../src/logs')
+  , repl = require('repl')
+  ;
+
+var colonyCompiler = require('colony-compiler')
+var fs = require('fs')
+
+// Setup cli.
+common.basic();
 
 function usage () {
   console.error(require('nomnom').getUsage());

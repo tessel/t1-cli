@@ -8,16 +8,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-var colors = require('colors')
-  , builds = require('../src/builds')
-  , logs = require('../src/logs')
-  ;
-
-var common = require('../src/cli');
-
-// Setup cli.
-common.basic();
-
 // Command-line arguments
 var argv = require("nomnom")
   .script('tessel push')
@@ -47,6 +37,10 @@ var argv = require("nomnom")
     flag: true,
     help: '[Tessel] Stay connected and print logs.'
   })
+  .option('show', {
+    flag: true,
+    help: 'Lists which files are being bundled during the push'
+  })
   .option('single', {
     abbr: 's',
     flag: true,
@@ -60,6 +54,20 @@ var argv = require("nomnom")
   .parse();
 
 argv.verbose = !argv.quiet;
+
+if (argv.show && !argv.quiet) {
+  process.env.DEBUG = '*';
+}
+
+var colors = require('colors')
+  , builds = require('../src/builds')
+  , logs = require('../src/logs')
+  ;
+
+var common = require('../src/cli');
+
+// Setup cli.
+common.basic();
 
 function usage () {
   console.error(require('nomnom').getUsage());
