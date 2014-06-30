@@ -99,7 +99,7 @@ Tessel.prototype.claim = function claim(stop, next) {
     } else {
       step();
     }
-    
+
     function step() {
       // We use an alternate setting so it is automatically released if the program is killed
       self.intf.setAltSetting(1, function(error) {
@@ -148,7 +148,7 @@ Tessel.prototype._receiveLogs = function _receiveLogs() {
     while (pos < data.length) {
       if (data[pos] !== 1) { throw new Error("Expected STX at"+ pos +' ' + data[pos]) }
       var level = data[pos+1];
-      
+
       for (var next=pos+2; next<data.length; next++) {
         if (data[next] === 1) {
           break;
@@ -158,7 +158,7 @@ Tessel.prototype._receiveLogs = function _receiveLogs() {
       var str = data.toString('utf8', pos+2, next);
 
       if ((!self.logLevels && typeof self.logLevels != 'array') || self.logLevels.indexOf(level) != -1) {
-        process.stdout.write(str + "\n");
+        process.stderr.write(str + "\n");
       }
 
       self.emit('log', level, str);
