@@ -39,8 +39,8 @@ if (argv.board){
     client.wifiVer(function(err, wifiVer){
       logs.info("Serial #:", client.serialNumber);
       logs.info("Wifi Version:", wifiVer);
-      logs.info("Firmware Version:", client.version.firmware_git);
-      logs.info("Runtime Version:", client.version.runtime_git);
+      logs.info("Firmware Commit:", client.version.firmware_git);
+      logs.info("Runtime Commit:", client.version.runtime_git);
 
       // try to check for the semver
       builds.checkBuildList(client.version.firmware_git, function (buildRes){
@@ -55,6 +55,8 @@ if (argv.board){
             var ver = filtered[0].url;
             logs.info("Firmware Build:", ver.substring(ver.lastIndexOf('-')+1, ver.lastIndexOf('.')));
           }
+        } else {
+          logs.warn("Could not look up build server to determine build. You can manually check for the commit hash at https://github.com/tessel/firmware/commits/master");
         }
 
         client.close(function () {
