@@ -8,6 +8,16 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+var colors = require('colors')
+  , builds = require('../src/builds')
+  , logs = require('../src/logs')
+  ;
+
+var common = require('../src/cli');
+
+// Setup cli.
+common.basic();
+
 // Command-line arguments
 var argv = require("nomnom")
   .script('tessel push')
@@ -54,20 +64,7 @@ var argv = require("nomnom")
   .parse();
 
 argv.verbose = !argv.quiet;
-
-if (argv.show && !argv.quiet) {
-  process.env.DEBUG = '*';
-}
-
-var colors = require('colors')
-  , builds = require('../src/builds')
-  , logs = require('../src/logs')
-  ;
-
-var common = require('../src/cli');
-
-// Setup cli.
-common.basic();
+argv.flash = true;
 
 function usage () {
   console.error(require('nomnom').getUsage());
@@ -122,10 +119,9 @@ common.controller(true, function (err, client) {
   });
 
   function pushCode(){
-    client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), {
-      flash: true,
-      single: argv.single
-    }, function (err) {
+    client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || [])
+      , argv
+      , function (err) {
 
       logs.info("Finished deployment");
 

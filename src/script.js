@@ -131,7 +131,7 @@ tessel.bundleScript = function (pushpath, argv, bundleopts, next)
   verbose && logs.info('Bundling directory ' + ret.pushdir + ' (~' + humanize.filesize(ret.size) + ')');
 
   // Create archive and deploy it to tessel.
-  tessel.bundleFiles(ret.relpath, argv, ret.files, next);
+  tessel.bundleFiles(ret.relpath, argv, ret.files, bundleopts, next);
 }
 
 // client#run(pushpath, args, next(err))
