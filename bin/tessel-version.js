@@ -44,15 +44,17 @@ if (argv.board){
 
       // try to check for the semver
       builds.checkBuildList(client.version.firmware_git, function (builds){
-        var filtered = builds.filter(function(build){
-          if (build.version) return build.version.search(client.version.firmware_git) >= 0
-          return false;
-        });
+        if (builds) {
+          var filtered = builds.filter(function(build){
+            if (build.version && build.url.indexOf('current') == -1) return build.version.search(client.version.firmware_git) >= 0
+            return false;
+          });
 
-        if (filtered.length > 0) {
-          // parse out the semver
-          var ver = filtered[0].url;
-          logs.info("Firmware Build:", ver.substring(ver.lastIndexOf('-')+1, ver.lastIndexOf('.')));
+          if (filtered.length > 0) {
+            // parse out the semver
+            var ver = filtered[0].url;
+            logs.info("Firmware Build:", ver.substring(ver.lastIndexOf('-')+1, ver.lastIndexOf('.')));
+          }
         }
 
         client.close(function () {
