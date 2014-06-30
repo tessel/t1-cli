@@ -43,9 +43,9 @@ if (argv.board){
       logs.info("Runtime Version:", client.version.runtime_git);
 
       // try to check for the semver
-      builds.checkBuildList(client.version.firmware_git, function (builds){
-        if (builds) {
-          var filtered = builds.filter(function(build){
+      builds.checkBuildList(client.version.firmware_git, function (buildRes){
+        if (buildRes) {
+          var filtered = buildRes.filter(function(build){
             if (build.version && build.url.indexOf('current') == -1) return build.version.search(client.version.firmware_git) >= 0
             return false;
           });
