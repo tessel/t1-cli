@@ -10,6 +10,7 @@
 
 var common = require('../src/cli')
   , logs = require('../src/logs')
+  , builds = require('../src/builds')
   ;
 // Setup cli.
 common.basic();
@@ -38,11 +39,31 @@ if (argv.board){
     client.wifiVer(function(err, wifiVer){
       logs.info("Serial #:", client.serialNumber);
       logs.info("Wifi Version:", wifiVer);
-      logs.info("Firmware Version:", client.version.firmware_git);
-      logs.info("Runtime Version:", client.version.runtime_git);
-      client.close(function () {
-        process.exit(0);
+      logs.info("Firmware Commit:", client.version.firmware_git);
+      logs.info("Runtime Commit:", client.version.runtime_git);
+
+      // try to check for the semver
+      builds.checkBuildList(client.version.firmware_git, function (buildRes){
+        if (buildRes) {
+          var filtered = buildRes.filter(function(build){
+            if (build.version && build.url.indexOf('current') == -1) return build.version.search(client.version.firmware_git) >= 0
+            return false;
+          });
+
+          if (filtered.length > 0) {
+            // parse out the semver
+            var ver = filtered[0].url;
+            logs.info("Firmware Build:", ver.substring(ver.lastIndexOf('-')+1, ver.lastIndexOf('.')));
+          }
+        } else {
+          logs.warn("Could not look up build server to determine build. You can manually check for the commit hash at https://github.com/tessel/firmware/commits/master");
+        }
+
+        client.close(function () {
+          process.exit(0);
+        });
       });
+      
     });
   });
 } else {
