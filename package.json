@@ -36,7 +36,7 @@
     "read": "^1.0.5",
     "request": "~2.33.0",
     "semver": "^2.3.0",
-    "structured-clone": "~0.2.2",
+    "structured-clone": "git://github.com/johnnyman727/structured-clone.git#master",
     "tar": "~0.1.18",
     "temp": "~0.6.0",
     "usb": "~0.3.11"
@@ -65,7 +65,6 @@
     "read",
     "request",
     "semver",
-    "structured-clone",
     "tar",
     "temp",
     "usb"
