@@ -64,6 +64,11 @@ var argv = require("nomnom")
     flag: true,
     help: '[Tessel] Hide tessel deployment messages.'
   })
+  .option('verbose', {
+    abbr: 'v',
+    flag: true,
+    help: '[Tessel] Show debug messages (such as which files are being bundled).'
+  })
   .option('single', {
     abbr: 's',
     flag: true,
@@ -76,7 +81,10 @@ var argv = require("nomnom")
   })
   .parse();
 
-argv.verbose = !argv.quiet;
+if (argv.verbose && argv.quiet) {
+  argv.quiet = false;
+  logs.warn("Both --verbose and --quiet were specified. Defaulting to --verbose");
+}
 
 function usage () {
   console.error(require('nomnom').getUsage());
@@ -172,10 +180,13 @@ common.controller(true, function (err, client) {
 
   function pushCode(){
     client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || [])
-    ,  argv
+    , { single: argv.single
+        , verbose : argv.verbose
+        , quiet : argv.quiet
+      }
     , function () {
       // script-start emitted.
-      logs.info('Running script...');
+      if (!argv.quiet) logs.info('Running script...');
 
       // Forward pipes.
       client.stdout.resume();
@@ -189,7 +200,7 @@ common.controller(true, function (err, client) {
       process.on('SIGINT', function() {
         setTimeout(function () {
           // timeout :|
-          logs.info('Script aborted');
+          if (!argv.quiet) logs.info('Script aborted');
           process.exit(131);
         }, 200);
         client.stop();
@@ -211,7 +222,7 @@ common.controller(true, function (err, client) {
         try {
           var packet = require('structured-clone').deserialize(data);
           fs.writeFileSync(path.resolve(upload_dir, path.basename(packet.filename)), packet.buffer);
-          logs.info(util.format(packet.filename, 'saved to', upload_dir));
+          if (!argv.quiet) logs.info(util.format(packet.filename, 'saved to', upload_dir));
         } catch (e) {
           logs.err('invalid sendfile packet received.');
         }
