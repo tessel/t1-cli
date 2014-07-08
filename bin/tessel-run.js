@@ -59,6 +59,10 @@ var argv = require("nomnom")
     flag: true,
     help: 'Lists which files are being bundled during the push'
   })
+  .option('listen', {
+    abbr: 'l',
+    help: 'Listen and display specific logs. "--listen all" outputs all logs.'
+  })
   .option('quiet', {
     abbr: 'q',
     flag: true,
@@ -140,6 +144,13 @@ function interactiveClient (client)
 }
 
 common.controller(true, function (err, client) {
+  if (argv.listen == 'all') {
+    console.log('')
+    client.listen(true)
+  } else if ('listen' in argv) {
+    client.listen(true, String(argv.listen).split(/,/).map(parseInt));
+  }
+
   client.on('error', function (err) {
     if (err.code == 'ENOENT') {
       logs.err('Cannot connect to Tessel locally.')
@@ -174,7 +185,7 @@ common.controller(true, function (err, client) {
       // show warning
       logs.warn("There is a newer version of firmware available. You should run \"tessel update\".");
     }
-    
+
     pushCode();
   });
 
@@ -189,10 +200,12 @@ common.controller(true, function (err, client) {
       if (!argv.quiet) logs.info('Running script...');
 
       // Forward pipes.
-      client.stdout.resume();
-      client.stdout.pipe(process.stdout);
-      client.stderr.resume();
-      client.stderr.pipe(process.stderr);
+      if (!('listen' in argv)) {
+        client.stdout.resume();
+        client.stdout.pipe(process.stdout);
+        client.stderr.resume();
+        client.stderr.pipe(process.stderr);
+      }
       process.stdin.resume();
       process.stdin.pipe(client.stdin);
 
@@ -227,7 +240,7 @@ common.controller(true, function (err, client) {
           logs.err('invalid sendfile packet received.');
         }
       });
-      
+
       // repl is implemented in repl/index.js. Uploaded to tessel, it sends a
       // message telling host it's ready, then receives stdin via
       // process.on('message')
@@ -236,5 +249,5 @@ common.controller(true, function (err, client) {
       }
     });
   }
-  
+
 })
