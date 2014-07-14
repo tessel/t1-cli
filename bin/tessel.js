@@ -29,6 +29,7 @@ function usage () {
     "   tessel wifi -l\n" +
     "          see current wifi status\n" + 
     "   tessel stop\n" +
+    "          stop the current script\n" +
     "   tessel check <file>\n" + 
     "          dumps the tessel binary code\n" + 
     // "   tessel dfu-restore [tag]\n" +
