@@ -15,9 +15,6 @@ var Tessel = require('../src/tessel_usb').Tessel;
 var TESSEL_VID = 0x1d50;
 var TESSEL_PID = 0x6097;
 
-var NXP_ROM_VID = 0x1fc9;
-var NXP_ROM_PID = 0x000c;
-
 function fixedWidth(num, len) {
     var s = num.toFixed(0);
     return '          '.slice(0, len - s.length) + s
@@ -29,14 +26,12 @@ function showStatus(pos, len) {
 }
 
 function findDevice() {
-    return usb.findByIds(TESSEL_VID, TESSEL_PID) || usb.findByIds(NXP_ROM_VID, NXP_ROM_PID);
+    return usb.findByIds(TESSEL_VID, TESSEL_PID);
 }
 
 function guessDeviceState(device) {
     if (!device) {
         return undefined;
-    } else if (device.deviceDescriptor.idProduct === NXP_ROM_PID) {
-        return 'rom';
     } else if (device.deviceDescriptor.bcdDevice>>8 === 0) {
         return 'dfu';
     } else {
@@ -91,38 +86,6 @@ exports.runRam = function(image, next) {
     });
 }
 
-// This file is compiled in the boot/ directory of the Tessel firmware source
-var stage2_image = __dirname + '/stage2.bin';
-
-/// Use image_filename to boot the device via the ROM bootloader
-exports.romBoot = function(device, image_filename, callback) {
-    var dfu = new DFU(device);
-
-    var image = fs.readFileSync(image_filename);
-    var header = new Buffer(16);
-    header.fill(0)
-    header.writeUInt8(0xda, 0);
-    header.writeUInt8(0xff, 1);
-    header.writeUInt16LE(Math.floor(image.length / 512)+1, 2);
-    header.writeUInt32LE(0xFFFFFFFF, 12);
-
-    dfu.claim(function (e) {
-        if (e) throw e;
-        dfu.dnload(Buffer.concat([header, image]), callback);
-    });
-}
-
-exports.runNXP = function (image_filename) {
-    var device = findDevice();
-    if (guessDeviceState(device) !== 'rom') {
-        console.log("Not in ROM bootloader");
-        process.exit(1);
-    }
-    exports.romBoot(device, image_filename, function () {
-        console.log("Done");
-    });
-}
-
 function waitForBootloader(callback) {
     process.stdout.write("Waiting for bootloader....\n");
 
@@ -166,11 +129,6 @@ exports.enterStage2 = function(callback) {
                 waitForBootloader(callback);
             })
         })
-    } else if (state === 'rom') {
-        process.stdout.write("Loading flash bootloader...\n");
-        exports.romBoot(device, stage2_image, function() {
-            waitForBootloader(callback);
-        });
     } else if (state === 'dfu') {
         callback(device);
     }

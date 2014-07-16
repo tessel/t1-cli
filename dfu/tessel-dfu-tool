@@ -26,9 +26,7 @@ if (!file) {
   usage();
 }
 
-if (op === "run_bl") {
-	tessel_dfu.runNXP(file);
-} else if (op === "read") {
+if (op === "read") {
 	tessel_dfu.read(file);
 } else if (op === "write") {
 	tessel_dfu.write(fs.readFileSync(file));
