@@ -39,21 +39,6 @@ function guessDeviceState(device) {
     }
 }
 
-/// Read flash to `filename`
-exports.read = function(filename) {
-    exports.enterStage2(function(device) {
-        var dfu = new DFU(device);
-        console.log("Reading flash...")
-        dfu.upload(function(error, data){
-            if (error) {
-                return console.log('read error', error);
-            }
-            fs.writeFileSync(filename, data);
-            console.log("Wrote ", filename)
-        });
-    });
-}
-
 /// Write `filename` to flash
 exports.write = function(image, next) {
     exports.enterStage2(function(device) {

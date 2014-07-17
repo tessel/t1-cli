@@ -26,9 +26,7 @@ if (!file) {
   usage();
 }
 
-if (op === "read") {
-	tessel_dfu.read(file);
-} else if (op === "write") {
+if (op === "write") {
 	tessel_dfu.write(fs.readFileSync(file));
 } else if (op === "run_ram") {
 	tessel_dfu.runRam(fs.readFileSync(file));
