@@ -106,7 +106,6 @@ exports.enterStage2 = function(callback) {
 
     if (state === 'app'){
         var t = new Tessel(device);
-        t.rx = false;
         t.init(function() {
             t.claim(true, function(e) {
                 if (e) throw e;

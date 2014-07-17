@@ -24,17 +24,14 @@ var REQ_CC = 0x21;
 var VENDOR_REQ_OUT = usb.LIBUSB_REQUEST_TYPE_VENDOR | usb.LIBUSB_RECIPIENT_DEVICE | usb.LIBUSB_ENDPOINT_OUT;
 var VENDOR_REQ_IN  = usb.LIBUSB_REQUEST_TYPE_VENDOR | usb.LIBUSB_RECIPIENT_DEVICE | usb.LIBUSB_ENDPOINT_IN;
 
-
 var usb_debug = parseInt(process.env.TESSEL_USB_DEBUG, 10);
 if (usb_debug) {
   console.log("USB debug level", usb_debug);
   usb.setDebugLevel(usb_debug);
 }
 
-
 function Tessel(dev) {
   this.usb = dev;
-  this.rx = true;
 }
 
 exports.Tessel = Tessel;
@@ -53,7 +50,6 @@ Tessel.prototype.init = function init(next) {
   }
   this.initCommands();
 
-  this.logColors = true;
   this.logLevels = [];
 
   this.usb.getStringDescriptor(this.usb.deviceDescriptor.iSerialNumber, function (error, data) {
@@ -111,10 +107,8 @@ Tessel.prototype.claim = function claim(stop, next) {
 
         self.usb.timeout = 10000;
 
-        if (self.rx) {
-          self._receiveLogs();
-          self._receiveMessages();
-        }
+        self._receiveLogs();
+        self._receiveMessages();
 
         self.emit('claimed');
       });
@@ -135,8 +129,7 @@ Tessel.prototype.close = function close (next) {
   }.bind(this));
 }
 
-Tessel.prototype.listen = function listen(colors, levels) {
-  this.logColors = colors;
+Tessel.prototype.listen = function listen(deprecated, levels) {
   this.logLevels = levels;
 }
 
