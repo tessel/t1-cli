@@ -280,21 +280,34 @@ Tessel.prototype.wifiVer = function (next) {
 exports.findTessel = function findTessel(opts, next) {
   if (opts.stop   === undefined) opts.stop = false;
   if (opts.serial === undefined) opts.serial = null;
+  if (opts.claim  === undefined) opts.claim = true;
 
-  exports.listDevices(function (err, devices) {
+  deviceBySerial(opts.serial, function (err, device) {
     if (err) return next(err);
-
-    for (var i=0; i<devices.length; i++) {
-      if (!opts.serial || opts.serial === devices[i].serialNumber) {
-        devices[i].claim(opts.stop, function(err) {
-          if (err) return next(err);
-          return next(null, devices[i]);
-        });
-        return;
-      }
+    if (!device) {
+      return next(opts.serial?"Device not found.":"No devices found.", null);
     }
 
-    return next(opts.serial?"Device not found.":"No devices found.", null);
+    if (opts.claim) {
+      device.claim(opts.stop, function(err) {
+        if (err) return next(err);
+        return next(null, device);
+      });
+    } else {
+      return next(null, device);
+    }
+  });
+}
+
+function deviceBySerial(serial, next) {
+  exports.listDevices(function (err, devices) {
+    if (err) return next(err);
+    for (var i=0; i<devices.length; i++) {
+      if (!serial || serial === devices[i].serialNumber) {
+        return next(null, devices[i])
+      }
+    }
+    return next(null, null);
   });
 }
 
