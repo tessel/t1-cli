@@ -155,7 +155,14 @@ prototype.initCommands = function () {
 }
 
 prototype.enterBootloader = function (next) {
-  commands.enterBootloader(this, next);
+  var self = this;
+  self.claim(true, function() {
+    commands.enterBootloader(self, function(err) {
+      if (err) return next && next(err);
+      self.reFind('boot', next);
+    });
+    self.close();
+  });
 };
 
 prototype.ping = function (opts, next) {

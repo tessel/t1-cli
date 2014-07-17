@@ -8,6 +8,7 @@
 // except according to those terms.
 
 var usb = 'MOCK_USB' in process.env ? {} : require('usb');
+var DFU = require('../dfu/dfu');
 var util = require('util');
 var async = require('async');
 var EventEmitter = require('events').EventEmitter;
@@ -51,6 +52,54 @@ TesselBase.prototype.init = function init(next) {
     self.serialNumber = data;
     next(null, self);
   })
+}
+
+// Wait for this device to reconnect in the specified mode
+TesselBase.prototype.reFind = function reFind(desiredMode, next) {
+  var retrycount = 16;
+  function retry (error) {
+    deviceBySerial(this.serialNumber, function(err, device) {
+      if (err) return next(err);
+      if (device && device.mode === desiredMode) {
+        return next(null, device);
+      } else if (--retrycount > 0) {
+        return setTimeout(retry, 500);
+      } else {
+        var mode = device ? "In " + device.mode + " mode." : "Device not found.";
+        return next("Timed out waiting to switch to " + desiredMode + " mode."  + msg);
+      }
+    });
+  }  
+  setTimeout(retry, 1000);
+}
+
+// A Tessel in bootloader (DFU) mode
+function TesselBoot(dev) {
+  this.usb = dev;
+  this.mode = 'boot';
+}
+util.inherits(TesselBoot, TesselBase);
+
+TesselBoot.prototype.dnload = function(iface, image, next, statuscb) {
+  var dfu = new DFU(this.usb, iface);
+  dfu.claim(function (e) {
+    if (e) return next(e);
+    dfu.dnload(image, next, statuscb);
+  });
+}
+
+TesselBoot.prototype.runRam = function runRam(image, next, statuscb) {
+  this.dnload(1, image, next, statuscb);
+}
+
+TesselBoot.prototype.writeFlash = function writeFlash(image, next, statuscb) {
+  this.dnload(0, image, next, statuscb);
+}
+
+TesselBoot.prototype.enterBootloader = function (next) {
+  var self = this;
+  // No-op so mode doesn't have to be checked
+  setImmediate(function() { next(null, self); });
 }
 
 // A Tessel in normal app mode
@@ -281,6 +330,7 @@ exports.findTessel = function findTessel(opts, next) {
   if (opts.stop   === undefined) opts.stop = false;
   if (opts.serial === undefined) opts.serial = null;
   if (opts.claim  === undefined) opts.claim = true;
+  if (opts.appMode  === undefined) opts.appMode = true;
 
   deviceBySerial(opts.serial, function (err, device) {
     if (err) return next(err);
@@ -288,7 +338,12 @@ exports.findTessel = function findTessel(opts, next) {
       return next(opts.serial?"Device not found.":"No devices found.", null);
     }
 
-    if (opts.claim) {
+    // Bootloader can't currently switch to app mode without flashing something...
+    if (opts.appMode && device.mode !== 'app') {
+      return next("An update failed to complete. Press the reset button and try again", null);
+    }
+
+    if (opts.claim && device.mode === 'app') {
       device.claim(opts.stop, function(err) {
         if (err) return next(err);
         return next(null, device);
@@ -314,7 +369,9 @@ function deviceBySerial(serial, next) {
 exports.listDevices = function listDevices(next) {
   var devices = usb.getDeviceList().map(function(dev) {
     if ((dev.deviceDescriptor.idVendor == TESSEL_VID) && (dev.deviceDescriptor.idProduct == TESSEL_PID)) {
-      if (dev.deviceDescriptor.bcdDevice >> 8 != 0) { // Exclude devices in bootloader mode
+      if (dev.deviceDescriptor.bcdDevice >> 8 == 0) {
+        return new TesselBoot(dev);
+      } else {
         return new Tessel(dev);
       }
     }

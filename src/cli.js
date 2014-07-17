@@ -50,6 +50,16 @@ var header = {
   }
 }
 
+function fixedWidth(num, len) {
+    var s = num.toFixed(0);
+    return '          '.slice(0, len - s.length) + s
+}
+
+exports.showStatus = function showStatus(pos, len) {
+    var percent = fixedWidth(pos/len*100, 3);
+    process.stdout.write("Writing: " + percent + "%  " + fixedWidth(pos,7) + " /" + fixedWidth(len,7) + '\r')
+}
+
 function controller (options, next)
 {
   header.init();
