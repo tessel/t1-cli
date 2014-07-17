@@ -64,6 +64,8 @@ function controller (options, next)
 {
   header.init();
 
+  options.serial = options.serial || process.env.TESSEL_SERIAL;
+
   tessel.findTessel(options, function (err, client) {
     if (!client || err) {
       logs.err(err);
