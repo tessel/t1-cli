@@ -30,15 +30,12 @@ if (usb_debug) {
   usb.setDebugLevel(usb_debug);
 }
 
-function Tessel(dev) {
-  this.usb = dev;
-}
 
-exports.Tessel = Tessel;
+// Common base support for bootloader and app mode
+function TesselBase() {}
+util.inherits(TesselBase, EventEmitter);
 
-util.inherits(Tessel, EventEmitter);
-
-Tessel.prototype.init = function init(next) {
+TesselBase.prototype.init = function init(next) {
   var self = this;
   try {
     this.usb.open();
@@ -48,20 +45,35 @@ Tessel.prototype.init = function init(next) {
     }
     return next(e)
   }
-  this.initCommands();
-
-  this.logLevels = [];
-
+  
   this.usb.getStringDescriptor(this.usb.deviceDescriptor.iSerialNumber, function (error, data) {
     if (error) return next(error);
     self.serialNumber = data;
-    self._info(function(err, info) {
-      if (err) return next(error);
-      self.version = info;
-      next(null, self);
-    })
+    next(null, self);
   })
 }
+
+// A Tessel in normal app mode
+function Tessel(dev) {
+  this.usb = dev;
+  this.mode = 'app';
+}
+util.inherits(Tessel, TesselBase);
+exports.Tessel = Tessel;
+
+Tessel.prototype.init = function init(next) {
+  var self = this;
+  this.logLevels = [];
+
+  TesselBase.prototype.init.call(this, function() {
+    // Fetch version info from the device
+    self._info(function(err, info) {
+      if (err) return next(err);
+      self.version = info;
+      next(null, self);
+    });
+  });
+};
 
 Tessel.prototype.claim = function claim(stop, next) {
   // Runs the claiming procedure exactly once, and calls next after it has completed
@@ -73,7 +85,8 @@ Tessel.prototype.claim = function claim(stop, next) {
       return setImmediate(next);
     }
   }
-
+  
+  this.initCommands();
   this.once('claimed', next);
 
   if (!this.claimed) {
