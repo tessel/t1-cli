@@ -68,6 +68,7 @@ var builtinCommands = {
   'version': 'version',
   'wifi': 'wifi',
   'install-drivers': 'install-drivers',
+  'boot': 'boot',
 }
 
 if (process.argv.length < 3 || !builtinCommands[process.argv[2]]) {
