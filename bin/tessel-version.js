@@ -35,7 +35,7 @@ function usage () {
 }
 
 if (argv.board){
-  common.controller(true, function (err, client) {
+  common.controller({stop: true}, function (err, client) {
     client.wifiVer(function(err, wifiVer){
       logs.info("Serial #:", client.serialNumber);
       logs.info("Wifi Version:", wifiVer);

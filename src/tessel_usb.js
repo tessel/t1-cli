@@ -277,18 +277,16 @@ Tessel.prototype.wifiVer = function (next) {
   });
 }
 
-exports.findTessel = function findTessel(desiredSerial, stop, next) {
-  if (typeof stop === 'function' && typeof next === 'undefined') {
-    next = stop;
-    stop = false;
-  }
+exports.findTessel = function findTessel(opts, next) {
+  if (opts.stop   === undefined) opts.stop = false;
+  if (opts.serial === undefined) opts.serial = null;
 
   exports.listDevices(function (err, devices) {
     if (err) return next(err);
 
     for (var i=0; i<devices.length; i++) {
-      if (!desiredSerial || desiredSerial == devices[i].serialNumber) {
-        devices[i].claim(stop, function(err) {
+      if (!opts.serial || opts.serial === devices[i].serialNumber) {
+        devices[i].claim(opts.stop, function(err) {
           if (err) return next(err);
           return next(null, devices[i]);
         });
@@ -296,7 +294,7 @@ exports.findTessel = function findTessel(desiredSerial, stop, next) {
       }
     }
 
-    return next(desiredSerial?"Device not found.":"No devices found.", null);
+    return next(opts.serial?"Device not found.":"No devices found.", null);
   });
 }
 

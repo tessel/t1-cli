@@ -63,7 +63,7 @@ function usage () {
   process.exit(1);
 }
 
-common.controller(false, function (err, client) {
+common.controller({stop: false}, function (err, client) {
   if (argv.list) {
     client.listen(true, null); // TODO: should use [20, 21, 22, 86] once firmware logs at the right level
     client.wifiStatus(function (err, data) {

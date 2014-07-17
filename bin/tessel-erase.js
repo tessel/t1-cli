@@ -35,7 +35,7 @@ if (argv.force) {
     logs.info('Tessel filesystem erased.');
   });
 } else {
-  common.controller(true, function (err, client) {
+  common.controller({ stop: true }, function (err, client) {
     client.erase(function () {
       logs.info('Attempting to erase Tessel filesystem.');
       logs.info("If erasing failed try running \"tessel erase --force\"");

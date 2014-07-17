@@ -50,16 +50,11 @@ var header = {
   }
 }
 
-function controller (stop, next)
+function controller (options, next)
 {
   header.init();
 
-  if (typeof stop === 'function' && typeof next === 'undefined') {
-    next = stop;
-    stop = false;
-  }
-
-  tessel.findTessel(null, stop, function (err, client) {
+  tessel.findTessel(options, function (err, client) {
     if (!client || err) {
       logs.err(err);
       process.exit(1);

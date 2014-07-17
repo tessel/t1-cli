@@ -19,7 +19,7 @@ var logs = require('../src/logs')
 // Setup cli.
 common.basic();
 
-common.controller(true, function (err, client) {
+common.controller({stop: true}, function (err, client) {
   client.listen(true, [10, 11, 12, 13, 20, 21, 22])
   client.on('error', function (err) {
     if (err.code == 'ENOENT') {

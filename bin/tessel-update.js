@@ -239,7 +239,7 @@ if (argv.list){
     // looks like they've run it in dfu mode, don't bother with common
     update(null, 0);
   } else {
-    common.controller(function (err, client) {
+    common.controller({stop: false}, function (err, client) {
 
       if (!err) {
         // client.listen(true);
