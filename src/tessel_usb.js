@@ -8,7 +8,7 @@
 // except according to those terms.
 
 var usb = 'MOCK_USB' in process.env ? {} : require('usb');
-var DFU = require('../dfu/dfu');
+var DFU = 'MOCK_USB' in process.env ? {} : require('../dfu/dfu');
 var util = require('util');
 var async = require('async');
 var EventEmitter = require('events').EventEmitter;
