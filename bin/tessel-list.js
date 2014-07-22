@@ -18,6 +18,6 @@ common.basic();
 
 tesselClient.listDevices(function (err, devices) {
   devices.map(function (device) {
-    logs.info(device.serialNumber);
+    console.log(device.serialNumber);
   });
 })

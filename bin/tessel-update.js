@@ -14,7 +14,6 @@ var os = require("os")
   , request = require('request')
   , fs = require('fs')
   , colors = require('colors')
-  , tessel_dfu = require('../dfu/tessel-dfu')
   , builds = require('../src/builds')
   , logs = require('../src/logs')
   , semver = require('semver')
@@ -55,130 +54,125 @@ function usage(){
   process.exit(1);
 }
 
-function restore(buff, client, next){
-  // check to make sure buffer is valid
-  if (!builds.isValid(buff)){
-    logs.err("file is not a valid firmware image");
-    return next && next(err)
-  }
-
-  logs.info("Updating firmware... please wait. Tessel will reset itself after the update");
-  client && client.close();
-
-  if (client){
-    client.on('close', function(){
-      next && next();
-    })
+function done(err) {
+  if (err) {
+    logs.err(err.stack);
+    process.exit(1);
   } else {
-    next && next();
+    logs.info("Complete")
   }
 }
 
-function restoreBuild(buff, client, next){
-  restore(buff, client, function(){
-    tessel_dfu.write(buff, next);
-  });
-}
-
-function restoreRam(buff, client, next){
-  restore(buff, client, function(){
-    tessel_dfu.runRam(buff, function(){
-      logs.info("Wifi patch uploaded... waiting for it to apply (10s)");
+function fetchBuild(path, next) {
+  if (isUrl(path)) {
+    logs.info('Downloading remote file', path);
+    builds.getBuild(path, check);
+  } else {
+    logs.info('Using local file', path);
+    fs.readFile(path, check);
+  }
   
-      var holdUp = setInterval(function(){
-        logs.info("...");
-      }, 2000);
-
-      setTimeout(function(){
-        clearInterval(holdUp);
-        logs.info("... Done");
-      }, 12500);
-    });
-  });
+  function check(err, buf) {
+    if (err) return next(err);
+    if (builds.isValid(buf)) {
+      next(null, buf);
+    } else {
+      next(new Error("file is not a valid firmware image"));
+    }
+  }
 }
+
 
 function applyBuild(url, client, next){
-  logs.info("Downloading firmware from "+url);
-  builds.getBuild(url, function(err, buff){
-    if (!err){
-      restoreBuild(buff, client, next);
-    } else {
-      throw err;
-    }
+  fetchBuild(url, function(err, buff){
+    if (err) return next(err);
+    logs.info("Updating firmware... please wait. Tessel will reset itself after the update");
+    
+    client.enterBootloader(function(err, bl) {
+      if (err) return next(err);
+      bl.writeFlash(buff, function() {
+        if (next) {
+          bl.reFind('app', next);
+        }
+      }, common.showStatus);
+    });
+
   });
 }
 
 function applyRam(url, client, next){
-  logs.info("Downloading wifi patch from "+url);
-  builds.getBuild(url, function(err, buff){
-    if (!err){
-      restoreRam(buff, client);
-    } else {
-      throw err;
-    }
-  });
-}
+  fetchBuild(url, function(err, buff){
+    if (err) return next(err);
 
-function isLocalPath (str) {
-  return str.match(/^[\.\/\\]/);
+    client.enterBootloader(function(err, bl) {
+      if (err) return next(err);
+      
+      bl.runRam(buff, function (e) {
+        logs.info("Wifi patch uploaded... waiting for it to apply (10s)");
+
+        var holdUp = setInterval(function(){
+          logs.info("...");
+        }, 2000);
+
+        setTimeout(function(){
+          clearInterval(holdUp);
+          logs.info("");
+          if (next) {
+            bl.reFind('app', next);
+          }
+        }, 12500);
+      });
+    });
+  });
 }
 
 function isUrl (str){
   return str.match(/^(ftp|http|https):\/\//);
 }
 
-function update(client, wifiVer) {
-  if (argv._.length > 0) {
-    var updateVer = argv._[0];
-    if (isUrl(updateVer)) {
-      // if it's a custom url
-      logs.info('Downloading remote file', updateVer);
-      applyBuild(updateVer, client);
-      return;
-    } else if (isLocalPath(updateVer)){
-      // if it's a local path just send this file
-      logs.info('Using local file', updateVer);
-      restoreBuild(fs.readFileSync(updateVer), client);
-      return;
-    }
-  }
-
-  // Use registry.
-  if (argv.build) { 
+function update(client) {
+  if (argv._.length > 0) { // The user requested a specific file
+    applyBuild(argv._[0], client, done);
+  } else if (argv.build) { 
     // rebuild url and download by build number
-    applyBuild(builds.utils.buildsPath+"firmware/tessel-firmware-"+argv.build+".bin", client);
+    applyBuild(builds.utils.buildsPath+"firmware/tessel-firmware-"+argv.build+".bin", client, done);
   } else if (argv.wifi) {
     // apply the wifi build
-    applyRam(builds.utils.buildsPath+"wifi/"+argv.wifi+".bin", client);
-  
+    applyRam(builds.utils.buildsPath+"wifi/"+argv.wifi+".bin", client, done);
   } else {
     // if there's only 2 args apply latest firmware patch
     logs.info("Checking for latest firmware... ");
-    builds.checkBuildList(client == null ? null : client.version, function (allBuilds, needUpdate){
+    builds.checkBuildList(client == null ? null : client.version, function (allBuilds, needUpdate) {
       if (!allBuilds) {
         // no builds?
         logs.err("No builds were found");
-        return client && client.close();
+        client && client.close();
+        return;
       }
       if (needUpdate || argv.force) {
-        
-        // check if we need a wifi update
-        var wifiUpdate = function (){};
-        if ( (argv.dfu && argv.wifi) || // if its in dfu mode and a wifi flag is passed, do both updates
-          (allBuilds[0].wifi && Number(wifiVer) != Number(allBuilds[0].wifi)) ){ // otherwise only update if version is outdated
-         
-          logs.info("Wifi version is also outdated, applying wifi patch after firmware.");
-
-          wifiUpdate = function(){
-            // wait for reboot and reacquire tessel
-            setTimeout(function(){
-              applyRam(builds.utils.buildsPath+"wifi/"+allBuilds[0].wifi+".bin", null);
-            }, 1000);
-            
-          }
+        if (client.mode == 'app') {
+          client.wifiVer( function(err, wifiVer) {
+            if (err) return done(err);
+              
+            if (wifiVer === '0.0') {
+              logs.err("Error retrieving WiFi version");
+              step(null, client);
+            } else if (allBuilds[0].wifi && Number(wifiVer) != Number(allBuilds[0].wifi)) {
+              logs.info("Wifi version is also outdated.");
+              applyRam(builds.utils.buildsPath+"wifi/"+allBuilds[0].wifi+".bin", client, step);
+            } else {
+                step(null, client);
+            }
+          });
+        } else {
+          logs.info("Already in bootloader mode: could not check WiFi version.")
+          step(null, client);
         }
-
-        applyBuild(builds.utils.buildsPath+allBuilds[0].url, client, wifiUpdate);
+        
+        function step(err, newClient) {
+          if (err) return done(err);
+          applyBuild(builds.utils.buildsPath+allBuilds[0].url, newClient, done);
+        }
         
       } else {
         // already at latest build
@@ -232,32 +226,9 @@ if (argv.list){
   });
 
 } else {
-  // check for dfu mode
-  var device = tessel_dfu.findDevice();
-  var state = tessel_dfu.guessDeviceState(device);
-  if (state == 'dfu' || state == 'rom' || argv.dfu){
-    // looks like they've run it in dfu mode, don't bother with common
-    update(null, 0);
-  } else {
-    common.controller(function (err, client) {
-
-      if (!err) {
-        // client.listen(true);
-
-        client.on('error', function (err) {
-          if (err.code == 'ENOENT') {
-            logs.err('Cannot connect to Tessel locally.')
-          } else {
-            console.error(err);
-          }
-        });
-
-        client.wifiVer(function(err, wifiVer){
-          update(client, wifiVer);
-        });
-      } 
-      
-    });
-  }
+  common.controller({stop: true, appMode: false}, function (err, client) {
+    if (err) throw err;
+    update(client);
+  });
 }
 

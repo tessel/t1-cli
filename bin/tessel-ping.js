@@ -19,7 +19,7 @@ var common = require('../src/cli');
 // Setup cli.
 common.basic();
 
-common.controller(true, function (err, client) {
+common.controller({stop: true}, function (err, client) {
   (function loop () {
     logs.info('ping...');
     client.ping(function pong (err, data) {

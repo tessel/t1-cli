@@ -166,7 +166,7 @@ tessel.Tessel.prototype.run = function (pushpath, argv, bundleopts, next)
 
 function script (pushpath, args, next)
 {
-  tessel.findTessel(null, function (err, client) {
+  tessel.findTessel({}, function (err, client) {
     // client.listen(true, [10, 11, 12, 13, 20, 21, 22])
 
     if (err) {

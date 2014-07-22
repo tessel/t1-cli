@@ -8,17 +8,23 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+var fs = require('fs')
+  , logs = require('../src/logs')
+  ;
+
 var common = require('../src/cli')
 
 // Setup cli.
 common.basic();
 
-common.controller({stop:false}, function (err, client) {
-  console.log('Requesting stack trace from Tessel...'.grey);
-
-  client.debugstack(function(err, stack) {
-    if (err) throw err;
-    console.log(stack || "Not running");
-    client.close();
-  })
-})
+var fname = process.argv[2];
+var image = fs.readFileSync(fname);
+  
+common.controller({ stop: true, appMode: false }, function (err, client) {
+  if (err) return logs.error(err);
+  client.enterBootloader(function(err, bl) {
+    if (err) return logs.error(err);
+    bl.runRam(image);
+    logs.info("Running ", fname);
+  });
+});

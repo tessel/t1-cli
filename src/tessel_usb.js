@@ -8,6 +8,7 @@
 // except according to those terms.
 
 var usb = 'MOCK_USB' in process.env ? {} : require('usb');
+var DFU = 'MOCK_USB' in process.env ? {} : require('../dfu/dfu');
 var util = require('util');
 var async = require('async');
 var EventEmitter = require('events').EventEmitter;
@@ -24,7 +25,6 @@ var REQ_CC = 0x21;
 var VENDOR_REQ_OUT = usb.LIBUSB_REQUEST_TYPE_VENDOR | usb.LIBUSB_RECIPIENT_DEVICE | usb.LIBUSB_ENDPOINT_OUT;
 var VENDOR_REQ_IN  = usb.LIBUSB_REQUEST_TYPE_VENDOR | usb.LIBUSB_RECIPIENT_DEVICE | usb.LIBUSB_ENDPOINT_IN;
 
-
 var usb_debug = parseInt(process.env.TESSEL_USB_DEBUG, 10);
 if (usb_debug) {
   console.log("USB debug level", usb_debug);
@@ -32,16 +32,11 @@ if (usb_debug) {
 }
 
 
-function Tessel(dev) {
-  this.usb = dev;
-  this.rx = true;
-}
+// Common base support for bootloader and app mode
+function TesselBase() {}
+util.inherits(TesselBase, EventEmitter);
 
-exports.Tessel = Tessel;
-
-util.inherits(Tessel, EventEmitter);
-
-Tessel.prototype.init = function init(next) {
+TesselBase.prototype.init = function init(next) {
   var self = this;
   try {
     this.usb.open();
@@ -51,21 +46,83 @@ Tessel.prototype.init = function init(next) {
     }
     return next(e)
   }
-  this.initCommands();
-
-  this.logColors = true;
-  this.logLevels = [];
-
+  
   this.usb.getStringDescriptor(this.usb.deviceDescriptor.iSerialNumber, function (error, data) {
     if (error) return next(error);
     self.serialNumber = data;
-    self._info(function(err, info) {
-      if (err) return next(error);
-      self.version = info;
-      next(null, self);
-    })
+    next(null, self);
   })
 }
+
+// Wait for this device to reconnect in the specified mode
+TesselBase.prototype.reFind = function reFind(desiredMode, next) {
+  var retrycount = 16;
+  function retry (error) {
+    deviceBySerial(this.serialNumber, function(err, device) {
+      if (err) return next(err);
+      if (device && device.mode === desiredMode) {
+        return next(null, device);
+      } else if (--retrycount > 0) {
+        return setTimeout(retry, 500);
+      } else {
+        var mode = device ? "In " + device.mode + " mode." : "Device not found.";
+        return next("Timed out waiting to switch to " + desiredMode + " mode."  + msg);
+      }
+    });
+  }  
+  setTimeout(retry, 1000);
+}
+
+// A Tessel in bootloader (DFU) mode
+function TesselBoot(dev) {
+  this.usb = dev;
+  this.mode = 'boot';
+}
+util.inherits(TesselBoot, TesselBase);
+
+TesselBoot.prototype.dnload = function(iface, image, next, statuscb) {
+  var dfu = new DFU(this.usb, iface);
+  dfu.claim(function (e) {
+    if (e) return next(e);
+    dfu.dnload(image, next, statuscb);
+  });
+}
+
+TesselBoot.prototype.runRam = function runRam(image, next, statuscb) {
+  this.dnload(1, image, next, statuscb);
+}
+
+TesselBoot.prototype.writeFlash = function writeFlash(image, next, statuscb) {
+  this.dnload(0, image, next, statuscb);
+}
+
+TesselBoot.prototype.enterBootloader = function (next) {
+  var self = this;
+  // No-op so mode doesn't have to be checked
+  setImmediate(function() { next(null, self); });
+}
+
+// A Tessel in normal app mode
+function Tessel(dev) {
+  this.usb = dev;
+  this.mode = 'app';
+}
+util.inherits(Tessel, TesselBase);
+exports.Tessel = Tessel;
+
+Tessel.prototype.init = function init(next) {
+  var self = this;
+  this.logLevels = [];
+
+  TesselBase.prototype.init.call(this, function() {
+    // Fetch version info from the device
+    self._info(function(err, info) {
+      if (err) return next(err);
+      self.version = info;
+      next(null, self);
+    });
+  });
+};
 
 Tessel.prototype.claim = function claim(stop, next) {
   // Runs the claiming procedure exactly once, and calls next after it has completed
@@ -77,7 +134,8 @@ Tessel.prototype.claim = function claim(stop, next) {
       return setImmediate(next);
     }
   }
-
+  
+  this.initCommands();
   this.once('claimed', next);
 
   if (!this.claimed) {
@@ -111,10 +169,8 @@ Tessel.prototype.claim = function claim(stop, next) {
 
         self.usb.timeout = 10000;
 
-        if (self.rx) {
-          self._receiveLogs();
-          self._receiveMessages();
-        }
+        self._receiveLogs();
+        self._receiveMessages();
 
         self.emit('claimed');
       });
@@ -135,8 +191,7 @@ Tessel.prototype.close = function close (next) {
   }.bind(this));
 }
 
-Tessel.prototype.listen = function listen(colors, levels) {
-  this.logColors = colors;
+Tessel.prototype.listen = function listen(deprecated, levels) {
   this.logLevels = levels;
 }
 
@@ -271,33 +326,52 @@ Tessel.prototype.wifiVer = function (next) {
   });
 }
 
-exports.findTessel = function findTessel(desiredSerial, stop, next) {
-  if (typeof stop === 'function' && typeof next === 'undefined') {
-    next = stop;
-    stop = false;
-  }
+exports.findTessel = function findTessel(opts, next) {
+  if (opts.stop   === undefined) opts.stop = false;
+  if (opts.serial === undefined) opts.serial = null;
+  if (opts.claim  === undefined) opts.claim = true;
+  if (opts.appMode  === undefined) opts.appMode = true;
 
-  exports.listDevices(function (err, devices) {
+  deviceBySerial(opts.serial, function (err, device) {
     if (err) return next(err);
-
-    for (var i=0; i<devices.length; i++) {
-      if (!desiredSerial || desiredSerial == devices[i].serialNumber) {
-        devices[i].claim(stop, function(err) {
-          if (err) return next(err);
-          return next(null, devices[i]);
-        });
-        return;
-      }
+    if (!device) {
+      return next(opts.serial?"Device matching serial " + opts.serial + " not found.":"No devices found.", null);
     }
 
-    return next(desiredSerial?"Device not found.":"No devices found.", null);
+    // Bootloader can't currently switch to app mode without flashing something...
+    if (opts.appMode && device.mode !== 'app') {
+      return next("An update failed to complete. Press the reset button and try again", null);
+    }
+
+    if (opts.claim && device.mode === 'app') {
+      device.claim(opts.stop, function(err) {
+        if (err) return next(err);
+        return next(null, device);
+      });
+    } else {
+      return next(null, device);
+    }
+  });
+}
+
+function deviceBySerial(serial, next) {
+  exports.listDevices(function (err, devices) {
+    if (err) return next(err);
+    for (var i=0; i<devices.length; i++) {
+      if (!serial || serial === devices[i].serialNumber) {
+        return next(null, devices[i])
+      }
+    }
+    return next(null, null);
   });
 }
 
 exports.listDevices = function listDevices(next) {
   var devices = usb.getDeviceList().map(function(dev) {
     if ((dev.deviceDescriptor.idVendor == TESSEL_VID) && (dev.deviceDescriptor.idProduct == TESSEL_PID)) {
-      if (dev.deviceDescriptor.bcdDevice >> 8 != 0) { // Exclude devices in bootloader mode
+      if (dev.deviceDescriptor.bcdDevice >> 8 == 0) {
+        return new TesselBoot(dev);
+      } else {
         return new Tessel(dev);
       }
     }

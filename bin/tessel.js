@@ -19,7 +19,7 @@ function usage () {
     "          -s push the specified file only (rather than associated files and modules)\n" + 
     "   tessel push <filename> [options]\n" +
     "          see 'tessel push --help' for options list\n" +
-    "   tessel erase [--force]\n" +
+    "   tessel erase\n" +
     "          erases saved usercode (JavaScript) on Tessel\n" +
     "   tessel repl\n" +
     "          interactive JavaScript shell\n" +
@@ -68,6 +68,7 @@ var builtinCommands = {
   'version': 'version',
   'wifi': 'wifi',
   'install-drivers': 'install-drivers',
+  'boot': 'boot',
 }
 
 if (process.argv.length < 3 || !builtinCommands[process.argv[2]]) {

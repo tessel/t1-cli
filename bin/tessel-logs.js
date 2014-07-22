@@ -23,7 +23,7 @@ var argv = require("nomnom")
   })
   .parse();
 
-common.controller(false, function (err, client) {
+common.controller({stop: false}, function (err, client) {
   if (argv.all){
     client.listen(true);
   } else {

@@ -139,7 +139,7 @@ function interactiveClient (client)
   });
 }
 
-common.controller(true, function (err, client) {
+common.controller({stop: true}, function (err, client) {
   if (argv.listen == 'all') {
     console.log('')
     client.listen(true)

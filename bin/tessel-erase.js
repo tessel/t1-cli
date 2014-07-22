@@ -8,8 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-var tessel_dfu = require('../dfu/tessel-dfu')
-  , fs = require('fs')
+var fs = require('fs')
   , path = require('path')
   , logs = require('../src/logs')
   ;
@@ -26,20 +25,26 @@ var argv = require("nomnom")
   .option('force', {
     abbr: 'f',
     flag: true,
-    help: 'Forces an erase binary onto Tessel. This will erase all user code even if user code is locking up.'
+    hidden: true,
   })
   .parse();
-
-if (argv.force) {
-  tessel_dfu.runRam(fs.readFileSync(erasePath), function(){
-    logs.info('Tessel filesystem erased.');
-  });
-} else {
-  common.controller(true, function (err, client) {
+  
+common.controller({ stop: true, appMode: false }, function (err, client) {
+  if (argv.force) {
+    logs.info("--force is no longer necessary.")
+  }
+  
+  if (client.mode === 'app') {
     client.erase(function () {
       logs.info('Attempting to erase Tessel filesystem.');
-      logs.info("If erasing failed try running \"tessel erase --force\"");
+      logs.info("If erasing failed, press the Reset button while holding down the Config button, then try again");
       client.close();
     }); 
-  });
-}
+  } else if (client.mode === 'boot') {
+    client.runRam(fs.readFileSync(erasePath), function() {
+      logs.info('Tessel filesystem erased.');
+    });
+  } else {
+    logs.error("Unknown device mode: " + client.mode);
+  }
+});

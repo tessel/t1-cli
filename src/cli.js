@@ -50,16 +50,23 @@ var header = {
   }
 }
 
-function controller (stop, next)
+function fixedWidth(num, len) {
+    var s = num.toFixed(0);
+    return '          '.slice(0, len - s.length) + s
+}
+
+exports.showStatus = function showStatus(pos, len) {
+    var percent = fixedWidth(pos/len*100, 3);
+    process.stdout.write("Writing: " + percent + "%  " + fixedWidth(pos,7) + " /" + fixedWidth(len,7) + '\r')
+}
+
+function controller (options, next)
 {
   header.init();
 
-  if (typeof stop === 'function' && typeof next === 'undefined') {
-    next = stop;
-    stop = false;
-  }
+  options.serial = options.serial || process.env.TESSEL_SERIAL;
 
-  tessel.findTessel(null, stop, function (err, client) {
+  tessel.findTessel(options, function (err, client) {
     if (!client || err) {
       logs.err(err);
       process.exit(1);
