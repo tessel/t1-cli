@@ -335,7 +335,7 @@ exports.findTessel = function findTessel(opts, next) {
   deviceBySerial(opts.serial, function (err, device) {
     if (err) return next(err);
     if (!device) {
-      return next(opts.serial?"Device not found.":"No devices found.", null);
+      return next(opts.serial?"Device matching serial " + opts.serial + " not found.":"No devices found.", null);
     }
 
     // Bootloader can't currently switch to app mode without flashing something...
