@@ -128,7 +128,7 @@ tessel.bundleScript = function (pushpath, argv, bundleopts, next)
   if (ret.warning) {
     verbose && logs.warn(ret.warning);
   }
-  verbose && logs.info('Bundling directory ' + ret.pushdir + ' (~' + humanize.filesize(ret.size) + ')');
+  verbose && logs.info('Bundling directory ' + ret.pushdir);
 
   // Create archive and deploy it to tessel.
   tessel.bundleFiles(ret.relpath, argv, ret.files, next);
