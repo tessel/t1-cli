@@ -227,12 +227,13 @@ Tessel.prototype._receiveLogs = function _receiveLogs() {
 }
 
 Tessel.prototype.postMessage = function postMessage(tag, buf, cb) {
+  buf = buf || new Buffer(0);
+  
   if (usb_debug) {
     console.log("USB TX: ", buf.length, tag.toString(16), buf);
   }
 
   var header = new Buffer(8);
-  buf = buf || new Buffer(0);
   header.writeUInt32LE(buf.length, 0);
   header.writeUInt32LE(tag, 4);
   var data = Buffer.concat([header, buf]);
