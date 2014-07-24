@@ -60,14 +60,20 @@ TesselBase.prototype.reFind = function reFind(desiredMode, next) {
   var retrycount = 16;
   function retry (error) {
     deviceBySerial(self.serialNumber, function(err, device) {
-      if (err) return next(err);
+      // Ignore errors until timeout (another device may fail, but that doesn't
+      // mean the device we're looking for won't come back)
       if (device && device.mode === desiredMode) {
-        return next(null, device);
+        return next(device.initError, device);
       } else if (--retrycount > 0) {
         return setTimeout(retry, 500);
       } else {
-        var mode = device ? "In " + device.mode + " mode." : "Device not found.";
-        return next("Timed out waiting to switch to " + desiredMode + " mode."  + msg);
+        var msg;
+        if (err) {
+          msg = err;
+        } else {
+          msg = device ? "In " + device.mode + " mode." : "Device not found.";
+        } 
+        return next("Timed out waiting to switch to " + desiredMode + " mode." + msg);
       }
     });
   }  
@@ -115,7 +121,8 @@ Tessel.prototype.init = function init(next) {
   var self = this;
   this.logLevels = [];
 
-  TesselBase.prototype.init.call(this, function() {
+  TesselBase.prototype.init.call(this, function(err) {
+    if (err) return next(err);
     // Fetch version info from the device
     self._info(function(err, info) {
       if (err) return next(err);
@@ -358,12 +365,16 @@ exports.findTessel = function findTessel(opts, next) {
 
 function deviceBySerial(serial, next) {
   exports.listDevices(function (err, devices) {
-    if (err) return next(err);
+    // Error handling in this function is slightly unconventional:
+    // If we find a device, we only care if the error happened
+    // enumerating that device, or if it prevented us from finding
+    // the device.
     for (var i=0; i<devices.length; i++) {
       if (!serial || serial === devices[i].serialNumber) {
-        return next(null, devices[i])
+        return next(devices[i].initError, devices[i])
       }
     }
+    if (err) return next(err);
     return next(null, null);
   });
 }
@@ -379,5 +390,12 @@ exports.listDevices = function listDevices(next) {
     }
   }).filter(function(x) {return x});
 
-  async.each(devices, function(dev, cb) { dev.init(cb) }, function(err) { next(err, devices)} );
+  async.each(devices, function(dev, cb) { 
+    dev.init(function(err) {
+      dev.initError = err;
+      cb(err);
+    });
+  }, function(err) {
+    next(err, devices)
+  });
 }
