@@ -56,9 +56,10 @@ TesselBase.prototype.init = function init(next) {
 
 // Wait for this device to reconnect in the specified mode
 TesselBase.prototype.reFind = function reFind(desiredMode, next) {
+  var self = this;
   var retrycount = 16;
   function retry (error) {
-    deviceBySerial(this.serialNumber, function(err, device) {
+    deviceBySerial(self.serialNumber, function(err, device) {
       if (err) return next(err);
       if (device && device.mode === desiredMode) {
         return next(null, device);
