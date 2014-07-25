@@ -229,6 +229,7 @@ Tessel.prototype._receiveLogs = function _receiveLogs() {
     }
   });
   self.log_ep.on('error', function(e) {
+    if (self.closed) return;
     console.error("Error reading USB log endpoint:", e);
     process.exit(-5);
   });
@@ -289,6 +290,7 @@ Tessel.prototype._receiveMessages = function _receiveMessages() {
   });
 
   self.msg_in_ep.on('error', function(e) {
+    if (self.closed) return;
     console.error("Error reading USB message endpoint:", e);
     process.exit(-5);
   });
