@@ -191,8 +191,17 @@ if (argv.list){
     }
 
     function tagsort (a, b) {
-      if (a.url < b.url) return 1;
-      if (a.url > b.url) return -1;
+      if (semver.valid(a) && !semver.valid(b)) {
+        return -1;
+      }
+      if (!semver.valid(a) && semver.valid(b)) {
+        return 1;
+      }
+      if (semver.valid(a) && semver.valid(b)) {
+        return semver.lt(a, b) ? 1 : semver.gt(a, b) ? -1 : 0;
+      }
+      if (a < b) return 1;
+      if (a > b) return -1;
       return 0;
     }
 
