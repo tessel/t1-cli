@@ -157,11 +157,14 @@ prototype.initCommands = function () {
 prototype.enterBootloader = function (next) {
   var self = this;
   self.claim(true, function() {
+    self.log_ep.stopStream();
+    self.msg_in_ep.stopStream();
     commands.enterBootloader(self, function(err) {
       if (err) return next && next(err);
+      self.usb.close();
+      self.closed = true;
       self.reFind('boot', next);
     });
-    self.close();
   });
 };
 
