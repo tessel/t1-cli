@@ -14,10 +14,18 @@ var fs = require('fs');
 var stream = require('stream');
 var clone = require('structured-clone')
   , logs = require('../src/logs')
+  , humanize = require('humanize')
   ;
 
 var tessel = require('./');
 var prototype = tessel.Tessel.prototype;
+
+/**
+ * If bundle size reaching this amount, show error and stop deployment
+ * @type {number}
+ */
+var MAX_BUNDLE_SIZE = 30 * 1024 * 1024;
+
 
 // Abstract raw command writing from JS API.
 // Eventually this will correspond to the USB interface.
@@ -308,6 +316,14 @@ prototype.checkWifi = function(lastCheck){
 
 prototype.deployBundle = function (bundle, options, next) {
   var self = this;
+
+  if (bundle.length > MAX_BUNDLE_SIZE) {
+    logs.err('Bundle size is %s and is above max limit of %s',
+        humanize.filesize(bundle.length),
+        humanize.filesize(MAX_BUNDLE_SIZE));
+    process.exit(-1);
+  }
+
   self.stop(function () {
     next && self.once('script-start', next);
     if (options.flash) {
