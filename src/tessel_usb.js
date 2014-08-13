@@ -73,7 +73,7 @@ TesselBase.prototype.reFind = function reFind(desiredMode, next) {
         } else {
           msg = device ? "In " + device.mode + " mode." : "Device not found.";
         } 
-        return next("Timed out waiting to switch to " + desiredMode + " mode." + msg);
+        return next("Timed out waiting to switch to " + desiredMode + " mode: " + msg);
       }
     });
   }  
