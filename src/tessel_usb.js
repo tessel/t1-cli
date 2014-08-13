@@ -58,6 +58,7 @@ TesselBase.prototype.init = function init(next) {
 TesselBase.prototype.reFind = function reFind(desiredMode, next) {
   var self = this;
   var retrycount = 16;
+  self.usb.__destroy();
   function retry (error) {
     deviceBySerial(self.serialNumber, function(err, device) {
       // Ignore errors until timeout (another device may fail, but that doesn't
@@ -65,6 +66,9 @@ TesselBase.prototype.reFind = function reFind(desiredMode, next) {
       if (device && device.mode === desiredMode) {
         return next(device.initError, device);
       } else if (--retrycount > 0) {
+        if (device) {
+          device.usb.__destroy();
+        }
         return setTimeout(retry, 500);
       } else {
         var msg;
@@ -374,6 +378,8 @@ function deviceBySerial(serial, next) {
     for (var i=0; i<devices.length; i++) {
       if (!serial || serial === devices[i].serialNumber) {
         return next(devices[i].initError, devices[i])
+      } else {
+        devices[i].usb.__destroy();
       }
     }
     if (err) return next(err);
@@ -389,6 +395,7 @@ exports.listDevices = function listDevices(next) {
       } else {
         return new Tessel(dev);
       }
+      dev.__destroy();
     }
   }).filter(function(x) {return x});
 
