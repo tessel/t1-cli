@@ -56,7 +56,7 @@ function usage(){
 
 function done(err) {
   if (err) {
-    logs.err(err.stack);
+    logs.err(err.stack || err);
     process.exit(1);
   } else {
     logs.info("Complete")
