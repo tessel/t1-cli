@@ -31,14 +31,30 @@ var path = require('path')
   }
 })();
 
+function toFullPath(f) {
+   return function(pathToExclude) {
+      return path.join(path.dirname(f), pathToExclude + '/');
+   }
+}
+
+function containsFile(file) {
+   return function(dir) {
+      // Filename starts with dir
+      return file.indexOf(dir) === 0;
+   };
+}
+
 exports.bundleFiles = function (startpath, args, files, next)
 {
   temp.mkdir('colony', function (err, dirpath) {
     var mkdirp = require('mkdirp');
+
+    dirpath = path.normalize(dirpath);
+
     Object.keys(files).forEach(function (filename) {
       mkdirp.sync(path.join(dirpath, 'app', path.dirname(filename)));
       fs.writeFileSync(path.join(dirpath, 'app', filename), fs.readFileSync(files[filename], 'binary'), 'binary');
-    })
+    });
 
     var stub
       = 'process.env.DEPLOY_IP = ' + JSON.stringify(require('my-local-ip')()) + ';\n'
@@ -48,10 +64,32 @@ exports.bundleFiles = function (startpath, args, files, next)
     fs.writeFileSync(path.join(dirpath, '_start.js'), stub);
 
     // Create list of (tesselpath, localfspath) files to compile.
-    var docompile = [];
-    effess.readdirRecursiveSync(path.join(dirpath)).forEach(function (f) {
+    var docompile = [], excludeDirs = [], noCompile;
+
+    // First pass - collect all package.json and get blacklisted folders
+    effess.readdirRecursiveSync(dirpath).forEach(function (f) {
+      var fullPath = path.join(dirpath, f);
+      if (f.match(/package\.json$/)) {
+        try {
+          noCompile = require(fullPath).noCompile;
+          if (!(noCompile && noCompile.length)) {
+             noCompile = [ '/static/' ];
+          }
+          if (!(noCompile instanceof Array)) {
+             noCompile = [ noCompile ];
+          }
+          excludeDirs = excludeDirs.concat(noCompile.map(toFullPath(f)));
+        } catch (e) {
+          // in case of not well-formed json
+          // ignore
+        }
+      }
+    });
+
+    // Collect all .js files which are not in blacklisted folders
+    effess.readdirRecursiveSync(dirpath).forEach(function (f) {
       // console.log("current file", f);
-      if (f.match(/\.js$/)) {
+      if (f.match(/\.js$/) && !excludeDirs.some(containsFile(f))) {
         docompile.push([f, path.join(dirpath, f)]);
       }
     });
@@ -97,10 +135,10 @@ exports.bundleFiles = function (startpath, args, files, next)
           });
         } catch (e) {
           logs.err('Compilation process failed for the following file:');
-          logs.err(f.replace(/^[^/]+/, '.'))
+          logs.err(f.replace(/^[^/]+/, '.'));
           logs.err('This is a compilation bug! Please file an issue at');
           logs.err('https://github.com/tessel/beta/issues with this text');
-          logs.err('and a copy of the file that failed to compile.')
+          logs.err('and a copy of the file that failed to compile.');
           process.exit(1);
         }
       }
