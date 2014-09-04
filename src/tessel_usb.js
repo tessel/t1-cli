@@ -31,6 +31,7 @@ if (usb_debug) {
   usb.setDebugLevel(usb_debug);
 }
 
+var isWindows = /^win/.test(process.platform);
 
 // Common base support for bootloader and app mode
 function TesselBase() {}
@@ -58,7 +59,11 @@ TesselBase.prototype.init = function init(next) {
 TesselBase.prototype.reFind = function reFind(desiredMode, next) {
   var self = this;
   var retrycount = 16;
-  self.usb.__destroy();
+  
+  if (isWindows) {
+    self.usb.__destroy();
+  }
+  
   function retry (error) {
     deviceBySerial(self.serialNumber, function(err, device) {
       // Ignore errors until timeout (another device may fail, but that doesn't
@@ -66,7 +71,7 @@ TesselBase.prototype.reFind = function reFind(desiredMode, next) {
       if (device && device.mode === desiredMode) {
         return next(device.initError, device);
       } else if (--retrycount > 0) {
-        if (device) {
+        if (device && isWindows) {
           device.usb.__destroy();
         }
         return setTimeout(retry, 500);
@@ -379,7 +384,9 @@ function deviceBySerial(serial, next) {
       if (!serial || serial === devices[i].serialNumber) {
         return next(devices[i].initError, devices[i])
       } else {
-        devices[i].usb.__destroy();
+        if (isWindows) {
+          devices[i].usb.__destroy();
+        }
       }
     }
     if (err) return next(err);
@@ -395,7 +402,9 @@ exports.listDevices = function listDevices(next) {
       } else {
         return new Tessel(dev);
       }
-      dev.__destroy();
+      if (isWindows) {
+        dev.__destroy();
+      }
     }
   }).filter(function(x) {return x});
 
