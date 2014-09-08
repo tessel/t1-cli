@@ -103,6 +103,7 @@ common.controller({stop: false}, function (err, client) {
           // there is no password and security was specified
           logs.err('A password is needed for', security);
           client.close();
+          process.exit(1);
         } else {
           // if there isn't a password then assume security type is unsecure
           security = new Buffer('unsecure');
@@ -113,6 +114,7 @@ common.controller({stop: false}, function (err, client) {
       } else if (security.toLowerCase() == 'unsecure') {
         logs.err('Cannot connect to an unsecure network with a password specified');
         client.close();
+        process.exit(1);
       } else {
         // otherwise use chosen security type
         security = new Buffer(security.toLowerCase());
