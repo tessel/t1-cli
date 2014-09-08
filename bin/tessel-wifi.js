@@ -98,7 +98,7 @@ common.controller({stop: false}, function (err, client) {
         pass = new Buffer(String(pass));
       }
 
-      var security = new Buffer((String(argv.security) || (pass ? 'wpa2' : 'unsecure')).toLowerCase());
+      var security = new Buffer((pass.length ? String(argv.security) : 'unsecure').toLowerCase());
 
       client.configureWifi(ssid, pass, security, {
         timeout: argv.timeout
