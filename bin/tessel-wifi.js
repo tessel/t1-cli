@@ -55,6 +55,11 @@ var argv = require("nomnom")
     abbr: 'h',
     help: '[Tessel] Show usage for tessel wifi'
   })
+  .option('mac', {
+    abbr: 'm',
+    flag: true,
+    help: '[Tessel] Show the MAC Address of the WiFi chip'
+  })
   .parse();
 
 
@@ -81,6 +86,15 @@ common.controller({stop: false}, function (err, client) {
     client.wifiErase(function(err){
       if (err) return console.error("Got error code:", err, "while erasing profiles");
       console.log("Erased wifi profiles");
+      client.close();
+    })
+  }
+  else if (argv.mac) {
+    client.macAddress(function(err, macAddress) {
+      if (err) return console.log("Error retrieving Mac Address.", err);
+      else {
+        logs.info("Mac Address:", macAddress);
+      }
       client.close();
     })
   } else {

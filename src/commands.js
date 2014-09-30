@@ -43,6 +43,9 @@ var commands = {
 
     client.postMessage(0x0057, outbuf, callback);
   },
+  macAddress: function(client, callback) {
+    client.postMessage(0x0063, null, callback);
+  },
   writeStdin: function (client, buffer, callback) {
     client.postMessage(0x006e, buffer, callback);
   },
@@ -123,6 +126,12 @@ prototype.initCommands = function () {
   // Debug stack
   this.on('rawMessage:006b', function (data) {
     this.emit('debug-stack', data.toString('utf-8'));
+  });
+
+  // Mac Address
+  this.on('rawMessage:0063', function(data) {
+    var packet = JSON.parse(data);
+    this.emit('mac-address', packet);
   });
 
   // Ping / pong.
@@ -223,6 +232,21 @@ prototype.wifiErase = function (next) {
       next(data);
     } else {
       next(null);
+    }
+  });
+}
+
+prototype.macAddress = function(next) {
+  commands.macAddress(this, function () {
+    logs.info('Requesting MAC Address...'.grey);
+  });
+
+  this.once('mac-address', function(data) {
+    if (data.event === 'error') {
+      next && next(new Error("Unable to retrieve MAC Address. Error Number " + data.status));
+    }
+    else {
+      next && next(null, data.mac_address);
     }
   });
 }
