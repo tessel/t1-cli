@@ -114,7 +114,7 @@ common.controller({stop: true}, function (err, client) {
   });
 
   function pushCode(){
-    client.run(pushpath, ['tessel', pushpath].concat(argv.arguments || []), {
+    client.run(pushpath, ['tessel', pushpath].concat(argv.args || []), {
       flash: true,
       single: argv.single
     }, function (err) {
