@@ -89,13 +89,13 @@ function checkBuildList (version, next) {
   }
 
   request.head(manifesturl, {
-    timeout: 3000
+    timeout: 10*1000
   }, function (err, res) {
     if (!err && res) {
       request.get({
         url: manifesturl,
         json: true,
-        timeout: 3000
+        timeout: 10*1000
       }, function(err, req, builds) {
         // HTTP error or JSON parsing error.
         if (err || typeof builds != 'object') return next && next(null);
