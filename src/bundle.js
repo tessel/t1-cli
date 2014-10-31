@@ -44,8 +44,13 @@ function containsFile(file) {
    };
 }
 
-exports.bundleFiles = function (startpath, args, files, next)
+exports.bundleFiles = function (startpath, args, files, opts, next)
 {
+  if (typeof opts == 'function') {
+    next = opts;
+    opts = {};
+  }
+
   temp.mkdir('colony', function (err, dirpath) {
     var mkdirp = require('mkdirp');
 
@@ -94,7 +99,7 @@ exports.bundleFiles = function (startpath, args, files, next)
       }
     });
 
-    var compileBytecode = true;
+    var compileBytecode = opts.compileBytecode == null ? true : !!opts.compileBytecode;
 
     // compile with compile_lua
     async.each(docompile, function (_f, next) {
