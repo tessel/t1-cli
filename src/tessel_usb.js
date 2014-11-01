@@ -12,6 +12,7 @@ var DFU = 'MOCK_USB' in process.env ? {} : require('../dfu/dfu');
 var util = require('util');
 var async = require('async');
 var EventEmitter = require('events').EventEmitter;
+var semver = require('semver')
 
 var TESSEL_VID = 0x1d50;
 var TESSEL_PID = 0x6097;
@@ -345,6 +346,10 @@ Tessel.prototype.wifiVer = function (next) {
     next(null, version);
   });
 }
+
+Tessel.prototype._supportsOldBytecode = function () {
+  return !('runtime_version' in this.version && semver.satisfies(this.version.runtime_version, '>= 1.0.0'));
+};
 
 exports.findTessel = function findTessel(opts, next) {
   if (opts.stop   === undefined) opts.stop = false;
