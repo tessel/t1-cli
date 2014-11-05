@@ -60,7 +60,7 @@ function usage () {
 }
 
 tessel.bundleScript(argv.script, argv.args, {
-  quiet: true
+  quiet: true,
   compileBytecode: argv.bytecode,
 }, function (err, tarbundle) {
   logs.info('wrote %s bytes', humanize.filesize(tarbundle.length))
