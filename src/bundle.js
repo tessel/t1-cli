@@ -109,7 +109,9 @@ exports.bundleFiles = function (startpath, args, files, opts, next)
 
       try {
         var source = fs.readFileSync(fullpath, 'utf-8');
-        var res = colonyCompiler.colonize(source);
+        var res = colonyCompiler.colonize(source, {
+          embedLineNumbers: !compileBytecode
+        });
       } catch (e) {
         if (!(e instanceof SyntaxError)) {
           throw e;
@@ -125,7 +127,9 @@ exports.bundleFiles = function (startpath, args, files, opts, next)
         ].join('\n');
         // Files with syntax errors can't be compiled.
         // We can pretend they were thrown by our parser though, at runtime.
-        var res = colonyCompiler.colonize('throw new SyntaxError(' + JSON.stringify(message) + ')')
+        var res = colonyCompiler.colonize('throw new SyntaxError(' + JSON.stringify(message) + ')', {
+          embedLineNumbers: !compileBytecode
+        })
       }
 
       if (!compileBytecode) {
