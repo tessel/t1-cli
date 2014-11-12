@@ -21,9 +21,9 @@ var fname = process.argv[2];
 var image = fs.readFileSync(fname);
   
 common.controller({ stop: true, appMode: false }, function (err, client) {
-  if (err) return logs.error(err);
+  if (err) return logs.err(err);
   client.enterBootloader(function(err, bl) {
-    if (err) return logs.error(err);
+    if (err) return logs.err(err);
     bl.runRam(image);
     logs.info("Running ", fname);
   });

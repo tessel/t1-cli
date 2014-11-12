@@ -45,6 +45,6 @@ common.controller({ stop: true, appMode: false }, function (err, client) {
       logs.info('Tessel filesystem erased.');
     });
   } else {
-    logs.error("Unknown device mode: " + client.mode);
+    logs.err("Unknown device mode: " + client.mode);
   }
 });
