@@ -162,6 +162,12 @@ prototype.initCommands = function () {
   };
 
   this.on('log', function (level, str) {
+    if (level == 30) {    // raw stderr
+        self.stdout.push(str);
+    }
+    if (level == 31) {    // raw stdout
+      self.stderr.push(str);
+    }
     if (level == 10 || level == 11 || level == 12) {
       self.stdout.push(str + '\n');
     }
