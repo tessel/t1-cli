@@ -1,0 +1,8 @@
+description: Linux
+badge_token: QsFQ9CsYegvj7x78qiit
+
+language: node_js
+node_js:
+  - "0.10"
+before_install:
+  - sudo apt-get install pkg-config build-essential libusb-1.0-0-dev
