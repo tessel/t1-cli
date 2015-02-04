@@ -11,6 +11,7 @@
 var tesselClient = require('../')
   , common = require('../src/cli')
   , logs = require('../src/logs')
+  , colors = require('colors')
   ;
 
 // Setup cli.
@@ -18,6 +19,8 @@ common.basic();
 
 tesselClient.listDevices(function (err, devices) {
   devices.map(function (device) {
+    var decoration = (device.serialNumber===process.env.TESSEL_SERIAL) ? '* '.red : '  ';
+    process.stderr.write(decoration);
     console.log(device.serialNumber);
   });
 })
