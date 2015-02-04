@@ -19,7 +19,8 @@ common.basic();
 
 tesselClient.listDevices(function (err, devices) {
   devices.map(function (device) {
-    var decoration = (device.serialNumber===process.env.TESSEL_SERIAL) ? '*'.red : ' ';
-    console.log(decoration,device.serialNumber);
+    var decoration = (device.serialNumber===process.env.TESSEL_SERIAL) ? '* '.red : '  ';
+    process.stderr.write(decoration);
+    console.log(device.serialNumber);
   });
 })
