@@ -11,8 +11,6 @@
 var path = require('path')
 
 var common = require('../src/cli')
-  , keypress = require('keypress')
-  , read = require('read')
   , colors = require('colors')
   , builds = require('../src/builds')
   , util = require('util')
