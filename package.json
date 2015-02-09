@@ -21,7 +21,7 @@
   "license": "MIT",
   "dependencies": {
     "async": "~0.2.9",
-    "colony-compiler": "~0.6.23",
+    "colony-compiler": "~1.0.0",
     "colors": "~0.6.0-1",
     "colorsafeconsole": "0.0.4",
     "debug": "^0.8.1",
