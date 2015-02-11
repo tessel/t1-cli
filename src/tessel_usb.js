@@ -181,7 +181,11 @@ Tessel.prototype.claim = function claim(stop, next) {
         self._receiveLogs();
         self._receiveMessages();
 
-        self.emit('claimed');
+        console.log('preclaim');
+        process.nextTick(function () {
+          console.log('claimed');
+          self.emit('claimed');
+        })
       });
     }
   }
