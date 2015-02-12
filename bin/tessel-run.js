@@ -11,13 +11,11 @@
 var path = require('path')
 
 var common = require('../src/cli')
-  , keypress = require('keypress')
-  , read = require('read')
   , colors = require('colors')
   , builds = require('../src/builds')
   , util = require('util')
   , logs = require('../src/logs')
-  , repl = require('repl')
+  , repl = require('../src/repl')
   ;
 
 var colonyCompiler = require('colony-compiler')
@@ -99,7 +97,7 @@ function usage () {
 
 function interactiveClient (client)
 {
-  function convertToContext (cmd) {
+  function convertToTesselContext (cmd) {
     var self = this, matches,
         scopeVar = /^\s*var\s*([_\w\$]+)(.*)$/m,
         scopeFunc = /^\s*function\s*([_\w\$]+)/;
@@ -129,7 +127,7 @@ function interactiveClient (client)
         });
 
         try {
-          var data = convertToContext(cmd.slice(1, -2));
+          var data = convertToTesselContext(cmd.slice(1, -2));
           var script
             = 'local function _run ()\n' + colonyCompiler.colonize(data, {returnLastStatement: true, wrap: false}) + '\nend\nsetfenv(_run, colony.global);\nreturn _run()';
           client.send(script);
