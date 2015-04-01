@@ -1,11 +1,11 @@
 {
   "name": "tessel",
-  "version": "v0.3.21",
+  "version": "v0.3.22",
   "description": "Tessel command line tools and programmatic access library.",
   "main": "src/index.js",
   "scripts": {
     "test": "MOCK_USB=1 tap test/*.js test/badserver/test.js",
-    "postinstall": "tessel install-drivers || true"
+    "postinstall": "tessel install-drivers || true; tessel trademark || true"
   },
   "bin": {
     "tessel": "./bin/tessel.js"

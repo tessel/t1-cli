@@ -69,6 +69,7 @@ var builtinCommands = {
   'version': 'version',
   'wifi': 'wifi',
   'install-drivers': 'install-drivers',
+  'trademark' : 'trademark',
   'boot': 'boot',
 }
 
