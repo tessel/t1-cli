@@ -205,6 +205,9 @@ if (argv.list){
       return 0;
     }
 
+    if (!allBuilds) {
+      return logs.err("There was an error getting build information.");
+    }
     logs.info("Switch to any of these builds with `tessel update -b <build name>`");
     var alltags = allBuilds.filter(function (file) {
       return file.url.match(/^firmware\/./) && file.url.match(/\.bin$/);
