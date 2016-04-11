@@ -1,3 +1,5 @@
+**[UNMAINTAINED] This library does not have a maintainer. The source code and repository will be kept at this URL indefinitely. If you'd like to help maintain this codebase, create an issue on this repo explaining why you'd like to become a maintainer and tag @tessel/maintainers in the body.**
+
 # tessel cli and module
 
 This is the Node module for communicating with Tessel by the commandline, pushing code and controlling network settings / configuration, or for programmatically interacting with Tessel.
